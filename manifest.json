@@ -1,13 +1,13 @@
 {
-  "name": "Mis Metas de Ahorro",
-  "short_name": "Ahorros",
-  "description": "Crea metas de ahorro, añade dinero y sigue tu progreso de forma fácil y bonita.",
+  "name": "Savings Goals",
+  "short_name": "Goals",
+  "description": "Create savings goals, add money, and track your progress.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b1220",
-  "theme_color": "#1d4ed8",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
