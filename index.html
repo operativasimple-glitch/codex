@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Mis Metas de Ahorro</title>
+<meta name="theme-color" content="#1d4ed8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ahorros">
+<meta name="description" content="Lleva el control de tus metas de ahorro de forma fácil y bonita">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#0b1220;
+  --bg2:#111b30;
+  --bg3:#16233d;
+  --line:#233252;
+  --tx:#eef3ff;
+  --tx2:#93a4c8;
+  --blue:#3b82f6;
+  --blue2:#60a5fa;
+  --indigo:#6366f1;
+  --violet:#8b5cf6;
+  --pink:#ec4899;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#f87171;
+  --r:18px;
+  --r-sm:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--tx);
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  overscroll-behavior-y:none;
+  background:
+    radial-gradient(900px 500px at 20% -10%, rgba(99,102,241,.35), transparent 60%),
+    radial-gradient(700px 500px at 100% 0%, rgba(59,130,246,.25), transparent 55%),
+    var(--bg);
+}
+#app{min-height:100%}
+.hidden{display:none !important}
+.wrap{max-width:520px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom))}
+
+/* ---- header ---- */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+header h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.3px;
+  background:linear-gradient(90deg,#93c5fd,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+header .sub{font-size:13px;color:var(--tx2);margin-top:2px}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(140deg,var(--blue),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 6px 16px -6px rgba(99,102,241,.7)}
+
+/* ---- summary card ---- */
+.summary{
+  border-radius:24px;padding:22px 22px 20px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#2563eb 0%,#4f46e5 55%,#7c3aed 100%);
+  box-shadow:0 20px 40px -18px rgba(37,99,235,.6);
+  margin-bottom:22px;
+}
+.summary::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(220px 140px at 90% -20%, rgba(255,255,255,.25), transparent 60%);
+}
+.summary .label{font-size:13px;color:rgba(255,255,255,.8);font-weight:600;letter-spacing:.3px;position:relative}
+.summary .amount{font-size:38px;font-weight:800;color:#fff;margin:4px 0 14px;letter-spacing:-.5px;position:relative}
+.summary .row{display:flex;gap:18px;position:relative}
+.summary .stat{flex:1;background:rgba(255,255,255,.14);border-radius:14px;padding:10px 12px;backdrop-filter:blur(6px)}
+.summary .stat .n{font-weight:700;font-size:16px;color:#fff}
+.summary .stat .l{font-size:11.5px;color:rgba(255,255,255,.75);margin-top:1px}
+
+/* ---- section ---- */
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--tx2);
+  margin:6px 2px 12px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+
+.empty{
+  text-align:center;padding:50px 20px;color:var(--tx2);border:1.5px dashed var(--line);
+  border-radius:var(--r);
+}
+.empty .e-icon{font-size:40px;margin-bottom:10px}
+.empty b{color:var(--tx);display:block;margin-bottom:4px;font-size:16px}
+
+.list{display:flex;flex-direction:column;gap:14px}
+
+.goal{
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 16px 14px;position:relative;overflow:hidden;
+}
+.goal.done{border-color:rgba(34,197,94,.5)}
+.goal .g-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.goal .g-emoji{
+  width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.goal .g-info{flex:1;min-width:0}
+.goal .g-name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal .g-date{font-size:12.5px;color:var(--tx2);margin-top:1px}
+.goal .g-menu{background:transparent;border:0;color:var(--tx2);font-size:20px;padding:6px 4px;cursor:pointer;line-height:1}
+
+.progress-track{height:10px;border-radius:99px;background:var(--bg3);overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--violet));transition:width .4s ease}
+.goal.done .progress-fill{background:linear-gradient(90deg,#22c55e,#4ade80)}
+
+.g-nums{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.g-nums .saved{font-weight:700;font-size:15px}
+.g-nums .saved b{color:var(--blue2)}
+.goal.done .g-nums .saved b{color:var(--green)}
+.g-nums .target{font-size:13px;color:var(--tx2)}
+.g-nums .pct{font-size:12.5px;font-weight:700;color:var(--tx2)}
+
+.g-actions{display:flex;gap:8px}
+.btn-add-money{
+  flex:1;border:0;border-radius:12px;padding:11px;font-weight:700;font-size:14px;cursor:pointer;
+  background:linear-gradient(135deg,var(--blue),var(--indigo));color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-add-money:active{transform:scale(.97)}
+.btn-add-money:disabled{opacity:.55;filter:grayscale(.4)}
+.btn-ghost{
+  border:1px solid var(--line);background:transparent;color:var(--tx2);border-radius:12px;
+  padding:11px 14px;font-size:14px;cursor:pointer;font-weight:600;
+}
+.btn-ghost:active{background:var(--bg3)}
+.done-badge{
+  position:absolute;top:14px;right:14px;background:rgba(34,197,94,.15);color:var(--green);
+  font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;letter-spacing:.3px;
+}
+
+/* ---- fab ---- */
+.fab{
+  position:fixed;right:20px;bottom:calc(24px + env(safe-area-inset-bottom));
+  width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;
+  background:linear-gradient(140deg,var(--blue),var(--violet));color:#fff;font-size:28px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 14px 30px -10px rgba(99,102,241,.75);
+  z-index:20;
+}
+.fab:active{transform:scale(.93)}
+
+/* ---- sheet / modal ---- */
+.overlay{
+  position:fixed;inset:0;background:rgba(4,8,20,.6);backdrop-filter:blur(2px);
+  display:flex;align-items:flex-end;justify-content:center;z-index:50;
+}
+.overlay.center{align-items:center;padding:20px}
+.sheet{
+  width:100%;max-width:520px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:22px 22px 0 0;padding:18px 20px calc(24px + env(safe-area-inset-bottom));
+  animation:slideup .22s ease;
+}
+.overlay.center .sheet{border-radius:22px;animation:popin .18s ease}
+@keyframes slideup{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes popin{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.sheet-handle{width:38px;height:4px;background:var(--line);border-radius:99px;margin:0 auto 14px}
+.sheet h2{margin:0 0 16px;font-size:18px;font-weight:800}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;color:var(--tx2);margin-bottom:6px;font-weight:600}
+.field input{
+  width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:12px;
+  padding:13px 14px;color:var(--tx);font-size:16px;font-family:inherit;
+}
+.field input:focus{outline:2px solid var(--blue);outline-offset:-1px}
+
+.emoji-grid{display:flex;flex-wrap:wrap;gap:8px}
+.emoji-opt{
+  width:44px;height:44px;border-radius:12px;border:2px solid transparent;background:var(--bg3);
+  font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.emoji-opt.sel{border-color:var(--blue);background:rgba(59,130,246,.18)}
+
+.quick-amounts{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.qa{
+  border:1px solid var(--line);background:var(--bg3);color:var(--tx);border-radius:10px;
+  padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer;
+}
+.qa:active{background:var(--blue);border-color:var(--blue)}
+
+.sheet-actions{display:flex;gap:10px;margin-top:6px}
+.btn-primary{
+  flex:1;border:0;border-radius:13px;padding:14px;font-weight:700;font-size:15.5px;cursor:pointer;
+  background:linear-gradient(135deg,var(--blue),var(--indigo));color:#fff;
+}
+.btn-primary:active{transform:scale(.98)}
+.btn-cancel{
+  border:1px solid var(--line);background:transparent;color:var(--tx2);border-radius:13px;
+  padding:14px 18px;font-size:15.5px;cursor:pointer;font-weight:600;
+}
+.btn-danger{
+  width:100%;border:0;background:rgba(248,113,113,.12);color:var(--red);border-radius:13px;
+  padding:13px;font-weight:700;font-size:15px;cursor:pointer;margin-top:4px;
+}
+
+/* confetti */
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+.confetti-piece{position:absolute;top:-10px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.2}}
+
+/* toast */
+.toast{
+  position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:#1c2a49;border:1px solid var(--line);color:var(--tx);padding:11px 18px;border-radius:99px;
+  font-size:14px;font-weight:600;box-shadow:0 12px 24px -10px rgba(0,0,0,.5);z-index:90;
+  display:flex;align-items:center;gap:8px;opacity:0;transition:opacity .2s, transform .2s;
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Mis Metas 💙</h1>
+        <div class="sub" id="dateLine"></div>
+      </div>
+      <div class="avatar">💰</div>
+    </header>
+
+    <div class="summary">
+      <div class="label">TOTAL AHORRADO</div>
+      <div class="amount" id="totalSaved">$0</div>
+      <div class="row">
+        <div class="stat"><div class="n" id="statGoals">0</div><div class="l">Metas activas</div></div>
+        <div class="stat"><div class="n" id="statDone">0</div><div class="l">Completadas</div></div>
+        <div class="stat"><div class="n" id="statTarget">$0</div><div class="l">Meta total</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Tus metas</div>
+    <div id="emptyState" class="empty hidden">
+      <div class="e-icon">🎯</div>
+      <b>Aún no tienes metas</b>
+      Toca el botón + para crear tu primera meta de ahorro
+    </div>
+    <div class="list" id="goalList"></div>
+  </div>
+
+  <button class="fab" id="fabAdd" aria-label="Añadir meta">+</button>
+</div>
+
+<!-- New / edit goal sheet -->
+<div class="overlay hidden" id="goalOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="goalSheetTitle">Nueva meta</h2>
+    <div class="field">
+      <label>Nombre de la meta</label>
+      <input id="inpName" type="text" placeholder="Ej: Viaje a la playa" maxlength="40">
+    </div>
+    <div class="field">
+      <label>Cantidad objetivo</label>
+      <input id="inpTarget" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label>Fecha límite (opcional)</label>
+      <input id="inpDate" type="date">
+    </div>
+    <div class="field">
+      <label>Icono</label>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="btnCancelGoal">Cancelar</button>
+      <button class="btn-primary" id="btnSaveGoal">Guardar</button>
+    </div>
+    <button class="btn-danger hidden" id="btnDeleteGoal">Eliminar meta</button>
+  </div>
+</div>
+
+<!-- Add money sheet -->
+<div class="overlay hidden" id="moneyOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Añadir dinero</h2>
+    <div class="field">
+      <label>Cantidad</label>
+      <input id="inpMoney" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01" autofocus>
+    </div>
+    <div class="quick-amounts">
+      <button class="qa" data-v="5">+$5</button>
+      <button class="qa" data-v="10">+$10</button>
+      <button class="qa" data-v="20">+$20</button>
+      <button class="qa" data-v="50">+$50</button>
+      <button class="qa" data-v="100">+$100</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="btnCancelMoney">Cancelar</button>
+      <button class="btn-primary" id="btnConfirmMoney">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div id="confetti"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'savingGoals.v1';
+const EMOJIS = ['🎯','✈️','🏖️','🏠','🚗','💍','🎓','📱','💻','🎁','👗','👟','🎉','🐷','💵','❤️','🍼','🐾','🎮','⛺'];
+
+let goals = load();
+let activeGoalId = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return [];
+    return JSON.parse(raw);
+  }catch(e){ return []; }
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function fmt(n){
+  n = Math.round((n + Number.EPSILON) * 100) / 100;
+  return '$' + n.toLocaleString('es-ES', {maximumFractionDigits: n % 1 === 0 ? 0 : 2});
+}
+function dateLine(){
+  const d = new Date();
+  const s = d.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+  document.getElementById('dateLine').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+dateLine();
+
+function daysLeftText(dateStr){
+  if(!dateStr) return '';
+  const target = new Date(dateStr + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((target - today) / 86400000);
+  if(diff < 0) return ' · Venció';
+  if(diff === 0) return ' · Es hoy';
+  if(diff === 1) return ' · Queda 1 día';
+  return ' · Quedan ' + diff + ' días';
+}
+
+function render(){
+  const list = document.getElementById('goalList');
+  const empty = document.getElementById('emptyState');
+  list.innerHTML = '';
+
+  if(goals.length === 0){
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+  }
+
+  let totalSaved = 0, totalTarget = 0, doneCount = 0;
+
+  goals.forEach(g => {
+    totalSaved += g.saved;
+    totalTarget += g.target;
+    const pct = g.target > 0 ? Math.min(100, (g.saved / g.target) * 100) : 0;
+    const isDone = g.saved >= g.target && g.target > 0;
+    if(isDone) doneCount++;
+
+    const el = document.createElement('div');
+    el.className = 'goal' + (isDone ? ' done' : '');
+    el.innerHTML = `
+      ${isDone ? '<div class="done-badge">✓ CUMPLIDA</div>' : ''}
+      <div class="g-top">
+        <div class="g-emoji" style="background:${emojiBg(g.emoji)}">${g.emoji}</div>
+        <div class="g-info">
+          <div class="g-name">${escapeHtml(g.name)}</div>
+          <div class="g-date">${g.date ? formatDate(g.date) + daysLeftText(g.date) : 'Sin fecha límite'}</div>
+        </div>
+        <button class="g-menu" data-edit="${g.id}">⋯</button>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="g-nums">
+        <div class="saved"><b>${fmt(g.saved)}</b> <span style="color:var(--tx2);font-weight:500"> de ${fmt(g.target)}</span></div>
+        <div class="pct">${pct.toFixed(0)}%</div>
+      </div>
+      <div class="g-actions">
+        <button class="btn-add-money" data-add="${g.id}" ${isDone ? 'disabled' : ''}>${isDone ? '🎉 ¡Lograda!' : '💵 Añadir dinero'}</button>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+
+  document.getElementById('totalSaved').textContent = fmt(totalSaved);
+  document.getElementById('statGoals').textContent = goals.length - doneCount;
+  document.getElementById('statDone').textContent = doneCount;
+  document.getElementById('statTarget').textContent = fmt(totalTarget);
+
+  list.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => openMoneySheet(b.dataset.add)));
+  list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openGoalSheet(b.dataset.edit)));
+}
+
+function emojiBg(e){
+  const palette = ['linear-gradient(135deg,#3b82f6,#6366f1)','linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#0ea5e9,#3b82f6)','linear-gradient(135deg,#8b5cf6,#ec4899)'];
+  let h = 0;
+  for(const c of e) h += c.codePointAt(0);
+  return palette[h % palette.length];
+}
+function formatDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'});
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---- goal sheet (create/edit) ---- */
+const goalOverlay = document.getElementById('goalOverlay');
+const emojiGrid = document.getElementById('emojiGrid');
+let selectedEmoji = EMOJIS[0];
+
+EMOJIS.forEach(e => {
+  const b = document.createElement('button');
+  b.className = 'emoji-opt';
+  b.textContent = e;
+  b.type = 'button';
+  b.addEventListener('click', () => {
+    selectedEmoji = e;
+    emojiGrid.querySelectorAll('.emoji-opt').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+  });
+  emojiGrid.appendChild(b);
+});
+
+function openGoalSheet(id){
+  activeGoalId = id || null;
+  const g = id ? goals.find(x => x.id === id) : null;
+  document.getElementById('goalSheetTitle').textContent = g ? 'Editar meta' : 'Nueva meta';
+  document.getElementById('inpName').value = g ? g.name : '';
+  document.getElementById('inpTarget').value = g ? g.target : '';
+  document.getElementById('inpDate').value = g ? (g.date || '') : '';
+  selectedEmoji = g ? g.emoji : EMOJIS[0];
+  emojiGrid.querySelectorAll('.emoji-opt').forEach(x => x.classList.toggle('sel', x.textContent === selectedEmoji));
+  document.getElementById('btnDeleteGoal').classList.toggle('hidden', !g);
+  goalOverlay.classList.remove('hidden');
+  setTimeout(() => document.getElementById('inpName').focus(), 50);
+}
+function closeGoalSheet(){
+  goalOverlay.classList.add('hidden');
+  activeGoalId = null;
+}
+document.getElementById('fabAdd').addEventListener('click', () => openGoalSheet(null));
+document.getElementById('btnCancelGoal').addEventListener('click', closeGoalSheet);
+goalOverlay.addEventListener('click', e => { if(e.target === goalOverlay) closeGoalSheet(); });
+
+document.getElementById('btnSaveGoal').addEventListener('click', () => {
+  const name = document.getElementById('inpName').value.trim();
+  const target = parseFloat(document.getElementById('inpTarget').value);
+  const date = document.getElementById('inpDate').value;
+
+  if(!name){ showToast('Ponle un nombre a tu meta'); return; }
+  if(!target || target <= 0){ showToast('Ingresa una cantidad objetivo válida'); return; }
+
+  if(activeGoalId){
+    const g = goals.find(x => x.id === activeGoalId);
+    g.name = name; g.target = target; g.date = date; g.emoji = selectedEmoji;
+  } else {
+    goals.push({ id: uid(), name, target, saved: 0, date, emoji: selectedEmoji, createdAt: Date.now() });
+  }
+  save(); render(); closeGoalSheet();
+  showToast(activeGoalId ? '✓ Meta actualizada' : '🎯 ¡Nueva meta creada!');
+});
+
+document.getElementById('btnDeleteGoal').addEventListener('click', () => {
+  if(!activeGoalId) return;
+  if(confirm('¿Eliminar esta meta? Esta acción no se puede deshacer.')){
+    goals = goals.filter(x => x.id !== activeGoalId);
+    save(); render(); closeGoalSheet();
+    showToast('Meta eliminada');
+  }
+});
+
+/* ---- add money sheet ---- */
+const moneyOverlay = document.getElementById('moneyOverlay');
+function openMoneySheet(id){
+  activeGoalId = id;
+  document.getElementById('inpMoney').value = '';
+  moneyOverlay.classList.remove('hidden');
+  setTimeout(() => document.getElementById('inpMoney').focus(), 50);
+}
+function closeMoneySheet(){
+  moneyOverlay.classList.add('hidden');
+  activeGoalId = null;
+}
+document.getElementById('btnCancelMoney').addEventListener('click', closeMoneySheet);
+moneyOverlay.addEventListener('click', e => { if(e.target === moneyOverlay) closeMoneySheet(); });
+
+document.querySelectorAll('.qa').forEach(b => {
+  b.addEventListener('click', () => {
+    const inp = document.getElementById('inpMoney');
+    inp.value = (parseFloat(inp.value) || 0) + parseFloat(b.dataset.v);
+  });
+});
+
+document.getElementById('btnConfirmMoney').addEventListener('click', () => {
+  const amount = parseFloat(document.getElementById('inpMoney').value);
+  if(!amount || amount <= 0){ showToast('Ingresa una cantidad válida'); return; }
+  const g = goals.find(x => x.id === activeGoalId);
+  if(!g) return;
+  const wasDone = g.saved >= g.target;
+  g.saved += amount;
+  save();
+  const nowDone = g.saved >= g.target;
+  closeMoneySheet();
+  render();
+  if(nowDone && !wasDone){
+    launchConfetti();
+    showToast('🎉 ¡Meta "' + g.name + '" cumplida!');
+  } else {
+    showToast('💵 ' + fmt(amount) + ' añadidos a "' + g.name + '"');
+  }
+});
+
+/* ---- toast ---- */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ---- confetti ---- */
+function launchConfetti(){
+  const holder = document.getElementById('confetti');
+  const colors = ['#3b82f6','#6366f1','#8b5cf6','#ec4899','#22c55e','#f59e0b'];
+  for(let i = 0; i < 60; i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const size = 6 + Math.random() * 6;
+    p.style.width = size + 'px';
+    p.style.height = (size * 0.4) + 'px';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDuration = (2.2 + Math.random() * 1.6) + 's';
+    p.style.animationDelay = (Math.random() * 0.3) + 's';
+    holder.appendChild(p);
+    setTimeout(() => p.remove(), 4200);
+  }
+}
+
+/* ---- init ---- */
+render();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
