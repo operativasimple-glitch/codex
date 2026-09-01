@@ -1,21 +1,30 @@
-# Savings Goals
+# Colchón
 
-A simple, Apple-styled web app for creating savings goals, adding money to each one, and tracking progress. Built to feel at home on an iPhone — system colors, SF fonts, grouped lists, and native-style sheets.
+Una web app (PWA) para controlar el drawdown y el riesgo restante de varias cuentas de prop firm a la vez, desde el móvil. Construida para usarse en directo, durante la sesión — no es un diario de trading para analizar después.
 
-## Features
+## Qué hace la v1
 
-- Create goals with a name, target amount, optional due date, and an icon.
-- Add money to any goal with quick-amount chips (+$5, +$10, +$20...) or a custom amount.
-- Track progress with a slim progress bar and percentage.
-- See total saved, active goals, and completed goals at a glance.
-- Goals move to a "Completed" section automatically once fully funded, with a success animation.
-- Edit or delete a goal from its `•••` menu.
-- Installable as a PWA — add it to the iPhone home screen and it works offline.
+- Muestra, para cada cuenta, el **colchón restante**: la distancia en dólares entre tu saldo y el suelo de drawdown.
+- Calcula el suelo automáticamente a partir del **saldo de cierre del día (EOD)** que introduces a mano — no necesita ninguna API.
+- Vigila **días mínimos de trading**, **regla de consistencia** (% máximo de un solo día sobre el beneficio total) y el **objetivo de beneficio** de las evaluaciones.
+- Guarda la **fecha de próximo payout** que te indica tu firma y avisa cuándo está disponible.
+- Admite cuentas con drawdown **trailing (EOD)**, **trailing (intradía, con aviso)**, **estático** o **sin drawdown**.
+- Todo en una sola pantalla, en español, instalable como app en el móvil.
 
-Data is stored on-device (`localStorage`) — no account or server required.
+Fuera de la v1 (a propósito): copiador de operaciones, IA, app nativa de iOS.
 
-## Publish with GitHub Pages
+## Cómo se usa
 
-1. Go to **Settings → Pages** on this repository.
-2. Under "Build and deployment", set the source branch to this branch and folder to `/ (root)`.
-3. Save, then open the published URL on your phone and choose "Add to Home Screen" to install it like a native app.
+1. Añade cada cuenta con su firma, tamaño y reglas (drawdown, días mínimos, consistencia, objetivo, payout).
+2. Cada día, registra el saldo de cierre de cada cuenta con "Registrar cierre".
+3. Revisa el colchón restante y las reglas en la pantalla principal.
+
+Las reglas de cada firma cambian con frecuencia — verifica siempre los números exactos con tu firma; esta app no sustituye tu panel oficial.
+
+Datos guardados en el dispositivo (`localStorage`) — sin cuenta ni servidor.
+
+## Publicar con GitHub Pages
+
+1. Ve a **Settings → Pages** en este repositorio.
+2. En "Build and deployment", pon como rama de origen esta rama y carpeta `/ (root)`.
+3. Guarda y abre la URL publicada en el móvil — "Añadir a pantalla de inicio" para instalarla como app.
