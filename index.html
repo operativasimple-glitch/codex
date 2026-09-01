@@ -127,7 +127,7 @@ button,input{font-family:inherit}
 
 .empty{
   text-align:center;padding:56px 24px;color:var(--label2);
-  background:var(--card);border-radius:var(--r-lg);
+  background:var(--card);border-radius:var(--r-lg);margin-bottom:26px;
 }
 .empty .e-icon{
   width:52px;height:52px;border-radius:26px;background:var(--fill);margin:0 auto 14px;
@@ -241,6 +241,35 @@ button,input{font-family:inherit}
 }
 .btn-danger-row:active{background:var(--fill2)}
 
+/* ---- personal goals (rules) ---- */
+.rules-card{background:var(--card);border-radius:var(--r-lg);overflow:hidden}
+.rule{display:flex;align-items:flex-start;gap:11px;padding-left:14px}
+.rule-check{
+  width:23px;height:23px;border-radius:50%;border:1.8px solid var(--label3);background:transparent;
+  padding:0;margin-top:11px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.rule-check svg{width:13px;height:13px;stroke:#fff;opacity:0}
+.rule.done .rule-check{background:var(--blue);border-color:var(--blue)}
+.rule.done .rule-check svg{opacity:1}
+.rule-body{
+  flex:1;min-width:0;display:flex;align-items:flex-start;gap:8px;
+  padding:11px 12px 11px 0;border-bottom:.5px solid var(--sep-op);
+}
+.rule-text{flex:1;font-size:15.5px;line-height:1.35;padding-top:1px}
+.rule.done .rule-text{color:var(--label2)}
+.rule-menu{
+  background:transparent;border:0;color:var(--label3);width:26px;height:26px;padding:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:-1px;
+}
+.rule-menu svg{width:15px;height:15px}
+.rule-add{
+  width:100%;display:flex;align-items:center;gap:11px;padding:13px 14px;text-align:left;
+  background:transparent;border:0;color:var(--blue);font-size:16px;cursor:pointer;font-family:inherit;
+}
+.rule-add svg{width:23px;height:23px;flex-shrink:0}
+.rule-add:active{background:var(--fill)}
+
 /* ---- success overlay ---- */
 .success-overlay{
   position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
@@ -311,6 +340,17 @@ button,input{font-family:inherit}
       <div class="section-title">Completed</div>
       <div class="list" id="doneList"></div>
     </div>
+
+    <div class="section">
+      <div class="section-title">Personal Goals</div>
+      <div class="rules-card">
+        <div id="rulesList"></div>
+        <button class="rule-add" id="btnAddRule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Add Rule
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -373,6 +413,27 @@ button,input{font-family:inherit}
   </div>
 </div>
 
+<!-- New / edit rule sheet -->
+<div class="overlay hidden" id="ruleOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-nav">
+      <button class="nav-btn" id="btnCancelRule">Cancel</button>
+      <div class="nav-title" id="ruleSheetTitle">New Rule</div>
+      <button class="nav-btn save" id="btnSaveRule">Save</button>
+    </div>
+
+    <div class="form-group">
+      <div class="form-row">
+        <label>Rule</label>
+        <input id="inpRule" type="text" placeholder="e.g. Spend money only on groceries" maxlength="90">
+      </div>
+    </div>
+
+    <button class="btn-danger-row hidden" id="btnDeleteRule">Delete Rule</button>
+  </div>
+</div>
+
 <div class="success-overlay" id="successOverlay">
   <div class="success-card">
     <div class="success-check"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg></div>
@@ -385,6 +446,12 @@ button,input{font-family:inherit}
 
 <script>
 const STORAGE_KEY = 'savingGoals.v2';
+const RULES_KEY = 'personalGoals.v1';
+const DEFAULT_RULES = [
+  'Spend money only on groceries',
+  "Don't buy clothes or decorations unless with extra money",
+  "Don't spend money in Brazil",
+];
 
 /* ---- icon set: id -> {color, svg innerHTML} ---- */
 const ICONS = {
@@ -405,6 +472,7 @@ const ICONS = {
 const ICON_IDS = Object.keys(ICONS);
 
 let goals = load();
+let rules = loadRules();
 let activeGoalId = null;
 
 function load(){
@@ -620,6 +688,94 @@ document.getElementById('btnConfirmMoney').addEventListener('click', () => {
   }
 });
 
+/* ---- personal goals (rules) ---- */
+const ruleOverlay = document.getElementById('ruleOverlay');
+let activeRuleId = null;
+
+function loadRules(){
+  try{
+    const raw = localStorage.getItem(RULES_KEY);
+    if(raw === null) return DEFAULT_RULES.map(text => ({ id: uid(), text, done: false }));
+    return JSON.parse(raw);
+  }catch(e){ return []; }
+}
+function saveRules(){
+  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+}
+
+function renderRules(){
+  const list = document.getElementById('rulesList');
+  list.innerHTML = '';
+
+  rules.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'rule' + (r.done ? ' done' : '');
+    el.innerHTML = `
+      <button class="rule-check" data-toggle="${r.id}" aria-label="Toggle rule">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+      </button>
+      <div class="rule-body">
+        <div class="rule-text">${escapeHtml(r.text)}</div>
+        <button class="rule-menu" data-rule-edit="${r.id}" aria-label="Edit rule">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+        </button>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+
+  list.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', () => toggleRule(b.dataset.toggle)));
+  list.querySelectorAll('[data-rule-edit]').forEach(b => b.addEventListener('click', () => openRuleSheet(b.dataset.ruleEdit)));
+}
+
+function toggleRule(id){
+  const r = rules.find(x => x.id === id);
+  if(!r) return;
+  r.done = !r.done;
+  saveRules();
+  renderRules();
+}
+
+function openRuleSheet(id){
+  activeRuleId = id || null;
+  const r = id ? rules.find(x => x.id === id) : null;
+  document.getElementById('ruleSheetTitle').textContent = r ? 'Edit Rule' : 'New Rule';
+  document.getElementById('inpRule').value = r ? r.text : '';
+  document.getElementById('btnDeleteRule').classList.toggle('hidden', !r);
+  ruleOverlay.classList.remove('hidden');
+  setTimeout(() => document.getElementById('inpRule').focus(), 50);
+}
+function closeRuleSheet(){
+  ruleOverlay.classList.add('hidden');
+  activeRuleId = null;
+}
+document.getElementById('btnAddRule').addEventListener('click', () => openRuleSheet(null));
+document.getElementById('btnCancelRule').addEventListener('click', closeRuleSheet);
+ruleOverlay.addEventListener('click', e => { if(e.target === ruleOverlay) closeRuleSheet(); });
+
+document.getElementById('btnSaveRule').addEventListener('click', () => {
+  const text = document.getElementById('inpRule').value.trim();
+  if(!text){ showToast('Write your rule first'); return; }
+
+  const editing = activeRuleId;
+  if(editing){
+    rules.find(x => x.id === editing).text = text;
+  } else {
+    rules.push({ id: uid(), text, done: false });
+  }
+  saveRules(); renderRules(); closeRuleSheet();
+  showToast(editing ? 'Rule updated' : 'Rule added');
+});
+
+document.getElementById('btnDeleteRule').addEventListener('click', () => {
+  if(!activeRuleId) return;
+  if(confirm('Delete this rule? This cannot be undone.')){
+    rules = rules.filter(x => x.id !== activeRuleId);
+    saveRules(); renderRules(); closeRuleSheet();
+    showToast('Rule deleted');
+  }
+});
+
 /* ---- toast ---- */
 let toastTimer = null;
 function showToast(msg){
@@ -640,6 +796,8 @@ function showSuccess(name){
 
 /* ---- init ---- */
 render();
+if(localStorage.getItem(RULES_KEY) === null) saveRules();
+renderRules();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
