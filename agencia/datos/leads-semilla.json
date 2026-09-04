@@ -1,0 +1,182 @@
+[
+  {
+    "prioridad": 1,
+    "segmento": "Agencia web",
+    "empresa": "Amarillo Limón",
+    "web": "amarillolimon.net",
+    "sede": "Córdoba",
+    "porQue": "Especialistas en PrestaShop con cartera de tiendas online: todos sus clientes están en el sector obligado por la Ley 11/2023",
+    "via": "Formulario web + LinkedIn de la agencia"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Agencia web",
+    "empresa": "Alcalink",
+    "web": "alcalink.com",
+    "sede": "Murcia",
+    "porQue": "PrestaShop Enterprise y tiendas de mucho tráfico. Cartera concentrada en comercio electrónico, justo el sector nombrado por la ley",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Agencia web",
+    "empresa": "Coco Solution",
+    "web": "cocosolution.com",
+    "sede": "Las Palmas",
+    "porQue": "Agencia de rendimiento con clientes de comercio electrónico. Tamaño medio: grande para tener cartera, pequeña para no tener equipo de accesibilidad",
+    "via": "Formulario web + teléfono publicado"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Agencia web",
+    "empresa": "Bisiesto",
+    "web": "bisiesto.es",
+    "sede": "Madrid",
+    "porQue": "Clientes internacionales B2B y B2C que venden a consumidores europeos: la ley les alcanza aunque no sean españoles",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Agencia web",
+    "empresa": "Idital",
+    "web": "idital.com",
+    "sede": "Valencia",
+    "porQue": "Agencia integral de tamaño medio con cartera de pymes. Venden diseño y SEO, no accesibilidad: complemento, no competencia",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Agencia web",
+    "empresa": "Trilogi",
+    "web": "trilogi.com",
+    "sede": "Igualada / Barcelona",
+    "porQue": "Agencia de comercio electrónico consolidada, con clientes que facturan y pueden pagar remediación",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Agencia web",
+    "empresa": "Onestic",
+    "web": "onestic.com",
+    "sede": "Valencia",
+    "porQue": "Clientes grandes (Druni, Suárez, Aristocrazy): el tipo de marca que no se puede permitir una sanción pública",
+    "via": "Formulario web + LinkedIn"
+  },
+  {
+    "prioridad": 3,
+    "segmento": "Agencia web",
+    "empresa": "NeoAttack",
+    "web": "neoattack.com",
+    "sede": "Madrid",
+    "porQue": "Agencia grande y muy visible. Menos probable que subcontrate, pero si entra vale por diez",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 3,
+    "segmento": "Agencia web",
+    "empresa": "Ebolution",
+    "web": "ebolution.com",
+    "sede": "Madrid",
+    "porQue": "Comercio electrónico de alta complejidad (Royal Canin, Seur). Proyecto grande si entra, ciclo de venta largo",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 3,
+    "segmento": "Agencia web",
+    "empresa": "Redegal",
+    "web": "redegal.com",
+    "sede": "Ourense / Madrid",
+    "porQue": "Multinacional pequeña con clientes de marca (Primor, Cupra). Puede tener ya proveedor: comprobar antes de escribir",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Prop firm / fintech",
+    "empresa": "FTMO",
+    "web": "ftmo.com",
+    "sede": "Praga",
+    "porQue": "Vende a traders europeos y tiene web en español: la Ley de Accesibilidad le aplica de lleno. Oscar es cliente potencial y habla su idioma técnico",
+    "via": "Formulario de soporte + LinkedIn de marketing"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Prop firm / fintech",
+    "empresa": "BrightFunded",
+    "web": "brightfunded.com",
+    "sede": "Ámsterdam / Varsovia",
+    "porQue": "Empresa de la UE: la ley le aplica sin discusión posible, y es pequeña, así que no tiene equipo de cumplimiento",
+    "via": "Formulario web + LinkedIn"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Prop firm / fintech",
+    "empresa": "E8 Markets",
+    "web": "e8markets.com",
+    "sede": "Internacional",
+    "porQue": "Base de clientes europea. Sector con mucho gasto en captación y competencia feroz por la atención",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Prop firm / fintech",
+    "empresa": "FundingPips",
+    "web": "fundingpips.com",
+    "sede": "Internacional",
+    "porQue": "Crecimiento rápido y clientes en Europa. El tipo de empresa joven que no ha mirado esto nunca",
+    "via": "Formulario web + redes"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Prop firm / fintech",
+    "empresa": "Blue Guardian",
+    "web": "blueguardian.com",
+    "sede": "Internacional",
+    "porQue": "Acepta traders españoles. Web comercial pesada, muy probable que tenga fallos evidentes",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 3,
+    "segmento": "Prop firm / fintech",
+    "empresa": "Hola Prime",
+    "web": "holaprime.com",
+    "sede": "Internacional",
+    "porQue": "Nombre y comunicación en español, clientes hispanohablantes: encaja con el ángulo de Oscar",
+    "via": "Formulario web"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Red directa",
+    "empresa": "[Rellena: negocio de un conocido]",
+    "web": "",
+    "sede": "",
+    "porQue": "Presentación previa = respuesta casi garantizada. Empieza por aquí: la primera auditoría de pago casi siempre sale de la red",
+    "via": "Presentación de un conocido"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Red directa",
+    "empresa": "[Rellena: proveedor o cliente del Kiosco de Jesús]",
+    "web": "",
+    "sede": "Madrid",
+    "porQue": "Acceso caliente a través de la familia. Cualquier proveedor con tienda online está en alcance",
+    "via": "Presentación familiar"
+  },
+  {
+    "prioridad": 1,
+    "segmento": "Red directa",
+    "empresa": "[Rellena: gestoría o asesoría que conozcas]",
+    "web": "",
+    "sede": "",
+    "porQue": "Las gestorías ya asesoran a pymes en RGPD: pueden derivar clientes y aportan la credibilidad que a Oscar le falta",
+    "via": "Presentación / visita"
+  },
+  {
+    "prioridad": 2,
+    "segmento": "Red directa",
+    "empresa": "[Rellena: club o entidad deportiva]",
+    "web": "",
+    "sede": "",
+    "porQue": "Los clubes tienen webs con inscripciones y venta de entradas, y suelen depender de subvención pública, donde la accesibilidad se exige",
+    "via": "Contacto directo"
+  }
+]

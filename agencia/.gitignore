@@ -1,0 +1,9 @@
+node_modules/
+datos/escaneos/
+datos/capturas/
+datos/informes/
+datos/correos/
+datos/estado.json
+datos/estado.json.bak
+agencia.config.json
+.env

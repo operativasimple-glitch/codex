@@ -1,0 +1,14 @@
+{
+  "marca": "Norma",
+  "responsable": "Oscar",
+  "correo": "oscar@tudominio.es",
+  "web": "https://tudominio.es",
+  "precios": {
+    "auditoria": 1200,
+    "vigilanciaMin": 250,
+    "vigilanciaMax": 500
+  },
+  "rastreo": {
+    "maxPaginas": 12
+  }
+}
