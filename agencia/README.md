@@ -28,6 +28,80 @@ export ANTHROPIC_API_KEY=...
 
 Sin eso, todo funciona igual con las plantillas.
 
+## La sesión automática
+
+```bash
+agencia auto --simulacro     # enseña lo que haría, sin tocar nada
+agencia auto                 # lo hace
+```
+
+Una sesión mira el estado real del negocio y ejecuta la cadena entera de cada lead:
+**audita su web → saca el diagnóstico en PDF → deja el correo escrito en la bandeja**, con
+los hallazgos reales dentro. Después reescanea a los clientes de vigilancia que toquen,
+cierra los leads que ya no van a contestar, regenera el panel y escribe un resumen.
+
+Hay dos motores, con las mismas herramientas y los mismos límites:
+
+- **Con `ANTHROPIC_API_KEY`**: dirige Claude. Decide a quién auditar y por qué, con qué
+  plantilla escribir a cada uno y qué dejar anotado. Es un bucle de uso de herramientas real:
+  no propone, ejecuta.
+- **Sin clave (`--sin-ia`, o automático si no hay clave)**: piloto determinista que ejecuta
+  las reglas del plan comercial en orden. No cuesta nada y hace el mismo trabajo mecánico.
+
+Presupuesto por sesión, para que no se desmande:
+
+```bash
+agencia auto --auditorias 4 --informes 6 --correos 6 --pasos 24
+agencia auto --mision "hoy solo los clientes de vigilancia y las agencias de Madrid"
+```
+
+### Lo que el agente NO puede hacer
+
+Esto no está en el prompt, está en el código (`src/agente/herramientas.js`), así que no lo
+puede cambiar ni una instrucción ni el texto de una web auditada:
+
+| No puede | Por qué |
+|---|---|
+| Enviar correos | Los deja en la bandeja y los manda una persona, por el formulario del cliente o LinkedIn. En España el correo comercial no solicitado está regulado, y un agente disparando correos quema la lista y la marca |
+| Marcar a alguien como "respondido", "llamada" o "cliente" | Eso lo sabe quien ha leído la respuesta o cobrado la factura |
+| Entregar el informe completo de pago | Requiere la revisión manual con teclado y lector de pantalla, que hace una persona |
+| Auditar webs fuera de la lista | Solo leads y clientes dados de alta |
+| Saltarse el presupuesto de la sesión | Auditorías, informes, correos y pasos están contados |
+
+Todo lo que hace queda en `datos/bitacora.jsonl`: `agencia bitacora`.
+
+### La bandeja
+
+```bash
+agencia bandeja                          # correos preparados, esperándote
+agencia bandeja amarillo-limon-agencia-2026-09-04          # ver uno entero
+agencia bandeja amarillo-limon-agencia-2026-09-04 --enviado  # cuando lo hayas mandado
+```
+
+Marcarlo como enviado es lo que mueve el lead a "contactado" y arranca el reloj de los
+siete días del recordatorio.
+
+### Dejarlo corriendo solo
+
+Una sesión al día, de lunes a viernes a las 8 de la mañana (hora de Misuri, que son las 15:00
+en España: justo cuando abre la ventana de llamadas). En un fichero `~/agencia-diaria.sh`:
+
+```bash
+#!/bin/bash
+export ANTHROPIC_API_KEY=...            # opcional: sin esto corre el piloto sin IA
+cd /ruta/a/codex/agencia
+/usr/local/bin/node bin/agencia.js auto >> datos/auto.log 2>&1
+```
+
+```bash
+chmod +x ~/agencia-diaria.sh
+crontab -e
+# 0 8 * * 1-5 /Users/oscar/agencia-diaria.sh
+```
+
+Por la mañana: `agencia bandeja` para ver qué hay que mandar, y `agencia panel --abrir`
+para ver cómo va el negocio.
+
 ## El día a día
 
 ```bash
@@ -56,6 +130,9 @@ agencia panel --abrir                        # el panel del negocio
 | Vigilancia | `src/vigilancia/monitor.js` | Compara con el escaneo anterior y saca las regresiones. Es la cuota recurrente |
 | Agente | `src/agente/hoy.js` | Decide las siguientes acciones según las reglas del plan comercial |
 | Panel | `src/panel/panel.js` | Embudo, recurrente, auditorías y cuenta atrás de los 90 días |
+| Herramientas | `src/agente/herramientas.js` | Lo único que el agente se permite hacer solo, con sus límites y su presupuesto |
+| Agente autónomo | `src/agente/autonomo.js` | Bucle de uso de herramientas con Claude: mira el estado, decide y ejecuta |
+| Piloto | `src/agente/piloto.js` | El mismo trabajo sin IA, ejecutando las reglas en orden |
 | IA | `src/agente/ia.js` | Capa opcional con Claude para redactar. Con reglas duras: no certifica, no asesora, no inventa cifras |
 
 ## Reglas del negocio que el programa hace cumplir
@@ -77,7 +154,9 @@ datos/estado.json       leads, clientes y eventos (con copia .bak en cada escrit
 datos/escaneos/         un JSON por auditoría, con hallazgos, totales y esfuerzo
 datos/capturas/         las capturas de pantalla de cada fallo
 datos/informes/         los HTML y PDF que se mandan al cliente, y el panel
-datos/correos/          cada correo generado, con su fecha
+datos/correos/          cada correo generado a mano, con su fecha
+datos/bandeja/          los correos que ha preparado el agente y esperan tu visto bueno
+datos/bitacora.jsonl    todo lo que ha hecho el agente, paso a paso
 datos/leads-semilla.json  los 20 leads del paquete de contexto
 ```
 

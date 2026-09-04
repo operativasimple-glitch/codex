@@ -3,6 +3,9 @@ datos/escaneos/
 datos/capturas/
 datos/informes/
 datos/correos/
+datos/bandeja/
+datos/bitacora.jsonl
+datos/auto.log
 datos/estado.json
 datos/estado.json.bak
 agencia.config.json

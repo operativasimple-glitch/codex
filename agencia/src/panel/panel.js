@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { config } from '../config.js';
 import { asegurarDir, DATOS, escaparHTML, fechaLegible, euros, diasDesde } from '../util.js';
 import { calcularAgenda, marcador, ventanaLlamadas } from '../agente/hoy.js';
+import { leerBitacora, bandeja } from '../agente/herramientas.js';
 
 const ESTADO = {
   rojo: { color: 'var(--critico)', icono: '●', texto: 'Incumple' },
@@ -34,6 +35,10 @@ export function generarPanel() {
     ['Clientes', m.clientes],
   ];
   const tope = Math.max(1, ...embudo.map(([, n]) => n));
+
+  const bitacora = leerBitacora(40);
+  const ultimaSesion = bitacora.find((e) => e.tipo === 'sesion');
+  const pendientes = bandeja();
 
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -91,6 +96,18 @@ code{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(1
   ${embudo.map(([etq, n]) => `<div class="fila"><span class="suave">${etq}</span>
     <span class="barra" style="width:${Math.max(2, (n / tope) * 100)}%"></span><em>${n}</em></div>`).join('')}
 </div>
+
+${ultimaSesion ? `<h2>Última sesión automática</h2>
+<div class="accion"><b>${fechaLegible(ultimaSesion.fecha)} · modo ${escaparHTML(ultimaSesion.modo || 'piloto')}</b>
+<span class="suave">${escaparHTML(String(ultimaSesion.resumen || '').split('\n').slice(0, 4).join(' · '))}</span></div>` : ''}
+
+${pendientes.length ? `<h2>Bandeja de salida · ${pendientes.length} sin enviar</h2>
+<table><tr><th>Empresa</th><th>Plantilla</th><th>Asunto</th><th>Vía</th></tr>
+${pendientes.slice(0, 10).map((c) => `<tr><td>${escaparHTML(c.empresa)}</td>
+  <td class="suave">${escaparHTML(c.plantilla)}</td>
+  <td>${escaparHTML(c.asunto)}</td>
+  <td class="suave">${escaparHTML(c.via || 'formulario de su web')}</td></tr>`).join('')}</table>
+<p class="suave">Los prepara el agente; los manda una persona. <code>agencia bandeja</code></p>` : ''}
 
 <h2>Qué toca ahora</h2>
 ${acciones.length ? acciones.map((a) => `<div class="accion"><b>${escaparHTML(a.titulo)}</b>

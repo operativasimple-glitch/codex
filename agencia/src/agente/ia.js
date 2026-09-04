@@ -54,6 +54,11 @@ export async function hayIA() {
   return !!(await cargarCliente());
 }
 
+/** El cliente ya construido, para el bucle autónomo. Devuelve null si no hay clave. */
+export const obtenerCliente = cargarCliente;
+
+export const MODELO_AGENTE = MODELO;
+
 /** Una llamada, con tope de tokens y sin streaming: son textos cortos. */
 async function pedir(prompt, { maxTokens = 1200 } = {}) {
   const c = await cargarCliente();

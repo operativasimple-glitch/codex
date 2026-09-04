@@ -36,9 +36,12 @@ function puntuar(url) {
 
 export async function auditar(urlInicial, opciones = {}) {
   const maxPaginas = opciones.paginas ?? config.rastreo.maxPaginas;
-  const inicio = normalizar(urlInicial.startsWith('http') ? urlInicial : `https://${urlInicial}`);
+  // Si el lead viene anotado como "empresa.es" se prueba https y, si no responde,
+  // http: hay pymes que todavía no han migrado, y son justo las que más fallan.
+  const esquemaSupuesto = !urlInicial.startsWith('http');
+  const inicio = normalizar(esquemaSupuesto ? `https://${urlInicial}` : urlInicial);
   if (!inicio) throw new Error(`URL no válida: ${urlInicial}`);
-  const origen = new URL(inicio).origin;
+  let origen = new URL(inicio).origin;
 
   const idEscaneo = `${slug(new URL(inicio).hostname)}-${hoyISO()}-${Date.now().toString(36).slice(-4)}`;
   const dirCapturas = asegurarDir(join(DATOS, 'capturas', idEscaneo));
@@ -75,6 +78,10 @@ export async function auditar(urlInicial, opciones = {}) {
         }
         await pagina.waitForTimeout(config.rastreo.esperaMs);
 
+        // El origen definitivo es el de la primera página que responde: puede
+        // diferir del supuesto (http en vez de https, o un redirect a www).
+        if (!paginas.length) origen = new URL(pagina.url()).origin;
+
         const bruto = await pagina.evaluate(FUENTE_COMPROBACIONES);
         bruto.capturas = await capturarInfracciones(pagina, bruto, dirCapturas, paginas.length);
         delete bruto.marcados;
@@ -94,6 +101,11 @@ export async function auditar(urlInicial, opciones = {}) {
       } catch (e) {
         errores.push({ url, motivo: e.message.split('\n')[0] });
         console.log(`  ${col.rojo('✗')} ${url} ${col.gris(e.message.split('\n')[0])}`);
+        if (esquemaSupuesto && !paginas.length && url === inicio) {
+          const enHttp = inicio.replace(/^https:/, 'http:');
+          console.log(col.gris(`  (no responde por https, se prueba ${enHttp})`));
+          pendientes.push(enHttp);
+        }
       } finally {
         await pagina.close().catch(() => {});
       }

@@ -25,6 +25,9 @@ import { vigilar, informeVigilancia } from '../src/vigilancia/monitor.js';
 import { generarPanel } from '../src/panel/panel.js';
 import { imprimirHoy } from '../src/agente/hoy.js';
 import { resumirParaDireccion, personalizarCorreo, hayIA } from '../src/agente/ia.js';
+import { nuevoPresupuesto, bandeja, marcarEnviado, leerBitacora } from '../src/agente/herramientas.js';
+import { correrPiloto } from '../src/agente/piloto.js';
+import { correrAutonomo } from '../src/agente/autonomo.js';
 
 // ── Argumentos: posicionales y --opciones, sin dependencias.
 function parsear(argv) {
@@ -45,6 +48,15 @@ function parsear(argv) {
 
 const AYUDA = `
 ${col.neg(`${config.marca} · el programa que corre la agencia`)}
+
+  ${col.azul('agencia auto')}                       LA SESIÓN AUTOMÁTICA: hace el trabajo del día solo
+      --simulacro        enseña lo que haría sin tocar nada
+      --sin-ia           piloto determinista (no necesita clave de API)
+      --auditorias N --informes N --correos N --pasos N    presupuesto de la sesión
+      --mision "..."     un encargo concreto en vez de la sesión de siempre
+  ${col.azul('agencia bandeja')} [<id>]             Correos preparados por el agente, esperando a que los mandes tú
+      <id> --enviado     márcalo cuando lo hayas mandado (mueve el lead a "contactado")
+  ${col.azul('agencia bitacora')} [--n 40]          Todo lo que ha hecho el agente, por orden
 
   ${col.azul('agencia hoy')}                        Qué toca hacer ahora, en orden y con el comando de cada cosa
   ${col.azul('agencia panel')} [--abrir]            Genera el panel del negocio en HTML
@@ -307,10 +319,82 @@ function cmdEscaneos() {
   }
 }
 
+async function cmdAuto(pos, op) {
+  const presupuesto = nuevoPresupuesto({
+    auditorias: op.auditorias ? +op.auditorias : undefined,
+    informes: op.informes ? +op.informes : undefined,
+    correos: op.correos ? +op.correos : undefined,
+    pasos: op.pasos ? +op.pasos : undefined,
+  });
+  presupuesto.simulacro = !!op.simulacro;
+
+  const conIA = !op['sin-ia'] && await hayIA();
+  titulo(`${config.marca} · sesión automática${presupuesto.simulacro ? ' (simulacro)' : ''}`);
+  console.log(col.gris(conIA
+    ? 'Dirige Claude, con las herramientas del programa y el presupuesto de la sesión.'
+    : 'Piloto sin IA: ejecuta las reglas del plan comercial en orden.'));
+  console.log(col.gris(`Presupuesto: ${presupuesto.auditorias} auditorías · ${presupuesto.informes} informes · ${presupuesto.correos} correos\n`));
+
+  const salida = conIA
+    ? await correrAutonomo(presupuesto, { mision: op.mision })
+    : await correrPiloto(presupuesto);
+
+  titulo('Resumen de la sesión');
+  console.log(salida.resumen || '(sin resumen)');
+
+  const pendientes = bandeja();
+  if (pendientes.length) {
+    console.log(`\n${col.ambar(`${pendientes.length} correo(s) esperando en la bandeja.`)} ${col.gris('Revísalos y mándalos tú:')}`);
+    console.log(col.azul('  agencia bandeja'));
+  }
+}
+
+function cmdBandeja(pos, op) {
+  const id = pos[0];
+  if (id && op.enviado) {
+    const { correo, lead } = marcarEnviado(id);
+    console.log(`${col.verde('Marcado como enviado.')} ${correo.empresa} → estado "${lead?.estado || 'sin lead'}".`);
+    return;
+  }
+  if (id) {
+    const correo = bandeja({ soloPendientes: false }).find((c) => c.id === id || c.id.startsWith(id));
+    if (!correo) throw new Error(`No hay ningún correo "${id}" en la bandeja.`);
+    titulo(`${correo.empresa} · plantilla "${correo.plantilla}"`);
+    console.log(col.gris(`Vía: ${correo.via || 'formulario de su web'} · escaneo ${correo.escaneo}`));
+    if (correo.motivo) console.log(col.gris(`Motivo: ${correo.motivo}`));
+    console.log(`\n${col.neg('Asunto:')} ${correo.asunto}\n`);
+    console.log(correo.cuerpo);
+    console.log(col.gris(`\nCuando lo hayas mandado:  agencia bandeja ${correo.id} --enviado`));
+    return;
+  }
+  const pendientes = bandeja();
+  if (!pendientes.length) { console.log(col.gris('La bandeja está vacía.')); return; }
+  titulo(`Bandeja de salida (${pendientes.length})`);
+  for (const c of pendientes) {
+    console.log(`${col.neg(c.empresa.padEnd(28).slice(0, 28))} ${col.gris(c.plantilla.padEnd(12))} ${c.asunto}`);
+    console.log(col.gris(`  ${c.id}  ·  vía: ${c.via || 'formulario de su web'}`));
+  }
+  console.log(col.gris('\nVer uno:  agencia bandeja <id>      Marcarlo enviado:  agencia bandeja <id> --enviado'));
+}
+
+function cmdBitacora(pos, op) {
+  const entradas = leerBitacora(op.n ? +op.n : 20);
+  if (!entradas.length) { console.log(col.gris('La bitácora está vacía.')); return; }
+  titulo('Bitácora');
+  for (const e of entradas) {
+    const cuando = new Date(e.fecha).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const texto = e.texto || e.resumen || `${e.nombre} ${JSON.stringify(e.argumentos || {})}`;
+    console.log(`${col.gris(cuando)} ${col.neg((e.tipo || '').padEnd(11))} ${String(texto).split('\n')[0].slice(0, 96)}`);
+  }
+}
+
 // ── Enrutador
 
 const COMANDOS = {
   hoy: () => imprimirHoy(),
+  auto: cmdAuto,
+  bandeja: (pos, op) => cmdBandeja(pos, op),
+  bitacora: (pos, op) => cmdBitacora(pos, op),
   auditar: cmdAuditar,
   informe: cmdInforme,
   manual: cmdManual,

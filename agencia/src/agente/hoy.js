@@ -31,6 +31,7 @@ export function calcularAgenda() {
       titulo: `Contestar a ${l.empresa} — respondió hace ${diasDesde(l.fechaRespuesta || l.fechaContacto)} días`,
       porque: 'La regla es responder en menos de una hora. Una respuesta que se enfría no vuelve.',
       comando: `agencia lead ${l.id} --estado llamada`,
+      herramienta: null, // lo contesta una persona: el agente no escribe a nadie por su cuenta
     });
   }
 
@@ -44,6 +45,8 @@ export function calcularAgenda() {
       titulo: `Auditar ${l.empresa} (${l.web})`,
       porque: `${l.segmento} · ${l.porQue?.slice(0, 90) || ''}`,
       comando: `agencia auditar ${l.web} --cliente "${l.empresa}"`,
+      herramienta: { nombre: 'auditar_web', argumentos: { lead: l.id } },
+      cadena: 'diagnostico-y-correo',
     });
   }
 
@@ -56,6 +59,7 @@ export function calcularAgenda() {
       titulo: `Escribir a ${l.empresa} con los hallazgos`,
       porque: `Auditada y sin contactar. Plantilla "${plantilla}". Mándalo por su formulario o LinkedIn.`,
       comando: `agencia correo ${l.id} --plantilla ${plantilla}`,
+      herramienta: { nombre: 'redactar_correo', argumentos: { lead: l.id, plantilla } },
     });
   }
 
@@ -66,6 +70,7 @@ export function calcularAgenda() {
       titulo: `Recordatorio a ${l.empresa} (${diasDesde(l.fechaContacto)} días sin respuesta)`,
       porque: 'Un solo recordatorio. Si tampoco contesta, se deja y no se insiste más.',
       comando: `agencia correo ${l.id} --plantilla recordatorio`,
+      herramienta: { nombre: 'redactar_correo', argumentos: { lead: l.id, plantilla: 'recordatorio' } },
     });
   }
 
@@ -76,6 +81,7 @@ export function calcularAgenda() {
       titulo: `Cerrar ${l.empresa} como descartado`,
       porque: 'Recordatorio enviado hace más de 10 días sin respuesta. La lista limpia se trabaja mejor.',
       comando: `agencia lead ${l.id} --estado descartado`,
+      herramienta: { nombre: 'actualizar_lead', argumentos: { lead: l.id, estado: 'descartado', nota: 'Sin respuesta tras el recordatorio.' } },
     });
   }
 
@@ -88,6 +94,7 @@ export function calcularAgenda() {
         titulo: `Vigilancia vencida de ${c.nombre} (${dias} días)`,
         porque: `Cliente de ${euros(c.cuota)}/mes. El reescaneo es lo que está pagando.`,
         comando: `agencia vigilar "${c.nombre}"`,
+        herramienta: { nombre: 'vigilar_cliente', argumentos: { cliente: c.nombre } },
       });
     }
   }
@@ -101,6 +108,7 @@ export function calcularAgenda() {
         titulo: `Revisión manual pendiente de ${e.cliente}`,
         porque: 'Las herramientas cubren el 57 %. El 43 % manual es lo que justifica los 1.200 €.',
         comando: `agencia manual ${e.id}`,
+        herramienta: null, // teclado y lector de pantalla: no lo puede hacer una máquina
       });
     }
   }
