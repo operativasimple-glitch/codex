@@ -152,6 +152,27 @@ background:var(--tarjeta);font-size:13.5px}
 .detalle{background:var(--lienzo)}
 .vacio{text-align:center;padding:44px 20px;color:var(--tenue)}
 .vacio b{display:block;color:var(--tinta);font-size:15px;margin-bottom:5px}
+/* Agente */
+.charla{display:flex;flex-direction:column;gap:10px;max-height:440px;overflow-y:auto;padding:4px 2px 8px}
+.burbuja{max-width:80%;padding:11px 14px;border-radius:14px;font-size:14px;line-height:1.55;white-space:pre-wrap}
+.burbuja.tu{align-self:flex-end;background:var(--acento);color:#fff;border-bottom-right-radius:5px}
+@media (prefers-color-scheme:dark){.burbuja.tu{color:#0d1210}}
+.burbuja.agente{align-self:flex-start;background:var(--lienzo);border:1px solid var(--linea);border-bottom-left-radius:5px}
+.escribir{display:flex;gap:9px;margin-top:12px}
+.escribir textarea{flex:1;min-height:46px;max-height:150px;resize:vertical;border-radius:11px;padding:11px 13px}
+.equipo{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.miembro{background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px;padding:13px 15px;box-shadow:var(--sombra)}
+.miembro b{display:block;font-size:14px}
+.miembro span{font-size:12.5px;color:var(--suave)}
+.ajuste{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.interruptor{position:relative;width:46px;height:26px;flex:none}
+.interruptor input{opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.interruptor i{position:absolute;inset:0;border-radius:99px;background:var(--linea);transition:.18s;pointer-events:none}
+.interruptor i::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;
+top:3px;left:3px;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.interruptor input:checked + i{background:var(--acento)}
+.interruptor input:checked + i::after{transform:translateX(20px)}
+
 #aviso{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(140%);
 background:var(--tinta);color:var(--fondo);padding:12px 20px;border-radius:11px;font-size:13.5px;
 box-shadow:var(--sombra-alta);max-width:min(620px,92vw);transition:transform .24s cubic-bezier(.2,.8,.2,1);z-index:9}
@@ -210,6 +231,7 @@ box-shadow:var(--sombra-alta);max-width:min(620px,92vw);transition:transform .24
 
 <nav id="pestanas">
   <button data-tab="panel" class="activa">Panel</button>
+  <button data-tab="agente">Agente</button>
   <button data-tab="leads">Leads <span class="cuenta" id="n-leads">0</span></button>
   <button data-tab="auditorias">Auditorías <span class="cuenta" id="n-escaneos">0</span></button>
   <button data-tab="bandeja">Bandeja <span class="cuenta" id="n-bandeja">0</span></button>
@@ -218,6 +240,7 @@ box-shadow:var(--sombra-alta);max-width:min(620px,92vw);transition:transform .24
 
 <main>
   <section id="tab-panel"></section>
+  <section id="tab-agente" hidden></section>
   <section id="tab-leads" hidden></section>
   <section id="tab-auditorias" hidden></section>
   <section id="tab-bandeja" hidden></section>
@@ -284,7 +307,8 @@ function pintar() {
   pintarHero();
   pintarAlerta();
   pintarTrabajo();
-  ({ panel: pintarPanel, leads: pintarLeads, auditorias: pintarAuditorias, bandeja: pintarBandeja, bitacora: pintarBitacora })[pestana]();
+  ({ panel: pintarPanel, agente: pintarAgente, leads: pintarLeads, auditorias: pintarAuditorias,
+     bandeja: pintarBandeja, bitacora: pintarBitacora })[pestana]();
 
   const ocupado = estado.trabajo.activo;
   for (const b of document.querySelectorAll('.hero .btn, .alerta .btn')) b.disabled = ocupado;
@@ -383,6 +407,9 @@ function pintarPanel() {
         <span class="tenue mini" style="text-align:right">${n}</span></div>`).join('')}
     </div>
 
+    ${ultimaSesion() ? `<h2 class="seccion">Lo último que hizo el agente</h2>
+      <div class="tarjeta"><span class="suave" style="white-space:pre-wrap">${esc(ultimaSesion())}</span></div>` : ''}
+
     <h2 class="seccion">Qué toca ahora</h2>
     ${estado.acciones.length ? estado.acciones.map((a) => `
       <div class="tarjeta accion">
@@ -397,6 +424,87 @@ function pintarPanel() {
         <td>${euros(c.cuota)}/mes</td><td class="suave mini">${c.dias === null ? '—' : 'hace ' + c.dias + ' días'}</td>
         <td class="der"><button class="btn chico" data-vigilar="${esc(c.nombre)}">Reescanear</button></td></tr>`).join('')}
       </tbody></table></div>` : ''}`;
+}
+
+function ultimaSesion() {
+  const e = estado.bitacora.find((x) => x.tipo === 'sesion' && x.resumen);
+  return e ? String(e.resumen).slice(0, 600) : null;
+}
+
+function pintarAgente() {
+  const p = estado.programacion;
+  const proxima = p.proxima
+    ? new Date(p.proxima).toLocaleString('es-ES', { weekday: 'long', hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  $('#tab-agente').innerHTML = `
+    <h2 class="seccion">La sesión diaria</h2>
+    <div class="tarjeta">
+      <div class="ajuste">
+        <label class="interruptor"><input type="checkbox" id="prog-activo" ${p.activo ? 'checked' : ''}><i></i></label>
+        <div style="flex:1;min-width:200px">
+          <b>Trabajar solo todos los días</b>
+          <div class="suave mini">Audita lo pendiente, escribe los correos y reescanea a los clientes,
+          sin que tengas que abrir nada. Necesita que la aplicación esté abierta a esa hora; si el
+          ordenador estaba apagado, lo hace en cuanto la abras.</div>
+        </div>
+        <span class="mini">a las <input type="text" id="prog-hora" value="${esc(p.hora)}" style="width:70px"></span>
+        <button class="btn chico" id="btn-guardar-prog">Guardar</button>
+      </div>
+      ${p.activo && proxima ? `<div class="tenue mini" style="margin-top:10px">Próxima sesión: ${proxima}</div>` : ''}
+    </div>
+
+    <h2 class="seccion">El equipo</h2>
+    <div class="equipo">
+      <div class="miembro"><b>Director</b><span>Mira el estado, decide y reparte. No ejecuta.</span></div>
+      <div class="miembro"><b>Auditor</b><span>Rastrea webs y saca los informes.</span></div>
+      <div class="miembro"><b>Comercial</b><span>Escribe los correos y mantiene la lista viva.</span></div>
+      <div class="miembro"><b>Vigilante</b><span>Cuida a los clientes que ya pagan.</span></div>
+      <div class="miembro"><b>Analista</b><span>Mira los números y dice la verdad.</span></div>
+    </div>
+
+    <h2 class="seccion">Hablar con el agente</h2>
+    ${estado.ia ? `
+      <div class="tarjeta">
+        <div class="charla" id="charla">
+          ${estado.charla.length ? estado.charla.map((m) => `<div class="burbuja ${m.quien}">${esc(m.texto)}</div>`).join('')
+            : `<div class="tenue mini">Pídele lo que quieras: «audita las agencias de Madrid»,
+               «¿cómo va el negocio?», «escribe a los que llevan una semana sin contestar»,
+               «busca diez leads nuevos». Hace el trabajo de verdad, no te lo cuenta.</div>`}
+        </div>
+        <div class="escribir">
+          <textarea id="mensaje" placeholder="Escríbele…"></textarea>
+          <button class="btn fuerte" id="btn-enviar">Enviar</button>
+        </div>
+        ${estado.charla.length ? '<div style="margin-top:8px"><button class="btn chico fantasma" id="btn-olvidar">Borrar la conversación</button></div>' : ''}
+      </div>`
+    : `<div class="caja vacio"><b>Hablar con el agente necesita clave de API</b>
+        Con <code>ANTHROPIC_API_KEY</code> puesta, aquí le pides las cosas en tu idioma y las hace.
+        Sin ella tienes los botones, que hacen el mismo trabajo sin decidir por su cuenta.</div>`}`;
+
+  const c = $('#charla');
+  if (c) c.scrollTop = c.scrollHeight;
+  const prog = $('#btn-guardar-prog');
+  if (prog) prog.onclick = () => pedir({ tipo: 'programacion', activo: $('#prog-activo').checked, hora: $('#prog-hora').value.trim() });
+  const activo = $('#prog-activo');
+  if (activo) activo.onchange = () => pedir({ tipo: 'programacion', activo: activo.checked, hora: $('#prog-hora').value.trim() });
+  const enviar = $('#btn-enviar');
+  if (enviar) enviar.onclick = mandarMensaje;
+  const olvidar = $('#btn-olvidar');
+  if (olvidar) olvidar.onclick = () => pedir({ tipo: 'olvidarCharla' });
+  const caja = $('#mensaje');
+  if (caja) {
+    caja.onkeydown = (ev) => { if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) mandarMensaje(); };
+    if (document.activeElement === document.body) caja.focus();
+  }
+}
+
+async function mandarMensaje() {
+  const caja = $('#mensaje');
+  const texto = caja.value.trim();
+  if (!texto) return;
+  caja.value = '';
+  await pedir({ tipo: 'chat', mensaje: texto });
 }
 
 function botonAccion(a) {

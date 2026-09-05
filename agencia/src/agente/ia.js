@@ -57,6 +57,14 @@ export async function hayIA() {
 /** El cliente ya construido, para el bucle autónomo. Devuelve null si no hay clave. */
 export const obtenerCliente = cargarCliente;
 
+/**
+ * Sustituye el cliente por uno de mentira. Existe para poder probar los bucles de
+ * agentes sin gastar llamadas de API ni depender de la red.
+ */
+export function usarClienteDePrueba(falso) {
+  cliente = falso;
+}
+
 export const MODELO_AGENTE = MODELO;
 
 /** Una llamada, con tope de tokens y sin streaming: son textos cortos. */

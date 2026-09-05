@@ -67,6 +67,34 @@ Si el puerto 4321 está ocupado se busca el siguiente libre solo. Y si lo que lo
 de la propia aplicación (pasa al abrirla dos veces), no se levanta una segunda: se abre la que ya
 estaba corriendo.
 
+## El equipo de agentes
+
+Con `ANTHROPIC_API_KEY` puesta, el programa no es una lista de comandos: es un equipo.
+
+| Quién | Qué hace | Qué herramientas ve |
+|---|---|---|
+| **Director** | Mira el estado, decide y reparte. No ejecuta | delegar, ver estado, panel, notas |
+| **Auditor** | Rastrea webs y saca los informes | auditar, informes |
+| **Comercial** | Escribe los correos y mantiene la lista viva | correos, estados de lead, buscar leads |
+| **Vigilante** | Cuida a los clientes que ya pagan | vigilancia, informes |
+| **Analista** | Mira los números y dice qué frena de verdad | solo lectura |
+
+Cada especialista ve **solo las herramientas de su oficio** y lleva escritas las reglas de su parte:
+el comercial sabe que no se escribe a nadie sin auditar antes, el vigilante sabe que una regresión
+grave se avisa. Un agente con quince herramientas y quince reglas se distrae; uno con cuatro y una
+misión, no.
+
+En la pestaña **Agente** de la aplicación le hablas y hace el trabajo de verdad: «audita las
+agencias de Madrid», «¿qué me está frenando?», «escribe a los que llevan una semana sin contestar».
+Se ve en directo a quién delega y qué ejecuta cada uno.
+
+### La sesión diaria, sin cron
+
+En esa misma pestaña, un interruptor: **trabajar solo todos los días** a la hora que le pongas.
+Mientras la aplicación esté abierta comprueba cada minuto si toca; si el ordenador estaba apagado a
+esa hora, la sesión salta en cuanto la abres. (El cron de más abajo sigue valiendo si prefieres que
+funcione con la aplicación cerrada.)
+
 ## Los leads no se acaban
 
 Cuando quedan menos de **cinco leads por contactar**, el programa lo avisa y repone solo. Los
@@ -199,7 +227,9 @@ agencia panel --abrir                        # el panel del negocio
 | Agente | `src/agente/hoy.js` | Decide las siguientes acciones según las reglas del plan comercial |
 | Panel | `src/panel/panel.js` | Embudo, recurrente, auditorías y cuenta atrás de los 90 días |
 | Herramientas | `src/agente/herramientas.js` | Lo único que el agente se permite hacer solo, con sus límites y su presupuesto |
-| Agente autónomo | `src/agente/autonomo.js` | Bucle de uso de herramientas con Claude: mira el estado, decide y ejecuta |
+| Director | `src/agente/autonomo.js` | El agente que dirige: reparte el trabajo y cierra con el resumen. También es con quien hablas |
+| Equipo | `src/agente/equipo.js` | Los cuatro especialistas, cada uno con sus reglas y sus herramientas |
+| Programador | `src/web/programador.js` | La sesión diaria a una hora fija, sin cron |
 | Piloto | `src/agente/piloto.js` | El mismo trabajo sin IA, ejecutando las reglas en orden |
 | IA | `src/agente/ia.js` | Capa opcional con Claude para redactar. Con reglas duras: no certifica, no asesora, no inventa cifras |
 

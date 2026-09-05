@@ -5,6 +5,8 @@ datos/informes/
 datos/correos/
 datos/bandeja/
 datos/bitacora.jsonl
+datos/programacion.json
+datos/cantera.json
 datos/auto.log
 datos/estado.json
 datos/estado.json.bak

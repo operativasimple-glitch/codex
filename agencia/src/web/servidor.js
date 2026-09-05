@@ -16,16 +16,21 @@ import { calcularAgenda, marcador, ventanaLlamadas } from '../agente/hoy.js';
 import { nuevoPresupuesto, ejecutar, bandeja, marcarEnviado, leerBitacora } from '../agente/herramientas.js';
 import { correrPiloto, plantillaPara } from '../agente/piloto.js';
 import { porContactar, necesitaLeads, anadirManual, UMBRAL } from '../crm/cantera.js';
-import { correrAutonomo } from '../agente/autonomo.js';
+import { correrAutonomo, conversar } from '../agente/autonomo.js';
 import { hayIA } from '../agente/ia.js';
 import { generarPanel } from '../panel/panel.js';
 import { generarInforme } from '../informe/generar.js';
-import { lanzar, estadoTrabajo } from './trabajos.js';
+import { lanzar, estadoTrabajo, hayTrabajo } from './trabajos.js';
+import { leerProgramacion, guardarProgramacion, proximaEjecucion, arrancarProgramador } from './programador.js';
 import { PAGINA } from './pagina.js';
 
 // Se consulta una vez al arrancar: la página necesita saber si puede ofrecer
 // la búsqueda automática de leads o solo el pegado a mano.
 let IA_DISPONIBLE = false;
+
+// La conversación con el director: lo que ve el usuario y lo que ve el modelo.
+let charla = [];        // [{quien:'tu'|'agente', texto, hora}]
+let mensajesIA = [];    // el historial en el formato de la API
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.pdf': 'application/pdf', '.png': 'image/png' };
 
@@ -67,6 +72,8 @@ function estadoCompleto() {
     bitacora: leerBitacora(15),
     trabajo: estadoTrabajo(),
     ia: IA_DISPONIBLE,
+    charla,
+    programacion: { ...leerProgramacion(), proxima: proximaEjecucion(leerProgramacion()) },
     estadosLead: ESTADOS_LEAD,
   };
 }
@@ -123,6 +130,43 @@ const ACCIONES = {
       console.log(`\n${salida.resumen}`);
     }, { total: cuantas, patron: /^Escaneo /});
     return { trabajo: id };
+  },
+
+  chat({ mensaje }) {
+    const texto = String(mensaje || '').trim();
+    if (!texto) throw new Error('No has escrito nada.');
+    if (!IA_DISPONIBLE) throw new Error('Hablar con el agente necesita clave de API (ANTHROPIC_API_KEY). '
+      + 'Sin ella tienes los botones, que hacen el mismo trabajo.');
+
+    charla.push({ quien: 'tu', texto, hora: new Date().toISOString() });
+    mensajesIA.push({ role: 'user', content: texto });
+
+    const id = lanzar('El agente está trabajando', async () => {
+      const p = nuevoPresupuesto();
+      const { respuesta, mensajes } = await conversar(mensajesIA, p);
+      mensajesIA = mensajes;
+      // Se recorta el historial para no arrastrar sesiones enteras en cada mensaje.
+      if (mensajesIA.length > 40) mensajesIA = mensajesIA.slice(-40);
+      charla.push({ quien: 'agente', texto: respuesta || '(sin respuesta)', hora: new Date().toISOString() });
+    });
+    return { trabajo: id };
+  },
+
+  olvidarCharla() {
+    charla = [];
+    mensajesIA = [];
+    return { mensaje: 'Conversación borrada.' };
+  },
+
+  programacion({ activo, hora }) {
+    const cambios = {};
+    if (activo !== undefined) cambios.activo = !!activo;
+    if (hora) {
+      if (!/^\d{1,2}:\d{2}$/.test(hora)) throw new Error('La hora se escribe como 08:00.');
+      cambios.hora = hora;
+    }
+    const prog = guardarProgramacion(cambios);
+    return { mensaje: prog.activo ? `Sesión diaria activada a las ${prog.hora}.` : 'Sesión diaria desactivada.' };
   },
 
   buscarLeads({ cuantos }) {
@@ -276,6 +320,11 @@ export function crearServidor() {
 
 export function arrancar({ puerto = 4321, intentos = 10 } = {}) {
   hayIA().then((v) => { IA_DISPONIBLE = v; });
+  // La sesión diaria, mientras la aplicación esté abierta.
+  arrancarProgramador(() => {
+    if (hayTrabajo()) return;
+    ACCIONES.sesion({ conIA: IA_DISPONIBLE });
+  });
   return buscarPuerto(puerto, intentos);
 }
 
