@@ -274,16 +274,57 @@ export function crearServidor() {
   });
 }
 
-export function arrancar({ puerto = 4321 } = {}) {
+export function arrancar({ puerto = 4321, intentos = 10 } = {}) {
   hayIA().then((v) => { IA_DISPONIBLE = v; });
+  return buscarPuerto(puerto, intentos);
+}
+
+/**
+ * Levanta el servidor en el primer puerto libre a partir del pedido.
+ *
+ * Si el puerto está ocupado por otra copia de este mismo programa (pasa al abrirlo
+ * dos veces), no se monta una segunda: se devuelve la que ya estaba corriendo. Y si
+ * lo ocupa cualquier otra cosa, se prueba el siguiente. Que el usuario tenga que
+ * escribir un comando para esquivar un puerto no es una opción.
+ */
+async function buscarPuerto(inicial, intentos) {
+  for (let i = 0; i < intentos; i++) {
+    const puerto = inicial + i;
+    try {
+      return await escuchar(puerto);
+    } catch (e) {
+      if (e.code !== 'EADDRINUSE') throw e;
+      if (await esNuestra(puerto)) {
+        return { servidor: null, direccion: `http://localhost:${puerto}`, yaAbierta: true };
+      }
+    }
+  }
+  throw new Error(`No hay ningún puerto libre entre el ${inicial} y el ${inicial + intentos - 1}.`);
+}
+
+function escuchar(puerto) {
   return new Promise((resolver, rechazar) => {
     const servidor = crearServidor();
-    servidor.on('error', (e) => {
-      if (e.code === 'EADDRINUSE') {
-        rechazar(new Error(`El puerto ${puerto} está ocupado. Prueba: agencia abrir --puerto ${puerto + 1}`));
-      } else rechazar(e);
-    });
+    servidor.once('error', rechazar);
     // Solo en local: esto es la ventana del programa, no un servidor de internet.
-    servidor.listen(puerto, '127.0.0.1', () => resolver({ servidor, direccion: `http://localhost:${puerto}` }));
+    servidor.listen(puerto, '127.0.0.1', () => {
+      servidor.removeListener('error', rechazar);
+      resolver({ servidor, direccion: `http://localhost:${puerto}`, puerto });
+    });
   });
+}
+
+/** ¿Lo que hay escuchando en ese puerto es otra copia de esta misma aplicación? */
+async function esNuestra(puerto) {
+  const control = new AbortController();
+  const reloj = setTimeout(() => control.abort(), 1500);
+  try {
+    const r = await fetch(`http://127.0.0.1:${puerto}/api/estado`, { signal: control.signal });
+    const datos = await r.json();
+    return typeof datos?.marca === 'string' && typeof datos?.umbralLeads === 'number';
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(reloj);
+  }
 }

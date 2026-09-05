@@ -331,7 +331,18 @@ function cmdEscaneos() {
 /** Abre la aplicación: el programa con botones, en el navegador. */
 async function cmdAbrir(pos, op) {
   const puerto = op.puerto ? +op.puerto : 4321;
-  const { direccion } = await arrancar({ puerto });
+  const { direccion, yaAbierta } = await arrancar({ puerto });
+
+  if (yaAbierta) {
+    // Ya había una copia corriendo (doble clic dos veces). Se usa esa.
+    console.log(`\n  ${col.neg(config.marca)} ${col.gris('· ya estaba abierta en')}`);
+    console.log(`  ${col.azul(direccion)}\n`);
+    console.log(col.gris('  Te la abro en el navegador. Esta ventana puedes cerrarla:'));
+    console.log(col.gris('  el programa sigue corriendo en la otra.\n'));
+    if (!op['sin-abrir']) abrir(direccion);
+    return;
+  }
+
   console.log(`\n  ${col.neg(config.marca)} ${col.gris('· la aplicación está abierta en')}`);
   console.log(`  ${col.azul(direccion)}\n`);
   console.log(col.gris('  Deja esta ventana abierta mientras la uses. Para cerrar el programa: Control + C.\n'));

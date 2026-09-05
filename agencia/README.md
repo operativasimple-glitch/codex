@@ -63,6 +63,10 @@ auditoría tarda minutos y la página no se queda colgada.
 
 Solo escucha en `127.0.0.1`: no es un servidor de internet, es la ventana del programa.
 
+Si el puerto 4321 está ocupado se busca el siguiente libre solo. Y si lo que lo ocupa es otra copia
+de la propia aplicación (pasa al abrirla dos veces), no se levanta una segunda: se abre la que ya
+estaba corriendo.
+
 ## Los leads no se acaban
 
 Cuando quedan menos de **cinco leads por contactar**, el programa lo avisa y repone solo. Los
