@@ -17,7 +17,7 @@ import { diasDesde, col, titulo, euros, mismoDominio } from '../util.js';
 
 const MAX_ACCIONES = 6;
 
-export function calcularAgenda() {
+export function calcularAgenda({ limite = MAX_ACCIONES } = {}) {
   const estado = cargar();
   const escaneos = listarEscaneos();
   const acciones = [];
@@ -39,7 +39,7 @@ export function calcularAgenda() {
   const sinAuditar = estado.leads
     .filter((l) => l.estado === 'sin-auditar' && l.web && !l.empresa.startsWith('['))
     .sort((a, b) => a.prioridad - b.prioridad);
-  for (const l of sinAuditar.slice(0, 3)) {
+  for (const l of sinAuditar.slice(0, Math.max(3, limite))) {
     empujar({
       prioridad: 1 + (l.prioridad - 1) * 0.1,
       titulo: `Auditar ${l.empresa} (${l.web})`,
@@ -113,7 +113,7 @@ export function calcularAgenda() {
     }
   }
 
-  return { estado, escaneos, acciones: acciones.sort((a, b) => a.prioridad - b.prioridad).slice(0, MAX_ACCIONES) };
+  return { estado, escaneos, acciones: acciones.sort((a, b) => a.prioridad - b.prioridad).slice(0, limite) };
 }
 
 /** Marcador del negocio: dónde está respecto al objetivo y al plazo de 90 días. */

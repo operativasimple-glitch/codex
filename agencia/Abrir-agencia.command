@@ -29,9 +29,19 @@ if [ ! -d node_modules ]; then
   echo ""
 fi
 
-# Si no hay leads todavía, se cargan los 20 del paquete de contexto.
+# Primera vez del todo: se ofrece el arranque completo, que es lo que convierte
+# la lista de leads en veinte diagnósticos y veinte correos escritos.
 if [ ! -f datos/estado.json ]; then
   node bin/agencia.js leads --sembrar
+  echo ""
+  echo "  Es la primera vez. El arranque audita las webs de todos los leads, saca"
+  echo "  cada diagnóstico en PDF y deja cada correo escrito en la bandeja."
+  echo "  Tarda entre veinte minutos y una hora, y puedes irte mientras."
+  echo ""
+  read -r -p "  ¿Lo lanzo ahora? [s/N] " RESP
+  if [ "$RESP" = "s" ] || [ "$RESP" = "S" ]; then
+    node bin/agencia.js arranque
+  fi
   echo ""
 fi
 
@@ -42,6 +52,7 @@ echo ""
 echo "  ────────────────────────────────────────────"
 echo "   Comandos que más vas a usar:"
 echo ""
+echo "     node bin/agencia.js arranque           auditar de golpe las webs de todos los leads"
 echo "     node bin/agencia.js auto --simulacro    ver qué haría la sesión automática"
 echo "     node bin/agencia.js auto               hacerla"
 echo "     node bin/agencia.js bandeja            correos listos para que los mandes"

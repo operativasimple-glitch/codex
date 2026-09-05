@@ -49,6 +49,8 @@ function parsear(argv) {
 const AYUDA = `
 ${col.neg(`${config.marca} · el programa que corre la agencia`)}
 
+  ${col.azul('agencia arranque')}                   DE CERO A TODO: carga los leads, audita todas sus webs,
+                                     saca los diagnósticos y deja los correos escritos. Se deja corriendo.
   ${col.azul('agencia auto')}                       LA SESIÓN AUTOMÁTICA: hace el trabajo del día solo
       --simulacro        enseña lo que haría sin tocar nada
       --sin-ia           piloto determinista (no necesita clave de API)
@@ -322,6 +324,45 @@ function cmdEscaneos() {
   }
 }
 
+/**
+ * Arranque: de cero a la cartera entera auditada, sin volver a tocar nada.
+ * Carga los leads, audita todas las webs pendientes, saca cada diagnóstico y deja
+ * todos los correos escritos en la bandeja. Es una sola orden y se deja corriendo.
+ */
+async function cmdArranque(pos, op) {
+  const estado = cargar();
+  const nuevos = sembrarLeads(estado);
+  if (nuevos) { guardar(estado); console.log(`${col.verde(`${nuevos} leads cargados.`)}`); }
+
+  const pendientes = estado.leads.filter((l) => l.estado === 'sin-auditar' && l.web && !l.empresa.startsWith('['));
+  if (!pendientes.length) {
+    console.log(col.ambar('No hay ningún lead con web pendiente de auditar.'));
+    console.log(col.gris('Sigue con:  agencia auto'));
+    return;
+  }
+
+  titulo(`Arranque · ${pendientes.length} webs por auditar`);
+  console.log(col.gris('Cada web son entre uno y tres minutos. Puedes dejarlo corriendo e irte:'));
+  console.log(col.gris('al final tendrás cada diagnóstico en PDF y cada correo escrito en la bandeja.\n'));
+
+  const presupuesto = nuevoPresupuesto({
+    auditorias: pendientes.length,
+    informes: pendientes.length + 2,
+    correos: pendientes.length + 2,
+    pasos: pendientes.length * 4 + 10,
+  });
+  presupuesto.simulacro = !!op.simulacro;
+
+  const salida = await correrPiloto(presupuesto, { limite: pendientes.length + 6 });
+
+  titulo('Resumen del arranque');
+  console.log(salida.resumen);
+  const enBandeja = bandeja();
+  console.log(`\n${col.neg(`${enBandeja.length} correo(s)`)} esperando en la bandeja. Los mandas tú:`);
+  console.log(col.azul('  agencia bandeja'));
+  console.log(col.gris('\nY a partir de mañana, la sesión diaria:  agencia auto'));
+}
+
 async function cmdAuto(pos, op) {
   const presupuesto = nuevoPresupuesto({
     auditorias: op.auditorias ? +op.auditorias : undefined,
@@ -396,6 +437,7 @@ function cmdBitacora(pos, op) {
 const COMANDOS = {
   hoy: () => imprimirHoy(),
   auto: cmdAuto,
+  arranque: cmdArranque,
   bandeja: (pos, op) => cmdBandeja(pos, op),
   bitacora: (pos, op) => cmdBitacora(pos, op),
   auditar: cmdAuditar,

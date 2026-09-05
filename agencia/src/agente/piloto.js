@@ -23,9 +23,9 @@ export function plantillaPara(segmento = '') {
   return 'directa';
 }
 
-export async function correrPiloto(presupuesto, { registrar = console.log } = {}) {
+export async function correrPiloto(presupuesto, { registrar = console.log, limite } = {}) {
   const hechas = [];
-  const { estado, acciones } = calcularAgenda();
+  const { estado, acciones } = calcularAgenda(limite ? { limite } : {});
 
   const ejecutables = acciones.filter((a) => a.herramienta);
   const humanas = acciones.filter((a) => !a.herramienta);

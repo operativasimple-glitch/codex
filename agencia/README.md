@@ -37,6 +37,19 @@ export ANTHROPIC_API_KEY=...
 
 Sin eso, todo funciona igual con las plantillas.
 
+## De cero a la cartera entera, en un comando
+
+```bash
+node bin/agencia.js arranque
+```
+
+Carga los 20 leads, audita la web de cada uno, saca su diagnóstico en PDF y deja su correo
+escrito en la bandeja. Entre veinte minutos y una hora según cuántas webs sean: se lanza y se
+deja corriendo. Al volver: `agencia bandeja` para ver qué hay que mandar y `agencia panel --abrir`
+para ver cómo ha quedado.
+
+A partir de ahí, el trabajo del día es `agencia auto`.
+
 ## La sesión automática
 
 ```bash
