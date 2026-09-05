@@ -93,7 +93,10 @@ ${col.gris(`Datos en ${DATOS}. Todo son ficheros: se pueden abrir, copiar y edit
 
 const abrir = (ruta) => {
   const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-  spawn(cmd, [ruta], { detached: true, stdio: 'ignore' }).unref();
+  const hijo = spawn(cmd, [ruta], { detached: true, stdio: 'ignore' });
+  // En un servidor sin escritorio no existe el comando: no es motivo para romper nada.
+  hijo.on('error', () => console.log(col.gris(`(Ábrelo tú: ${ruta})`)));
+  hijo.unref();
 };
 
 // ── Comandos

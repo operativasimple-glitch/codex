@@ -10,6 +10,15 @@ plan comercial del fichero `04`.
 
 ## Puesta en marcha
 
+**En un Mac, lo más rápido:** doble clic en `Abrir-agencia.command`. La primera vez instala lo
+que hace falta (tarda un par de minutos), y a partir de ahí arranca en dos segundos: te enseña
+qué toca hoy, abre el panel en el navegador y te deja la terminal lista.
+
+La primera vez macOS puede decir que no puede abrirlo por venir de internet: clic derecho sobre
+el fichero → Abrir → Abrir. Solo pasa una vez.
+
+**A mano:**
+
 ```bash
 cd agencia
 npm install                      # Playwright
