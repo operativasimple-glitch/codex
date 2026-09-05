@@ -16,6 +16,7 @@ import { calcularAgenda, marcador, ventanaLlamadas } from '../agente/hoy.js';
 import { nuevoPresupuesto, ejecutar, bandeja, marcarEnviado, leerBitacora } from '../agente/herramientas.js';
 import { correrPiloto, plantillaPara } from '../agente/piloto.js';
 import { porContactar, necesitaLeads, anadirManual, UMBRAL } from '../crm/cantera.js';
+import { PASOS, GUION, calcularEncargo, enMarcha, correoConfirmacion, correoEntrega } from '../crm/encargo.js';
 import { correrAutonomo, conversar } from '../agente/autonomo.js';
 import { hayIA } from '../agente/ia.js';
 import { generarPanel } from '../panel/panel.js';
@@ -68,6 +69,16 @@ function estadoCompleto() {
       hallazgos: e.hallazgos.slice(0, 6).map((h) => ({ titulo: h.titulo, gravedad: h.gravedad, incidencias: h.incidencias, criterio: h.criterio })),
     })),
     informes: listarInformes(),
+    guion: GUION,
+    pasosEncargo: PASOS,
+    encargos: estado.leads.filter(enMarcha).map((l) => ({
+      id: l.id,
+      empresa: l.empresa,
+      web: l.web,
+      estado: l.estado,
+      escaneo: (l.escaneos || []).at(-1) || null,
+      ...calcularEncargo(l, { escaneos, informes: listarInformes(), clientes: estado.clientes }),
+    })),
     bandeja: bandeja(),
     bitacora: leerBitacora(15),
     trabajo: estadoTrabajo(),
@@ -130,6 +141,30 @@ const ACCIONES = {
       console.log(`\n${salida.resumen}`);
     }, { total: cuantas, patron: /^Escaneo /});
     return { trabajo: id };
+  },
+
+  paso({ lead: clave, paso, hecho }) {
+    const estado = cargar();
+    const lead = buscarLead(estado, clave);
+    if (!lead) throw new Error(`No encuentro a "${clave}".`);
+    if (!PASOS.some((p) => p.id === paso)) throw new Error(`Paso desconocido: ${paso}`);
+    lead.encargo = lead.encargo || {};
+    if (hecho) lead.encargo[paso] = new Date().toISOString();
+    else delete lead.encargo[paso];
+    // Quien tiene encargo abierto ya no es un lead frío.
+    if (hecho && ['sin-auditar', 'auditado', 'contactado', 'recordado', 'respondido'].includes(lead.estado)) {
+      lead.estado = 'llamada';
+    }
+    guardar(estado);
+    return { mensaje: `${lead.empresa}: ${hecho ? 'hecho' : 'desmarcado'} "${PASOS.find((p) => p.id === paso).titulo.toLowerCase()}".` };
+  },
+
+  correoEncargo({ lead: clave, tipo }) {
+    const lead = buscarLead(cargar(), clave);
+    if (!lead) throw new Error(`No encuentro a "${clave}".`);
+    const escaneo = (lead.escaneos || []).length ? cargarEscaneo(lead.escaneos.at(-1)) : null;
+    const correo = tipo === 'entrega' ? correoEntrega(lead, escaneo) : correoConfirmacion(lead);
+    return { correo };
   },
 
   chat({ mensaje }) {

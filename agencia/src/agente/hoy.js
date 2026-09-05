@@ -14,6 +14,7 @@
 import { config } from '../config.js';
 import { cargar, listarEscaneos } from '../almacen.js';
 import { porContactar, UMBRAL } from '../crm/cantera.js';
+import { calcularEncargo, enMarcha } from '../crm/encargo.js';
 import { diasDesde, col, titulo, euros, mismoDominio } from '../util.js';
 
 const MAX_ACCIONES = 6;
@@ -103,6 +104,20 @@ export function calcularAgenda({ limite = MAX_ACCIONES } = {}) {
       porque: 'Recordatorio enviado hace más de 10 días sin respuesta. La lista limpia se trabaja mejor.',
       comando: `agencia lead ${l.id} --estado descartado`,
       herramienta: { nombre: 'actualizar_lead', argumentos: { lead: l.id, estado: 'descartado', nota: 'Sin respuesta tras el recordatorio.' } },
+    });
+  }
+
+  // 5.5 · Encargos a medias. Un cliente que ha dicho que sí y se queda sin
+  // presupuesto enviado es la peor forma de perder mil doscientos euros.
+  for (const l of estado.leads.filter(enMarcha)) {
+    const encargo = calcularEncargo(l, { escaneos, clientes: estado.clientes });
+    if (!encargo.siguiente || encargo.siguiente.auto) continue;
+    empujar({
+      prioridad: 0.3,
+      titulo: `${l.empresa}: ${encargo.siguiente.titulo.toLowerCase()}`,
+      porque: `Encargo en marcha, ${encargo.hechos} de ${encargo.total} pasos. ${encargo.siguiente.ayuda}`,
+      comando: `agencia panel  → pestaña Guion`,
+      herramienta: null, // esto no lo hace una máquina
     });
   }
 

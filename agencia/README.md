@@ -67,6 +67,32 @@ Si el puerto 4321 está ocupado se busca el siguiente libre solo. Y si lo que lo
 de la propia aplicación (pasa al abrirla dos veces), no se levanta una segunda: se abre la que ya
 estaba corriendo.
 
+## El guion y el encargo
+
+La parte que no automatiza nada — la llamada, el presupuesto, el cobro — es justo la que se
+olvida. La pestaña **Guion** tiene las dos mitades:
+
+**El guion de la llamada**, para tenerlo abierto mientras hablas: qué decir minuto a minuto, la
+demostración con teclado y lector de pantalla que vende sola, cómo se dice el precio, las cinco
+objeciones con su respuesta, y lo que no se dice nunca (que van a "quedar certificados", nada
+jurídico, ninguna cifra sin verificar).
+
+**El checklist de cada encargo**, ocho pasos desde el sí hasta la vigilancia mensual:
+
+| Paso | Quién lo marca |
+|---|---|
+| Videollamada de cierre hecha | tú |
+| Presupuesto y alcance por escrito | tú — con el correo listo para copiar |
+| Cobrado | tú |
+| Auditoría completa hecha | el programa, cuando existe el escaneo |
+| Revisión manual hecha | el programa, cuando la has pasado |
+| Informe completo generado | el programa, cuando está el fichero |
+| Entregado y llamada de entrega hecha | tú — con el correo de entrega listo para copiar |
+| Vigilancia mensual contratada | el programa, al dar de alta al cliente |
+
+Los pasos pendientes de un encargo salen en las acciones del día, para que un cliente que ha dicho
+que sí no se quede sin presupuesto enviado.
+
 ## El equipo de agentes
 
 Con `ANTHROPIC_API_KEY` puesta, el programa no es una lista de comandos: es un equipo.
@@ -221,6 +247,7 @@ agencia panel --abrir                        # el panel del negocio
 | Revisión manual | `src/auditoria/manual.js` | Guion de 12 comprobaciones de teclado y lector de pantalla. Es lo que justifica los 1.200 € |
 | Informes | `src/informe/` | HTML autocontenido (capturas incrustadas) y PDF, con el marco legal y los límites siempre presentes |
 | Correos | `src/crm/correos.js` | Las cinco plantillas del plan, rellenadas con los hallazgos del escaneo. No deja escribir sin auditar antes |
+| Encargo | `src/crm/encargo.js` | El guion de la llamada, el checklist de ocho pasos y los correos de presupuesto y entrega |
 | Cantera | `src/crm/cantera.js` | De dónde salen los leads nuevos, y la verificación que impide que entre una empresa inventada |
 | Aplicación | `src/web/` | El servidor local, la cola de trabajos y la página con botones |
 | Vigilancia | `src/vigilancia/monitor.js` | Compara con el escaneo anterior y saca las regresiones. Es la cuota recurrente |

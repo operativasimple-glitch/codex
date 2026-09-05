@@ -152,6 +152,32 @@ background:var(--tarjeta);font-size:13.5px}
 .detalle{background:var(--lienzo)}
 .vacio{text-align:center;padding:44px 20px;color:var(--tenue)}
 .vacio b{display:block;color:var(--tinta);font-size:15px;margin-bottom:5px}
+/* Guion y encargos */
+.paso{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:1px solid var(--linea-suave)}
+.paso:last-child{border-bottom:none}
+.paso input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--acento);flex:none;cursor:pointer}
+.paso input:disabled{cursor:default}
+.paso .txt{flex:1}
+.paso b{font-size:14px;font-weight:600}
+.paso.listo b{color:var(--suave);text-decoration:line-through;text-decoration-color:var(--linea)}
+.paso .ayuda{display:block;font-size:12.5px;color:var(--tenue);margin-top:2px}
+.progreso{height:5px;border-radius:99px;background:var(--linea);overflow:hidden;margin:10px 0 4px}
+.progreso i{display:block;height:100%;background:var(--acento);transition:width .3s}
+.acordeon{background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;
+box-shadow:var(--sombra);overflow:hidden}
+.acordeon summary{padding:13px 17px;cursor:pointer;font-weight:600;font-size:14.5px;list-style:none;
+display:flex;justify-content:space-between;align-items:center;gap:10px}
+.acordeon summary::-webkit-details-marker{display:none}
+.acordeon summary::after{content:'+';color:var(--tenue);font-weight:400;font-size:17px}
+.acordeon[open] summary::after{content:'–'}
+.acordeon .cuerpo{padding:0 17px 15px;font-size:13.8px;line-height:1.6}
+.cita{background:var(--acento-flojo);border-left:3px solid var(--acento);border-radius:0 9px 9px 0;
+padding:12px 15px;margin:4px 0 10px;font-size:14px;line-height:1.6}
+.nota-guion{color:var(--suave);font-size:12.5px;font-style:italic}
+.objecion{border-top:1px solid var(--linea-suave);padding:11px 0}
+.objecion:first-of-type{border-top:none}
+.objecion b{display:block;color:var(--critico);font-size:13.5px;margin-bottom:4px}
+
 /* Agente */
 .charla{display:flex;flex-direction:column;gap:10px;max-height:440px;overflow-y:auto;padding:4px 2px 8px}
 .burbuja{max-width:80%;padding:11px 14px;border-radius:14px;font-size:14px;line-height:1.55;white-space:pre-wrap}
@@ -232,6 +258,7 @@ box-shadow:var(--sombra-alta);max-width:min(620px,92vw);transition:transform .24
 <nav id="pestanas">
   <button data-tab="panel" class="activa">Panel</button>
   <button data-tab="agente">Agente</button>
+  <button data-tab="guion">Guion <span class="cuenta" id="n-encargos">0</span></button>
   <button data-tab="leads">Leads <span class="cuenta" id="n-leads">0</span></button>
   <button data-tab="auditorias">Auditorías <span class="cuenta" id="n-escaneos">0</span></button>
   <button data-tab="bandeja">Bandeja <span class="cuenta" id="n-bandeja">0</span></button>
@@ -241,6 +268,7 @@ box-shadow:var(--sombra-alta);max-width:min(620px,92vw);transition:transform .24
 <main>
   <section id="tab-panel"></section>
   <section id="tab-agente" hidden></section>
+  <section id="tab-guion" hidden></section>
   <section id="tab-leads" hidden></section>
   <section id="tab-auditorias" hidden></section>
   <section id="tab-bandeja" hidden></section>
@@ -303,11 +331,12 @@ function pintar() {
   $('#n-leads').textContent = estado.leads.length;
   $('#n-escaneos').textContent = estado.escaneos.length;
   $('#n-bandeja').textContent = estado.bandeja.length;
+  $('#n-encargos').textContent = estado.encargos.length;
 
   pintarHero();
   pintarAlerta();
   pintarTrabajo();
-  ({ panel: pintarPanel, agente: pintarAgente, leads: pintarLeads, auditorias: pintarAuditorias,
+  ({ panel: pintarPanel, agente: pintarAgente, guion: pintarGuion, leads: pintarLeads, auditorias: pintarAuditorias,
      bandeja: pintarBandeja, bitacora: pintarBitacora })[pestana]();
 
   const ocupado = estado.trabajo.activo;
@@ -424,6 +453,64 @@ function pintarPanel() {
         <td>${euros(c.cuota)}/mes</td><td class="suave mini">${c.dias === null ? '—' : 'hace ' + c.dias + ' días'}</td>
         <td class="der"><button class="btn chico" data-vigilar="${esc(c.nombre)}">Reescanear</button></td></tr>`).join('')}
       </tbody></table></div>` : ''}`;
+}
+
+function pintarGuion() {
+  const leadsElegibles = estado.leads.filter((l) => !estado.encargos.some((e) => e.id === l.id)
+    && !['descartado'].includes(l.estado) && !l.empresa.startsWith('['));
+
+  $('#tab-guion').innerHTML = `
+    <h2 class="seccion">Encargos en marcha</h2>
+    ${estado.encargos.length ? estado.encargos.map(tarjetaEncargo).join('') : `
+      <div class="caja vacio"><b>Ningún encargo abierto</b>
+        Cuando alguien te diga que sí en una llamada, ábrelo aquí y el programa te va llevando
+        paso a paso hasta la vigilancia mensual.</div>`}
+
+    <div class="tarjeta ajuste" style="margin-top:10px">
+      <span class="mini">Abrir un encargo para</span>
+      <select id="nuevo-encargo">
+        ${leadsElegibles.map((l) => `<option value="${l.id}">${esc(l.empresa)}</option>`).join('')}
+      </select>
+      <button class="btn chico" id="btn-abrir-encargo">Ha dicho que sí</button>
+    </div>
+
+    <h2 class="seccion">El guion de la llamada</h2>
+    <p class="sub">Tenlo abierto mientras hablas. No es para leerlo entero: es para no quedarte en blanco.</p>
+    ${estado.guion.map((sec, i) => `
+      <details class="acordeon" ${i < 2 ? 'open' : ''}>
+        <summary>${esc(sec.titulo)}</summary>
+        <div class="cuerpo">
+          ${sec.guion ? `<div class="cita">${esc(sec.guion)}</div>` : ''}
+          ${sec.puntos ? `<ul style="margin:0;padding-left:18px">${sec.puntos.map((p) => `<li style="margin-bottom:7px">${esc(p)}</li>`).join('')}</ul>` : ''}
+          ${sec.pares ? sec.pares.map(([o, r]) => `<div class="objecion"><b>"${esc(o)}"</b>${esc(r)}</div>`).join('') : ''}
+          ${sec.nota ? `<div class="nota-guion" style="margin-top:9px">${esc(sec.nota)}</div>` : ''}
+        </div>
+      </details>`).join('')}`;
+
+  const b = $('#btn-abrir-encargo');
+  if (b) b.onclick = () => pedir({ tipo: 'paso', lead: $('#nuevo-encargo').value, paso: 'llamada', hecho: true });
+}
+
+function tarjetaEncargo(e) {
+  const pct = Math.round((e.hechos / e.total) * 100);
+  return `<div class="tarjeta">
+    <div class="fila-tarjeta" style="align-items:baseline">
+      <div><b style="font-size:15px">${esc(e.empresa)}</b>
+        <span class="tenue mini"> · ${esc(e.web || '')}</span></div>
+      <span class="tenue mini">${e.hechos} de ${e.total}${e.completo ? ' · completo' : ''}</span>
+    </div>
+    <div class="progreso"><i style="width:${pct}%"></i></div>
+    ${e.pasos.map((p) => `
+      <label class="paso ${p.hecho ? 'listo' : ''}">
+        <input type="checkbox" ${p.hecho ? 'checked' : ''} ${p.auto ? 'disabled' : ''}
+          data-paso="${p.id}" data-encargo="${e.id}">
+        <span class="txt"><b>${esc(p.titulo)}</b>
+          <span class="ayuda">${esc(p.ayuda)}${p.auto ? ' · lo marca el programa solo' : ''}</span>
+          ${p.id === 'presupuesto' && !p.hecho ? `<button class="btn chico" style="margin-top:7px" data-correo-encargo='{"lead":"${e.id}","tipo":"confirmacion"}'>Copiar el correo de presupuesto</button>` : ''}
+          ${p.id === 'entregado' && !p.hecho ? `<button class="btn chico" style="margin-top:7px" data-correo-encargo='{"lead":"${e.id}","tipo":"entrega"}'>Copiar el correo de entrega</button>` : ''}
+        </span>
+      </label>`).join('')}
+  </div>`;
 }
 
 function ultimaSesion() {
@@ -678,6 +765,14 @@ document.addEventListener('click', async (ev) => {
     return void pedir({ tipo: 'enviado', id: d.enviado });
   }
   if (d.abrir) { abiertos.has(d.abrir) ? abiertos.delete(d.abrir) : abiertos.add(d.abrir); return void pintar(); }
+  if (d.correoEncargo) {
+    const r = await pedir({ tipo: 'correoEncargo', ...JSON.parse(d.correoEncargo) });
+    if (!r?.correo) return;
+    const texto = `Asunto: ${r.correo.asunto}\n\n${r.correo.cuerpo}`;
+    try { await navigator.clipboard.writeText(texto); avisar('Correo copiado. Pégalo en tu cliente de correo y rellena lo que va entre corchetes.'); }
+    catch { alert(texto); }
+    return;
+  }
   if (d.copiar) {
     const c = estado.bandeja.find((x) => x.id === d.copiar);
     try { await navigator.clipboard.writeText(c.asunto + '\n\n' + c.cuerpo); avisar('Copiado. Pégalo en su formulario o en LinkedIn.'); }
@@ -697,7 +792,9 @@ document.addEventListener('click', async (ev) => {
 
 document.addEventListener('change', (ev) => {
   const s = ev.target.closest('select[data-estado]');
-  if (s) pedir({ tipo: 'lead', id: s.dataset.estado, estado: s.value });
+  if (s) return void pedir({ tipo: 'lead', id: s.dataset.estado, estado: s.value });
+  const c = ev.target.closest('input[data-paso]');
+  if (c) pedir({ tipo: 'paso', lead: c.dataset.encargo, paso: c.dataset.paso, hecho: c.checked });
 });
 
 // Mientras algo está en marcha se mira cada segundo; si no, cada diez.
