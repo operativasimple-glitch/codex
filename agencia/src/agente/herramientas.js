@@ -24,6 +24,7 @@ import { redactar } from '../crm/correos.js';
 import { vigilar, informeVigilancia } from '../vigilancia/monitor.js';
 import { generarPanel } from '../panel/panel.js';
 import { calcularAgenda, marcador, ventanaLlamadas } from './hoy.js';
+import { reponer, porContactar, necesitaLeads, UMBRAL } from '../crm/cantera.js';
 
 /** Estados que el agente puede poner por su cuenta. El resto los pone una persona. */
 const ESTADOS_PERMITIDOS = ['auditado', 'recordado', 'descartado'];
@@ -131,6 +132,16 @@ export const ESQUEMAS = [
       type: 'object',
       properties: { cliente: { type: 'string' } },
       required: ['cliente'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'buscar_leads',
+    description: `Trae leads nuevos y verificados cuando quedan menos de ${UMBRAL} por contactar. `
+      + 'Solo entran los que tienen web que responde de verdad; el resto se descarta solo.',
+    input_schema: {
+      type: 'object',
+      properties: { cuantos: { type: 'integer', description: 'Cuántos intentar traer (por defecto 8).' } },
       additionalProperties: false,
     },
   },
@@ -326,6 +337,26 @@ const EJECUTORES = {
       ...comparacion.resueltos.map((h) => `  RESUELTO ${h.titulo}`),
       `Informe: ${ruta}`,
       comparacion.hayRegresionGrave ? 'Hay regresión grave: avisa en la bitácora, esto es lo que paga el cliente.' : '',
+    ].filter(Boolean).join('\n');
+  },
+
+  async buscar_leads({ cuantos }, presupuesto) {
+    const estado = cargar();
+    const antes = porContactar(estado).length;
+    if (presupuesto.simulacro) return `SIMULACRO: buscaría leads nuevos (quedan ${antes} por contactar).`;
+
+    const parte = await reponer(estado, { cuantos, registrar: (t) => console.log(t) });
+    if (parte.sinFuente) {
+      return `No hay de dónde sacar leads nuevos: la cantera (datos/cantera.json) está vacía y no hay `
+        + 'clave de API. Añádelos a mano desde la aplicación, en la pestaña de leads.';
+    }
+    guardar(estado);
+    presupuesto.gastado.push(`${parte.anadidos.length} leads nuevos`);
+    return [
+      `${parte.anadidos.length} leads nuevos verificados y añadidos `
+        + `(quedaban ${antes} por contactar, ahora ${porContactar(estado).length}).`,
+      ...parte.anadidos.map((l) => `  + ${l.empresa} (${l.web}) · ${l.segmento}`),
+      parte.descartados.length ? `Descartados por no responder o estar ya: ${parte.descartados.length}.` : '',
     ].filter(Boolean).join('\n');
   },
 

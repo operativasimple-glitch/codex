@@ -53,11 +53,29 @@ Abre `http://localhost:4321` con la aplicación:
 - **Bandeja** — los correos preparados: leerlos, copiarlos y marcarlos como enviados.
 - **Bitácora** — todo lo que ha hecho el programa.
 
+Arriba del todo, un bloque dice **qué es lo siguiente** y trae el botón que lo hace: auditar la
+cartera, mandar los correos que esperan, conseguir más leads o la sesión del día. Cambia solo según
+cómo esté el negocio.
+
 Arriba, los tres botones grandes: **auditar la cartera entera**, **hacer la sesión de hoy** y
 **ver qué haría** (simulacro). Mientras algo está en marcha se ve el avance línea a línea; una
 auditoría tarda minutos y la página no se queda colgada.
 
 Solo escucha en `127.0.0.1`: no es un servidor de internet, es la ventana del programa.
+
+## Los leads no se acaban
+
+Cuando quedan menos de **cinco leads por contactar**, el programa lo avisa y repone solo. Los
+candidatos salen de dos sitios: de `datos/cantera.json` (lo que hayas ido apuntando tú, o pegado en
+la aplicación) y, si hay clave de API, de Claude, que propone empresas del perfil que falte.
+
+La regla que hace esto fiable: **ningún candidato entra en la lista sin que su web responda de
+verdad**. Se comprueba cargándola antes de darla por buena, y lo que no responde se descarta con su
+motivo — "ese dominio no existe", "tarda demasiado en responder". Así, que un modelo se invente una
+empresa es inofensivo: no llega nunca a la lista.
+
+El repuesto salta solo al principio de cada sesión automática, y también se puede pedir a mano
+desde la aplicación o con `agencia auto`.
 
 ## De cero a la cartera entera, desde la terminal
 
@@ -171,6 +189,8 @@ agencia panel --abrir                        # el panel del negocio
 | Revisión manual | `src/auditoria/manual.js` | Guion de 12 comprobaciones de teclado y lector de pantalla. Es lo que justifica los 1.200 € |
 | Informes | `src/informe/` | HTML autocontenido (capturas incrustadas) y PDF, con el marco legal y los límites siempre presentes |
 | Correos | `src/crm/correos.js` | Las cinco plantillas del plan, rellenadas con los hallazgos del escaneo. No deja escribir sin auditar antes |
+| Cantera | `src/crm/cantera.js` | De dónde salen los leads nuevos, y la verificación que impide que entre una empresa inventada |
+| Aplicación | `src/web/` | El servidor local, la cola de trabajos y la página con botones |
 | Vigilancia | `src/vigilancia/monitor.js` | Compara con el escaneo anterior y saca las regresiones. Es la cuota recurrente |
 | Agente | `src/agente/hoy.js` | Decide las siguientes acciones según las reglas del plan comercial |
 | Panel | `src/panel/panel.js` | Embudo, recurrente, auditorías y cuenta atrás de los 90 días |

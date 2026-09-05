@@ -15,12 +15,17 @@ import { cargar, guardar, sembrarLeads, buscarLead, listarEscaneos, cargarEscane
 import { calcularAgenda, marcador, ventanaLlamadas } from '../agente/hoy.js';
 import { nuevoPresupuesto, ejecutar, bandeja, marcarEnviado, leerBitacora } from '../agente/herramientas.js';
 import { correrPiloto, plantillaPara } from '../agente/piloto.js';
+import { porContactar, necesitaLeads, anadirManual, UMBRAL } from '../crm/cantera.js';
 import { correrAutonomo } from '../agente/autonomo.js';
 import { hayIA } from '../agente/ia.js';
 import { generarPanel } from '../panel/panel.js';
 import { generarInforme } from '../informe/generar.js';
 import { lanzar, estadoTrabajo } from './trabajos.js';
 import { PAGINA } from './pagina.js';
+
+// Se consulta una vez al arrancar: la página necesita saber si puede ofrecer
+// la búsqueda automática de leads o solo el pegado a mano.
+let IA_DISPONIBLE = false;
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.pdf': 'application/pdf', '.png': 'image/png' };
 
@@ -31,6 +36,9 @@ function estadoCompleto() {
   return {
     marca: config.marca,
     marcador: m,
+    leadsPorContactar: porContactar(estado).length,
+    umbralLeads: UMBRAL,
+    faltanLeads: necesitaLeads(estado),
     ventana: v,
     precios: config.precios,
     acciones: acciones.map((a) => ({
@@ -58,6 +66,7 @@ function estadoCompleto() {
     bandeja: bandeja(),
     bitacora: leerBitacora(15),
     trabajo: estadoTrabajo(),
+    ia: IA_DISPONIBLE,
     estadosLead: ESTADOS_LEAD,
   };
 }
@@ -97,7 +106,9 @@ const ACCIONES = {
   },
 
   arranque() {
-    const id = lanzar('Arranque: auditando la cartera entera', async () => {
+    const estadoPrevio = cargar();
+    const cuantas = estadoPrevio.leads.filter((l) => l.estado === 'sin-auditar' && l.web && !l.empresa.startsWith('[')).length;
+    const id = lanzar('Auditando la cartera entera', async () => {
       const estado = cargar();
       sembrarLeads(estado);
       guardar(estado);
@@ -110,6 +121,26 @@ const ACCIONES = {
       });
       const salida = await correrPiloto(p, { limite: pendientes.length + 6 });
       console.log(`\n${salida.resumen}`);
+    }, { total: cuantas, patron: /^Escaneo /});
+    return { trabajo: id };
+  },
+
+  buscarLeads({ cuantos }) {
+    const id = lanzar('Buscando leads nuevos', async () => {
+      const p = nuevoPresupuesto({ pasos: 4 });
+      console.log(await ejecutar('buscar_leads', { cuantos }, p));
+    });
+    return { trabajo: id };
+  },
+
+  anadirLeads({ texto }) {
+    if (!String(texto || '').trim()) throw new Error('No has escrito ningún lead.');
+    const id = lanzar('Comprobando los leads que has añadido', async () => {
+      const estado = cargar();
+      const parte = await anadirManual(estado, texto, { registrar: (t) => console.log(t) });
+      guardar(estado);
+      console.log(`\n${parte.anadidos.length} añadidos, ${parte.descartados.length} descartados `
+        + '(no responde su web o ya estaban).');
     });
     return { trabajo: id };
   },
@@ -244,6 +275,7 @@ export function crearServidor() {
 }
 
 export function arrancar({ puerto = 4321 } = {}) {
+  hayIA().then((v) => { IA_DISPONIBLE = v; });
   return new Promise((resolver, rechazar) => {
     const servidor = crearServidor();
     servidor.on('error', (e) => {

@@ -12,7 +12,7 @@
 let actual = vacio();
 
 function vacio() {
-  return { id: null, titulo: null, activo: false, lineas: [], error: null, iniciado: null, terminado: null };
+  return { id: null, titulo: null, activo: false, lineas: [], error: null, iniciado: null, terminado: null, total: null, hechos: 0 };
 }
 
 export function estadoTrabajo() {
@@ -24,10 +24,13 @@ export function hayTrabajo() {
 }
 
 /** Lanza una función larga capturando todo lo que imprima por consola. */
-export function lanzar(titulo, fn) {
+export function lanzar(titulo, fn, { total = null, patron = null } = {}) {
   if (actual.activo) throw new Error(`Ya hay algo en marcha: ${actual.titulo}. Espera a que termine.`);
 
-  actual = { ...vacio(), id: Date.now().toString(36), titulo, activo: true, iniciado: new Date().toISOString() };
+  actual = {
+    ...vacio(), id: Date.now().toString(36), titulo, activo: true,
+    iniciado: new Date().toISOString(), total, hechos: 0,
+  };
   const trabajo = actual;
   // Una primera línea desde el segundo cero: un recuadro vacío parece que está roto.
   trabajo.lineas.push('Arrancando…');
@@ -35,7 +38,10 @@ export function lanzar(titulo, fn) {
   const apuntar = (texto) => {
     for (const linea of String(texto).split('\n')) {
       // Se quitan los colores de terminal: en la página estorban.
-      trabajo.lineas.push(linea.replace(/\x1b\[[0-9;]*m/g, ''));
+      const limpia = linea.replace(/\x1b\[[0-9;]*m/g, '');
+      trabajo.lineas.push(limpia);
+      // La barra de progreso avanza contando las líneas que marcan un paso hecho.
+      if (patron && patron.test(limpia)) trabajo.hechos++;
     }
   };
 

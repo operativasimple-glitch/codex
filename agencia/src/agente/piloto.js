@@ -12,6 +12,8 @@
 import { config } from '../config.js';
 import { col } from '../util.js';
 import { calcularAgenda } from './hoy.js';
+import { cargar } from '../almacen.js';
+import { necesitaLeads, porContactar } from '../crm/cantera.js';
 import { ejecutar, anotarBitacora } from './herramientas.js';
 
 /** Plantilla de correo que le toca a un lead por su segmento. */
@@ -25,6 +27,16 @@ export function plantillaPara(segmento = '') {
 
 export async function correrPiloto(presupuesto, { registrar = console.log, limite } = {}) {
   const hechas = [];
+
+  // Antes de nada: si la lista se ha quedado corta, se repone. Es lo primero
+  // porque todo lo demás depende de tener a quién escribir.
+  const estadoPrevio = cargar();
+  if (necesitaLeads(estadoPrevio)) {
+    registrar(`${col.azul('→')} Quedan ${porContactar(estadoPrevio).length} leads por contactar: buscando más`);
+    const salidaLeads = await ejecutar('buscar_leads', {}, presupuesto);
+    registrar(col.gris(sangrar(salidaLeads)));
+  }
+
   const { estado, acciones } = calcularAgenda(limite ? { limite } : {});
 
   const ejecutables = acciones.filter((a) => a.herramienta);

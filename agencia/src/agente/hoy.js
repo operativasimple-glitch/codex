@@ -13,9 +13,17 @@
  */
 import { config } from '../config.js';
 import { cargar, listarEscaneos } from '../almacen.js';
+import { porContactar, UMBRAL } from '../crm/cantera.js';
 import { diasDesde, col, titulo, euros, mismoDominio } from '../util.js';
 
 const MAX_ACCIONES = 6;
+
+/** Corta un texto largo sin dejarlo a medias de una palabra. */
+const recortar = (texto, largo) => {
+  const t = String(texto || '').trim();
+  if (t.length <= largo) return t;
+  return t.slice(0, t.lastIndexOf(' ', largo)) + '…';
+};
 
 export function calcularAgenda({ limite = MAX_ACCIONES } = {}) {
   const estado = cargar();
@@ -35,6 +43,19 @@ export function calcularAgenda({ limite = MAX_ACCIONES } = {}) {
     });
   }
 
+  // 1.5 · La lista se está quedando sin gente a la que escribir. Es el cuello de
+  // botella real del negocio: sin leads no hay auditorías ni correos que mandar.
+  const quedan = porContactar(estado).length;
+  if (quedan < UMBRAL) {
+    empujar({
+      prioridad: 0.8,
+      titulo: `Quedan ${quedan} leads por contactar`,
+      porque: `Por debajo de ${UMBRAL} la máquina se para: sin lista no hay a quién auditar ni a quién escribir.`,
+      comando: 'agencia leads --buscar',
+      herramienta: { nombre: 'buscar_leads', argumentos: {} },
+    });
+  }
+
   // 2 · Leads de prioridad 1 sin auditar: sin hallazgo no hay correo.
   const sinAuditar = estado.leads
     .filter((l) => l.estado === 'sin-auditar' && l.web && !l.empresa.startsWith('['))
@@ -43,7 +64,7 @@ export function calcularAgenda({ limite = MAX_ACCIONES } = {}) {
     empujar({
       prioridad: 1 + (l.prioridad - 1) * 0.1,
       titulo: `Auditar ${l.empresa} (${l.web})`,
-      porque: `${l.segmento} · ${l.porQue?.slice(0, 90) || ''}`,
+      porque: `${l.segmento} · ${recortar(l.porQue, 150)}`,
       comando: `agencia auditar ${l.web} --cliente "${l.empresa}"`,
       herramienta: { nombre: 'auditar_web', argumentos: { lead: l.id } },
       cadena: 'diagnostico-y-correo',
