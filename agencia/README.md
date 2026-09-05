@@ -10,9 +10,10 @@ plan comercial del fichero `04`.
 
 ## Puesta en marcha
 
-**En un Mac, lo más rápido:** doble clic en `Abrir-agencia.command`. La primera vez instala lo
-que hace falta (tarda un par de minutos), y a partir de ahí arranca en dos segundos: te enseña
-qué toca hoy, abre el panel en el navegador y te deja la terminal lista.
+**En un Mac:** doble clic en `Abrir-agencia.command`. La primera vez instala lo que hace falta
+(unos minutos); después abre **la aplicación en el navegador**, que es donde está todo: botones
+para auditar, los informes, la bandeja de correos y el panel. La ventana negra de la terminal hay
+que dejarla abierta mientras se usa: es el programa por dentro.
 
 La primera vez macOS puede decir que no puede abrirlo por venir de internet: clic derecho sobre
 el fichero → Abrir → Abrir. Solo pasa una vez.
@@ -37,7 +38,28 @@ export ANTHROPIC_API_KEY=...
 
 Sin eso, todo funciona igual con las plantillas.
 
-## De cero a la cartera entera, en un comando
+## La aplicación
+
+```bash
+node bin/agencia.js abrir        # o doble clic en Abrir-agencia.command
+```
+
+Abre `http://localhost:4321` con la aplicación:
+
+- **Panel** — marcador, embudo y las acciones pendientes, cada una con su botón.
+- **Leads** — los 20, con su estado. Botón para auditar, para escribir el correo, para
+  cambiar el estado o anotar la web que falte.
+- **Auditorías** — cada escaneo con sus hallazgos y el enlace a su informe en HTML y PDF.
+- **Bandeja** — los correos preparados: leerlos, copiarlos y marcarlos como enviados.
+- **Bitácora** — todo lo que ha hecho el programa.
+
+Arriba, los tres botones grandes: **auditar la cartera entera**, **hacer la sesión de hoy** y
+**ver qué haría** (simulacro). Mientras algo está en marcha se ve el avance línea a línea; una
+auditoría tarda minutos y la página no se queda colgada.
+
+Solo escucha en `127.0.0.1`: no es un servidor de internet, es la ventana del programa.
+
+## De cero a la cartera entera, desde la terminal
 
 ```bash
 node bin/agencia.js arranque

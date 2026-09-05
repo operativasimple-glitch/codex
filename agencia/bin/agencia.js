@@ -28,6 +28,7 @@ import { resumirParaDireccion, personalizarCorreo, hayIA } from '../src/agente/i
 import { nuevoPresupuesto, bandeja, marcarEnviado, leerBitacora } from '../src/agente/herramientas.js';
 import { correrPiloto } from '../src/agente/piloto.js';
 import { correrAutonomo } from '../src/agente/autonomo.js';
+import { arrancar } from '../src/web/servidor.js';
 
 // ── Argumentos: posicionales y --opciones, sin dependencias.
 function parsear(argv) {
@@ -48,6 +49,9 @@ function parsear(argv) {
 
 const AYUDA = `
 ${col.neg(`${config.marca} · el programa que corre la agencia`)}
+
+  ${col.azul('agencia abrir')}                      LA APLICACIÓN: la ventana con botones, en el navegador
+      --puerto N         si el 4321 está ocupado
 
   ${col.azul('agencia arranque')}                   DE CERO A TODO: carga los leads, audita todas sus webs,
                                      saca los diagnósticos y deja los correos escritos. Se deja corriendo.
@@ -324,6 +328,16 @@ function cmdEscaneos() {
   }
 }
 
+/** Abre la aplicación: el programa con botones, en el navegador. */
+async function cmdAbrir(pos, op) {
+  const puerto = op.puerto ? +op.puerto : 4321;
+  const { direccion } = await arrancar({ puerto });
+  console.log(`\n  ${col.neg(config.marca)} ${col.gris('· la aplicación está abierta en')}`);
+  console.log(`  ${col.azul(direccion)}\n`);
+  console.log(col.gris('  Deja esta ventana abierta mientras la uses. Para cerrar el programa: Control + C.\n'));
+  if (!op['sin-abrir']) abrir(direccion);
+}
+
 /**
  * Arranque: de cero a la cartera entera auditada, sin volver a tocar nada.
  * Carga los leads, audita todas las webs pendientes, saca cada diagnóstico y deja
@@ -436,6 +450,8 @@ function cmdBitacora(pos, op) {
 
 const COMANDOS = {
   hoy: () => imprimirHoy(),
+  abrir: cmdAbrir,
+  app: cmdAbrir,
   auto: cmdAuto,
   arranque: cmdArranque,
   bandeja: (pos, op) => cmdBandeja(pos, op),
