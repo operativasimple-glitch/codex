@@ -1,0 +1,1063 @@
+<title>Plan Fundacional F-1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --paper:   #eaeeea;
+    --surface: #fbfcfa;
+    --sunk:    #e2e7e2;
+    --line:    #ccd5cf;
+    --ink:     #1b2320;
+    --muted:   #5d6b65;
+    --accent:  #1f5f4f;
+    --accent-soft: #dceae4;
+    --stamp:   #a63a2e;
+    --stamp-soft: #f2e0dc;
+    --shadow: 0 1px 2px rgba(27,35,32,.06), 0 8px 24px -16px rgba(27,35,32,.28);
+
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 68ch;
+    --pad: clamp(20px, 5vw, 56px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #101512;
+      --surface: #171d1a;
+      --sunk:    #1d2521;
+      --line:    #2c3833;
+      --ink:     #e3e9e4;
+      --muted:   #93a29b;
+      --accent:  #63c0a4;
+      --accent-soft: #1a302a;
+      --stamp:   #e08573;
+      --stamp-soft: #33201c;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #101512;
+    --surface: #171d1a;
+    --sunk:    #1d2521;
+    --line:    #2c3833;
+    --ink:     #e3e9e4;
+    --muted:   #93a29b;
+    --accent:  #63c0a4;
+    --accent-soft: #1a302a;
+    --stamp:   #e08573;
+    --stamp-soft: #33201c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--pad); }
+  .col { max-width: var(--measure); }
+
+  /* ---------- masthead ---------- */
+  .masthead { border-bottom: 1px solid var(--line); padding: clamp(36px,7vw,72px) 0 32px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .masthead h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(38px, 7vw, 66px); line-height: 1.02;
+    letter-spacing: -.02em; margin: 14px 0 0; text-wrap: balance;
+  }
+  .masthead .deck {
+    font-family: var(--serif); font-size: clamp(18px,2.2vw,22px); line-height: 1.45;
+    color: var(--muted); max-width: 46ch; margin: 16px 0 0;
+  }
+  .factbar {
+    display: grid; gap: 1px; margin-top: 36px;
+    grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+    background: var(--line); border: 1px solid var(--line);
+  }
+  .fact { background: var(--surface); padding: 14px 16px; }
+  .fact dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .fact dd { margin: 5px 0 0; font-weight: 600; font-size: 14.5px; }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav ol { list-style: none; display: flex; gap: 4px; overflow-x: auto; margin: 0; padding: 8px 0; scrollbar-width: thin; }
+  nav a {
+    display: block; white-space: nowrap; text-decoration: none; color: var(--muted);
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em;
+    padding: 5px 9px; border-radius: 3px;
+  }
+  nav a:hover { color: var(--ink); background: var(--sunk); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  /* ---------- sections ---------- */
+  section { padding: clamp(44px,6vw,72px) 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+  .sec-num {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    letter-spacing: .06em; flex: none; padding-top: 2px;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 500; letter-spacing: -.015em;
+    font-size: clamp(26px, 3.6vw, 36px); line-height: 1.12; margin: 0; text-wrap: balance;
+  }
+  h3 {
+    font-size: 15px; font-weight: 700; letter-spacing: .01em;
+    margin: 34px 0 10px; text-wrap: balance;
+  }
+  h3 .tag { font-family: var(--mono); font-weight: 400; font-size: 11px; color: var(--muted); margin-left: 8px; letter-spacing: .06em; }
+  p { margin: 0 0 14px; }
+  .lede { font-size: 17.5px; line-height: 1.62; }
+  strong { font-weight: 600; }
+  em.term { font-style: normal; font-family: var(--mono); font-size: .92em; color: var(--accent); }
+  code {
+    font-family: var(--mono); font-size: .88em; background: var(--sunk);
+    padding: 1px 5px; border-radius: 3px; white-space: nowrap;
+  }
+  ul.tight { margin: 0 0 14px; padding-left: 1.1em; }
+  ul.tight li { margin-bottom: 6px; }
+  ul.tight li::marker { color: var(--accent); }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 2px solid var(--accent); background: var(--accent-soft);
+    padding: 14px 18px; margin: 20px 0; font-size: 15px;
+  }
+  .note.red { border-left-color: var(--stamp); background: var(--stamp-soft); }
+  .note p:last-child { margin-bottom: 0; }
+  .note .lbl {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 5px;
+  }
+  .note.red .lbl { color: var(--stamp); }
+
+  /* ---------- tables ---------- */
+  .scroller { overflow-x: auto; margin: 22px 0; border: 1px solid var(--line); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+  caption {
+    caption-side: top; text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--sunk); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tfoot td { font-weight: 700; background: var(--sunk); border-top: 2px solid var(--line); }
+  .who { font-family: var(--mono); font-size: 11px; color: var(--accent); white-space: nowrap; }
+
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em;
+    padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
+  }
+  .pill.go { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); }
+  .pill.stop { color: var(--stamp); border-color: color-mix(in srgb, var(--stamp) 40%, transparent); background: var(--stamp-soft); }
+
+  /* ---------- chart ---------- */
+  figure { margin: 24px 0; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 520px; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 10px; max-width: 62ch; }
+  .chart-scroll { overflow-x: auto; }
+
+  /* ---------- process timeline ---------- */
+  .stages { list-style: none; margin: 24px 0 0; padding: 0; border-top: 1px solid var(--line); }
+  .stages > li {
+    display: grid; gap: 4px 20px; padding: 18px 0; border-bottom: 1px solid var(--line);
+    grid-template-columns: 40px minmax(0,1fr);
+  }
+  @media (min-width: 760px) {
+    .stages > li { grid-template-columns: 40px minmax(0,1fr) 210px; align-items: start; }
+  }
+  .stg-n { font-family: var(--mono); font-size: 12px; color: var(--accent); padding-top: 3px; }
+  .stg-b h4 { margin: 0 0 5px; font-size: 15.5px; font-weight: 700; }
+  .stg-b p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .stg-m { display: flex; flex-wrap: wrap; gap: 5px; align-content: start; padding-top: 2px; }
+  .stg-m .pill { background: var(--surface); }
+
+  /* ---------- role cards ---------- */
+  .roles { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 22px 0; }
+  @media (min-width: 720px) { .roles { grid-template-columns: repeat(3, 1fr); } }
+  .role { background: var(--surface); padding: 18px 18px 20px; }
+  .role .seat { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .role h4 { margin: 7px 0 10px; font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+  .role ul { margin: 0; padding-left: 1.05em; font-size: 14px; color: var(--muted); }
+  .role li { margin-bottom: 5px; }
+
+  /* ---------- checklist ---------- */
+  .checks { list-style: none; margin: 20px 0; padding: 0; }
+  .checks li {
+    display: grid; grid-template-columns: 18px 1fr; gap: 12px;
+    padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 15px;
+  }
+  .checks li::before {
+    content: ""; width: 15px; height: 15px; margin-top: 4px;
+    border: 1.5px solid var(--line); border-radius: 3px; background: var(--surface);
+  }
+
+  footer { padding: 44px 0 72px; color: var(--muted); font-size: 13.5px; }
+  footer .col { max-width: 62ch; }
+  hr.rule { border: 0; border-top: 1px solid var(--line); margin: 30px 0; }
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Documento interno · Borrador 1 · Septiembre 2026</div>
+    <h1>Plan Fundacional F&#8209;1</h1>
+    <p class="deck">Agencia de reclutamiento de estudiantes internacionales. Chile, México y España hacia Estados Unidos, operada por tres socios.</p>
+    <dl class="factbar">
+      <div class="fact"><dt>Destino</dt><dd>Estados Unidos (F‑1)</dd></div>
+      <div class="fact"><dt>Mercados origen</dt><dd>CL · MX · ES</dd></div>
+      <div class="fact"><dt>Socios</dt><dd>3 (1 con green card)</dd></div>
+      <div class="fact"><dt>Ingreso</dt><dd>Estudiante + institución</dd></div>
+      <div class="fact"><dt>Vehículo</dt><dd>LLC en EE.&nbsp;UU.</dd></div>
+    </dl>
+  </div>
+</header>
+
+<nav aria-label="Secciones">
+  <div class="wrap">
+    <ol>
+      <li><a href="#s01">01 Resumen</a></li>
+      <li><a href="#s02">02 Mercado</a></li>
+      <li><a href="#s03">03 Ingresos</a></li>
+      <li><a href="#s04">04 Precios</a></li>
+      <li><a href="#s05">05 Economía</a></li>
+      <li><a href="#s06">06 Reparto</a></li>
+      <li><a href="#s07">07 Estructura legal</a></li>
+      <li><a href="#s08">08 Cumplimiento</a></li>
+      <li><a href="#s09">09 Proceso del estudiante</a></li>
+      <li><a href="#s10">10 Calendario</a></li>
+      <li><a href="#s11">11 Operación</a></li>
+      <li><a href="#s12">12 Instituciones</a></li>
+      <li><a href="#s13">13 Roadmap</a></li>
+      <li><a href="#s14">14 Riesgos</a></li>
+      <li><a href="#s15">15 A decidir</a></li>
+    </ol>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ============ 01 ============ -->
+<section id="s01">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Resumen ejecutivo</h2></div>
+  <div class="col">
+    <p class="lede">El negocio no es «encontrar estudiantes». Estudiantes hay de sobra: México manda unos 15.000 al año a EE.&nbsp;UU., España cerca de 6.000, Chile alrededor de 2.500. El activo escaso es <strong>el contrato de representación con la institución estadounidense</strong>, porque ese contrato es lo que convierte un estudiante en dinero recurrente y a ustedes en algo distinto de un asesor por hora.</p>
+    <p>Y ese contrato lo firma una entidad de EE.&nbsp;UU., con cuenta bancaria en EE.&nbsp;UU., con una persona real detrás que tenga estatus para ser dueña de ella. Ahí está la pieza del socio con green card: no es un detalle administrativo, es el cuello de botella de todo el modelo, y conviene diseñar la empresa alrededor de eso.</p>
+    <p>La configuración de ustedes tres —<strong>uno adentro con la estructura legal, dos afuera con el flujo de estudiantes</strong>— es literalmente el modelo estándar de la industria: institución en EE.&nbsp;UU. ↔ agencia con presencia local en origen. No están inventando nada raro; están armando la versión correcta de algo que ya existe.</p>
+
+    <h3>Las cuatro decisiones que ya están tomadas</h3>
+    <ul class="tight">
+      <li><strong>Destino:</strong> Estados Unidos, visa F‑1. Un solo destino el primer año — cada destino nuevo son contratos, reglas migratorias y calendarios distintos.</li>
+      <li><strong>Origen:</strong> Chile, México y España. Dos con socio en tierra, uno (España) por representante contratado.</li>
+      <li><strong>Cobro:</strong> a los dos lados, pero <strong>arrancando por el estudiante</strong>. Es la decisión correcta y la sección 03 explica por qué: la comisión institucional tarda entre 9 y 15 meses en llegar, y hay que comer en el intervalo.</li>
+      <li><strong>Vehículo:</strong> LLC en EE.&nbsp;UU. a nombre del socio con green card, con acuerdo de fundadores firmado por los tres desde el día uno.</li>
+    </ul>
+
+    <div class="note">
+      <span class="lbl">La frase para recordar</span>
+      <p>El fee del estudiante paga la operación. La comisión institucional construye el patrimonio. Si solo cobran al estudiante, tienen una consultoría. Si solo cobran comisión, se quedan sin caja antes del primer cobro.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="s02">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Los tres mercados, y qué esperar de cada uno</h2></div>
+  <div class="col">
+    <p>Los tres no se parecen en nada salvo el idioma. Vale la pena tratarlos como tres negocios con el mismo backoffice, no como «Latinoamérica y España».</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Perfil comparado de los mercados de origen</caption>
+      <thead>
+        <tr><th>Mercado</th><th class="num">Estudiantes/año a EE.UU.<br><span style="font-weight:400;text-transform:none;letter-spacing:0">(orden de magnitud)</span></th><th>Producto que mejor pega</th><th>Cómo se decide</th><th>Dificultad</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>México</strong><br><span class="who">socio en tierra</span></td>
+          <td class="num">≈ 15.000</td>
+          <td>Pregrado, community college con transferencia, máster, colegios privados bilingües</td>
+          <td>Familia completa. El que paga es el padre; el que elige es el hijo. Hay que venderle a los dos.</td>
+          <td><span class="pill go">Volumen alto</span></td>
+        </tr>
+        <tr>
+          <td><strong>España</strong><br><span class="who">sin socio aún</span></td>
+          <td class="num">≈ 6.000</td>
+          <td>Máster, año de intercambio, inglés + prácticas, deportistas con beca</td>
+          <td>El estudiante decide solo, es mayor, compara mucho y pregunta por becas deportivas y académicas.</td>
+          <td><span class="pill">Ticket alto, ciclo largo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Chile</strong><br><span class="who">socio en tierra</span></td>
+          <td class="num">≈ 2.500</td>
+          <td>Máster, inglés intensivo, pregrado en universidades medianas</td>
+          <td>Mercado chico y muy de boca en boca. Un colegio bien trabajado vale más que 10.000 € de publicidad.</td>
+          <td><span class="pill">Volumen bajo, conversión alta</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="note red">
+      <span class="lbl">Verificar antes de usar estos números en cualquier lado</span>
+      <p>Las cifras de arriba son órdenes de magnitud de memoria, para dimensionar. Antes de meterlas en un pitch a una universidad, sáquenlas de <strong>Open Doors (IIE)</strong>, que es la fuente que las instituciones estadounidenses reconocen, y citen el año.</p>
+    </div>
+
+    <h3>La consecuencia práctica</h3>
+    <p>México da volumen, España da ticket, Chile da margen y referidos. El primer año conviene <strong>concentrar el 70&nbsp;% del esfuerzo en México</strong>, porque es donde el mismo trabajo produce más estudiantes, y usar Chile como laboratorio: es lo bastante chico para probar precios, guiones y materiales sin quemar el mercado grande. España entra en firme cuando haya con qué pagarle a alguien allá.</p>
+  </div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="s03">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Los dos motores de ingreso</h2></div>
+  <div class="col">
+    <h3>Motor A · Fee al estudiante <span class="tag">cobra hoy</span></h3>
+    <p>El estudiante (o su familia) paga por el servicio de asesoría: elegir instituciones, armar el expediente, presentar aplicaciones, preparar la carpeta financiera y entrenar la entrevista consular. Se cobra por adelantado y por hitos. Es dinero rápido, predecible, y no depende de que nadie más cumpla.</p>
+    <p>Techo bajo: hay un límite de familias que se pueden atender bien al mismo tiempo, y el precio no puede subir indefinidamente. Pero es lo que financia el año uno.</p>
+
+    <h3>Motor B · Comisión de la institución <span class="tag">cobra en 9–15 meses</span></h3>
+    <p>La institución paga a la agencia por cada estudiante matriculado. Es el motor real del negocio: escala, se renueva y no se lo cobra a la familia. Pero tiene tres características que hay que entender antes de contar con esa plata:</p>
+    <ul class="tight">
+      <li><strong>Se paga después del <em class="term">census date</em></strong> — la fecha en que la institución certifica que el estudiante efectivamente se matriculó y no se dio de baja. Suele ser entre 3 y 8 semanas después de arrancar clases.</li>
+      <li><strong>Es retroactiva al esfuerzo</strong>: el estudiante que empiezan a trabajar en octubre entra a clases en agosto siguiente y la comisión se cobra en octubre o noviembre de ese año. <strong>Trece meses.</strong></li>
+      <li><strong>Se puede clawback</strong>: si el estudiante se retira antes del census, la comisión se devuelve. Hay que provisionar un 5–10&nbsp;%.</li>
+    </ul>
+
+    <div class="note">
+      <span class="lbl">Por qué su decisión de cobrar primero al estudiante es la correcta</span>
+      <p>Entre la primera llamada con un estudiante y el primer dólar de comisión pasan de 9 a 15 meses. Una agencia que arranca solo con comisiones necesita financiar más de un año de operación con capital propio. El fee al estudiante cierra exactamente ese hueco. La regla es: <strong>el fee paga los costos fijos, la comisión se reinvierte o se reparte.</strong></p>
+    </div>
+
+    <h3>Cuánto paga cada segmento</h3>
+    <p>Las comisiones no son un número único; dependen del tipo de institución. Esto es lo que mueve toda la estrategia comercial, porque un estudiante de pathway universitario vale seis veces uno de escuela de inglés por el mismo trabajo de captación.</p>
+  </div>
+
+  <figure>
+    <div class="chart-scroll">
+      <svg viewBox="0 0 780 306" role="img" aria-label="Ingreso por estudiante matriculado, según segmento: escuela de inglés 1.300 dólares, community college 2.300, máster privado 5.500, universidad privada vía pathway 7.500, colegio internado 7.700.">
+        <!-- legend -->
+        <rect x="200" y="10" width="10" height="10" fill="var(--accent)"></rect>
+        <text x="216" y="19" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">Fee del estudiante</text>
+        <rect x="352" y="10" width="10" height="10" fill="var(--accent)" opacity="0.34"></rect>
+        <text x="368" y="19" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">Comisión institucional</text>
+
+        <!-- gridlines -->
+        <g stroke="var(--line)" stroke-width="1">
+          <line x1="200" y1="34" x2="200" y2="252"></line>
+          <line x1="322.5" y1="34" x2="322.5" y2="252"></line>
+          <line x1="445" y1="34" x2="445" y2="252"></line>
+          <line x1="567.5" y1="34" x2="567.5" y2="252"></line>
+          <line x1="690" y1="34" x2="690" y2="252"></line>
+        </g>
+
+        <!-- rows -->
+        <g font-family="Public Sans, sans-serif" font-size="13" fill="var(--ink)">
+          <text x="190" y="59" text-anchor="end">Escuela de inglés</text>
+          <text x="190" y="103" text-anchor="end">Community college</text>
+          <text x="190" y="147" text-anchor="end">Máster privado</text>
+          <text x="190" y="191" text-anchor="end">Univ. privada (pathway)</text>
+          <text x="190" y="235" text-anchor="end">Colegio internado</text>
+        </g>
+
+        <g>
+          <rect x="200" y="44" width="24.5" height="21" fill="var(--accent)"></rect>
+          <rect x="224.5" y="44" width="55.1" height="21" fill="var(--accent)" opacity="0.34"></rect>
+          <rect x="200" y="88" width="55.1" height="21" fill="var(--accent)"></rect>
+          <rect x="255.1" y="88" width="85.8" height="21" fill="var(--accent)" opacity="0.34"></rect>
+          <rect x="200" y="132" width="91.9" height="21" fill="var(--accent)"></rect>
+          <rect x="291.9" y="132" width="245" height="21" fill="var(--accent)" opacity="0.34"></rect>
+          <rect x="200" y="176" width="91.9" height="21" fill="var(--accent)"></rect>
+          <rect x="291.9" y="176" width="367.5" height="21" fill="var(--accent)" opacity="0.34"></rect>
+          <rect x="200" y="220" width="73.5" height="21" fill="var(--accent)"></rect>
+          <rect x="273.5" y="220" width="398.1" height="21" fill="var(--accent)" opacity="0.34"></rect>
+        </g>
+
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)" font-weight="500">
+          <text x="286" y="59">$1.300</text>
+          <text x="347" y="103">$2.300</text>
+          <text x="543" y="147">$5.500</text>
+          <text x="666" y="191">$7.500</text>
+          <text x="678" y="235">$7.700</text>
+        </g>
+
+        <line x1="200" y1="252" x2="690" y2="252" stroke="var(--line)" stroke-width="1"></line>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)" text-anchor="middle">
+          <text x="200" y="270">$0</text>
+          <text x="322.5" y="270">$2.000</text>
+          <text x="445" y="270">$4.000</text>
+          <text x="567.5" y="270">$6.000</text>
+          <text x="690" y="270">$8.000</text>
+        </g>
+        <text x="445" y="292" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)" text-anchor="middle" letter-spacing="1.4">USD POR ESTUDIANTE MATRICULADO · AÑO 1</text>
+      </svg>
+    </div>
+    <figcaption>Supuestos de trabajo, no cotizaciones. Las comisiones reales se fijan contrato por contrato: escuelas de inglés suelen pagar 20–30&nbsp;% del precio del curso, community colleges entre 10–15&nbsp;% o un fijo de $1.000–$2.500, y los <em>pathway providers</em> universitarios 12–17&nbsp;% de la matrícula del primer año. Reemplacen estos números con los de sus contratos firmados en cuanto los tengan.</figcaption>
+  </figure>
+
+  <div class="col">
+    <h3>Qué significa el gráfico para la estrategia</h3>
+    <p>Un estudiante de universidad privada vale casi seis veces uno de escuela de inglés, pero cuesta el triple de trabajo y tarda el doble en cerrar. La mezcla sana del año uno es <strong>una base de inglés y community college</strong> —que cierran rápido, dan casos de éxito y validan la operación— <strong>con dos o tres apuestas de pathway universitario</strong>, que son las que pagan el año.</p>
+    <p>Hay además una cola larga que casi nadie aprovecha: las comisiones de <strong>años 2, 3 y 4</strong>. Algunos contratos pagan comisión reducida (3–7&nbsp;%) mientras el estudiante siga matriculado. Es negociable y hay que pedirlo siempre, porque convierte un ingreso puntual en una renta.</p>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="s04">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Precios al estudiante</h2></div>
+  <div class="col">
+    <p>Tres paquetes, no más. La orientación inicial va gratis porque es la herramienta de venta, y porque filtra: de cada diez llamadas, seis no califican y es mejor descubrirlo en 30 minutos que en el mes tres.</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Estructura de precios propuesta · USD</caption>
+      <thead>
+        <tr><th>Paquete</th><th class="num">Precio</th><th>Qué incluye</th><th>Cómo se cobra</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Orientación</strong></td>
+          <td class="num">$0</td>
+          <td>Llamada de 30–45 min: perfil académico, presupuesto real, nivel de inglés, rutas viables. Sale con un informe de una página.</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>Esencial</strong></td>
+          <td class="num">$890</td>
+          <td>Hasta 4 aplicaciones, revisión de expediente, guía de apostilla y traducciones, seguimiento hasta la admisión.</td>
+          <td>50&nbsp;% al firmar · 50&nbsp;% al enviar la primera aplicación</td>
+        </tr>
+        <tr>
+          <td><strong>Completo</strong></td>
+          <td class="num">$1.950</td>
+          <td>Hasta 10 aplicaciones, trabajo de ensayos y cartas, búsqueda de becas, carpeta financiera y <strong>trámite de visa F‑1 incluido</strong>.</td>
+          <td>40&nbsp;% al firmar · 30&nbsp;% en aplicaciones · 30&nbsp;% al recibir el I‑20</td>
+        </tr>
+        <tr>
+          <td><strong>Visa F‑1</strong> <span class="pill">add‑on</span></td>
+          <td class="num">$490</td>
+          <td>Para quien ya tiene admisión por su cuenta: DS‑160, tasas, carpeta financiera, dos simulacros de entrevista.</td>
+          <td>100&nbsp;% al firmar</td>
+        </tr>
+        <tr>
+          <td><strong>Extras</strong> <span class="pill">comisión de partner</span></td>
+          <td class="num">var.</td>
+          <td>Seguro médico, alojamiento, vuelos, preparación TOEFL/IELTS, banco y SIM en destino.</td>
+          <td>Comisión del proveedor, sin costo extra para la familia</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <ul class="tight">
+      <li><strong>Cobren por hitos, nunca todo al final.</strong> El pago escalonado es lo que sostiene la caja y lo que hace que la familia se comprometa con el proceso.</li>
+      <li><strong>Política de reembolso por escrito, y generosa en el tramo inicial.</strong> Algo como: reembolso íntegro dentro de los 14 días si no se envió ninguna aplicación; después, proporcional a hitos cumplidos. Esto no es amabilidad, es protección legal en México (PROFECO), Chile (SERNAC) y España, donde la venta a distancia da derecho de desistimiento.</li>
+      <li><strong>Nunca condicionen el precio al resultado del visado.</strong> «Si no sale la visa, devolvemos todo» es una promesa que no controlan y que además insinúa que influyen en el consulado. La forma correcta: el fee cubre el trabajo hecho, y se dice desde el principio.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="s05">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Economía unitaria y escenarios</h2></div>
+  <div class="col">
+    <h3>Costo de adquirir un cliente</h3>
+    <p>Con publicidad pagada en Meta/TikTok apuntando a Chile y México, un lead cuesta entre $3 y $8. De cada 100 leads, entre 3 y 6 terminan pagando un paquete. Eso pone el <strong>CAC entre $80 y $250</strong> por cliente de pago. Por referido o por charla en colegio, el CAC cae por debajo de $40 — y por eso el trabajo de colegios de los socios en tierra vale más que el presupuesto de publicidad.</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Contribución por estudiante · escenario base</caption>
+      <thead>
+        <tr><th>Concepto</th><th class="num">Inglés / CC</th><th class="num">Universidad / máster</th><th>Nota</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fee del estudiante</td><td class="num">$890</td><td class="num">$1.950</td><td>Mezcla real caerá entre los dos</td></tr>
+        <tr><td>Comisión institucional</td><td class="num">$1.150</td><td class="num">$5.000</td><td>Llega 9–15 meses después</td></tr>
+        <tr><td>CAC</td><td class="num">−$180</td><td class="num">−$180</td><td>Mismo costo, muy distinto retorno</td></tr>
+        <tr><td>Costos directos <span class="pill">traducciones, envíos, herramientas</span></td><td class="num">−$120</td><td class="num">−$220</td><td>Las tasas oficiales las paga la familia</td></tr>
+        <tr><td>Provisión por <em class="term">clawback</em></td><td class="num">−$70</td><td class="num">−$300</td><td>6&nbsp;% de la comisión</td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td>Contribución neta</td><td class="num">$1.670</td><td class="num">$6.250</td><td></td></tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>Costos fijos mensuales</h3>
+    <p>El año uno se opera flaco a propósito: sin oficina, sin sueldos, sin personal. Entre constitución de la LLC prorrateada, contabilidad, CRM, web, telefonía, firma electrónica y una reserva legal, la operación cuesta del orden de <strong>$1.800–$2.600 al mes</strong>, más publicidad variable.</p>
+    <p><strong>El punto de equilibrio operativo</strong> con esos fijos es de aproximadamente <strong>dos clientes de pago al mes</strong> — contando solo fees de estudiante, sin ninguna comisión. Eso es alcanzable con tres socios trabajando a medio tiempo, y es la meta real del primer semestre: no hacerse ricos, sino que la empresa se pague sola mientras madura la primera cosecha de comisiones.</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Escenarios a tres años · USD</caption>
+      <thead>
+        <tr>
+          <th>&nbsp;</th>
+          <th class="num">Año 1</th><th class="num">Año 2</th><th class="num">Año 3</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Conservador</strong> — estudiantes</td><td class="num">18</td><td class="num">45</td><td class="num">90</td></tr>
+        <tr><td><span class="who">ingreso</span></td><td class="num">$29.000</td><td class="num">$104.000</td><td class="num">$248.000</td></tr>
+        <tr><td><strong>Base</strong> — estudiantes</td><td class="num">30</td><td class="num">85</td><td class="num">180</td></tr>
+        <tr><td><span class="who">ingreso</span></td><td class="num">$52.000</td><td class="num">$212.000</td><td class="num">$530.000</td></tr>
+        <tr><td><strong>Agresivo</strong> — estudiantes</td><td class="num">45</td><td class="num">140</td><td class="num">320</td></tr>
+        <tr><td><span class="who">ingreso</span></td><td class="num">$81.000</td><td class="num">$367.000</td><td class="num">$980.000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="note">
+      <span class="lbl">Cómo leer esta tabla</span>
+      <p>El salto entre año 1 y año 2 no viene de trabajar el doble: viene de que en el año 2 <strong>cobran las comisiones del año 1 y las del año 2 a la vez</strong>, y de que ya existen los contratos institucionales que en el año 1 hubo que salir a firmar. Por eso el año 1 se ve pobre y no es una señal de fracaso — es la forma de la curva en este negocio. Lo que sí hay que vigilar en el año 1 es el número de contratos firmados con instituciones, no la facturación.</p>
+    </div>
+    <p><strong>Capital inicial necesario:</strong> del orden de <strong>$12.000–$18.000</strong> entre los tres, para cubrir constitución, marca y web, primeros seis meses de fijos, y un viaje a una feria de agentes. Aportado en partes iguales, o como préstamo de socio documentado si alguno pone más.</p>
+  </div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="s06">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Quién pone qué, y cómo se reparte</h2></div>
+  <div class="col">
+    <p>Esta es la sección que hunde a la mayoría de las sociedades entre amigos, y siempre por lo mismo: se reparte en tercios por amistad, y a los dieciocho meses uno de los tres trajo el 70&nbsp;% de los estudiantes y otro dejó de contestar. Lo que sigue está diseñado para que eso no rompa nada.</p>
+  </div>
+
+  <div class="roles">
+    <div class="role">
+      <span class="seat">Socio en EE.&nbsp;UU. · green card</span>
+      <h4>Alianzas y estructura</h4>
+      <ul>
+        <li>Titular de la LLC, EIN y cuenta bancaria</li>
+        <li>Firma los contratos con instituciones</li>
+        <li>Cobra y concilia comisiones</li>
+        <li>Contabilidad y declaración fiscal</li>
+        <li>Certificación AIRC (año 2)</li>
+        <li>Visitas a campus y ferias en EE.&nbsp;UU.</li>
+      </ul>
+    </div>
+    <div class="role">
+      <span class="seat">Socio en México</span>
+      <h4>Mercado México · CA</h4>
+      <ul>
+        <li>Colegios, ferias y alianzas locales</li>
+        <li>Captación y calificación de leads</li>
+        <li>Asesoría a familias hasta la admisión</li>
+        <li>Publicidad y contenido en español MX</li>
+        <li>Meta de volumen del grupo</li>
+      </ul>
+    </div>
+    <div class="role">
+      <span class="seat">Socio en Chile</span>
+      <h4>Mercado Chile · Cono Sur</h4>
+      <ul>
+        <li>Colegios y universidades chilenas</li>
+        <li>Captación y asesoría</li>
+        <li>Laboratorio de precios y guiones</li>
+        <li>Operación del proceso de visa</li>
+        <li>Relación con proveedores (seguro, alojamiento)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>El reparto, en tres reglas</h3>
+    <ul class="tight">
+      <li><strong>Equity en tercios, con <em class="term">vesting</em> de 4 años y cliff de 1.</strong> Nadie se lleva un tercio de la empresa por haber estado en la conversación inicial; se lo lleva por seguir un año después. Si alguien se va antes del año, conserva cero y se le devuelve el capital que puso.</li>
+      <li><strong>Prima de originación del 25&nbsp;%.</strong> Sobre la contribución neta de cada estudiante, el socio que lo trajo cobra primero un 25&nbsp;%. El 75&nbsp;% restante se reparte por equity. Esto hace que traer estudiantes siempre convenga individualmente, sin tener que renegociar la sociedad.</li>
+      <li><strong>Cero sueldos hasta que haya seis meses de fijos en el banco.</strong> Todo lo que sobre se reinvierte. Escrito, con fecha de revisión, para que no sea una discusión sino una regla.</li>
+    </ul>
+
+    <div class="note">
+      <span class="lbl">Ejemplo trabajado</span>
+      <p>Un estudiante de universidad privada traído por el socio de México deja $6.250 de contribución neta. Primero se le pagan $1.563 (25&nbsp;%) como prima de originación. Los $4.687 restantes se reparten en tercios: $1.562 a cada uno. El socio de México se lleva $3.125 en total; los otros dos, $1.562 cada uno. Nadie discute, porque estaba escrito antes.</p>
+    </div>
+
+    <h3>Lo que hay que dejar por escrito antes de facturar el primer dólar</h3>
+    <ul class="checks">
+      <li>Porcentajes, vesting y cliff</li>
+      <li>Prima de originación y qué cuenta como «traer» un estudiante (quién es dueño del lead si entra por la web)</li>
+      <li>Aporte de capital de cada uno y si es capital o préstamo</li>
+      <li>Qué pasa si uno se va: fórmula de recompra, plazo de pago, no competencia acotada y realista</li>
+      <li>Quién decide qué: gastos hasta $500 los decide cualquiera; sobre $2.000, los tres</li>
+      <li>Cómo se resuelve un empate 1‑1‑1 y qué pasa si alguien deja de responder 30 días</li>
+      <li>Propiedad de la marca, dominio, base de datos de estudiantes y cuentas de redes — a nombre de la empresa, nunca de una persona</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="s07">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Estructura legal</h2></div>
+  <div class="col">
+    <h3>El vehículo: una LLC en Estados Unidos</h3>
+    <p>Es lo que las instituciones esperan ver del otro lado de la mesa, lo que permite abrir cuenta bancaria en dólares, y lo que hace cobrable una comisión sin fricción internacional. <strong>Florida</strong> es la elección natural: barata, rápida, con banca acostumbrada a clientes latinoamericanos y con la mayor concentración de instituciones que reclutan en la región. Delaware solo tiene sentido si algún día levantan inversión; para esto, es papeleo extra.</p>
+
+    <h3>Quiénes son los dueños: dos caminos</h3>
+    <p>Aquí hay una decisión con consecuencias fiscales reales, y es la única parte de este plan donde vale gastar en un contador antes de firmar nada.</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Opciones de propiedad de la LLC</caption>
+      <thead>
+        <tr><th>&nbsp;</th><th>Opción A · recomendada para el año 1</th><th>Opción B</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Forma</strong></td>
+          <td>LLC unipersonal del socio con green card, más acuerdo de fundadores firmado por los tres y contratos de subagente con las entidades locales.</td>
+          <td>LLC con los tres como miembros, tributando como <em>partnership</em>.</td>
+        </tr>
+        <tr>
+          <td><strong>Cómo cobran los otros dos</strong></td>
+          <td>Su entidad local (SpA en Chile, persona física con actividad empresarial o S. de R.L. en México) factura servicios de representación y captación prestados <strong>en su país</strong>.</td>
+          <td>Reparto de utilidades como socios de la LLC.</td>
+        </tr>
+        <tr>
+          <td><strong>Carga fiscal en EE.&nbsp;UU.</strong></td>
+          <td>Servicios prestados fuera de EE.&nbsp;UU. son ingreso de fuente extranjera: en general <strong>sin retención</strong>. Se archiva un W‑8BEN‑E de cada entidad y listo.</td>
+          <td>Los socios extranjeros quedan sujetos a retención sobre ingreso conectado (secc. 1446), formularios 8804/8805, necesitan <strong>ITIN</strong> y deben presentar 1040‑NR.</td>
+        </tr>
+        <tr>
+          <td><strong>Costo y fricción</strong></td>
+          <td><span class="pill go">Bajo</span> Se monta en 2–3 semanas.</td>
+          <td><span class="pill stop">Alto</span> Contador especializado obligatorio, meses de trámite.</td>
+        </tr>
+        <tr>
+          <td><strong>Riesgo</strong></td>
+          <td>La propiedad formal está en una sola persona. Se compensa con el acuerdo de fundadores.</td>
+          <td>Ninguno de propiedad; el riesgo es ahogarse en cumplimiento antes de facturar.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="note">
+      <span class="lbl">Recomendación</span>
+      <p>Arranquen con la <strong>Opción A</strong>, y escriban en el acuerdo de fundadores un <strong>gatillo automático de conversión a Opción B</strong>: cuando la empresa facture, digamos, $150.000 en doce meses corridos, se convierte en LLC multi‑miembro con los tercios ya pactados, y el costo del contador lo paga la empresa. Así la estructura formal alcanza a la realidad sin que nadie tenga que pedirla como favor.</p>
+    </div>
+
+    <div class="note red">
+      <span class="lbl">Importante</span>
+      <p>La Opción A funciona <strong>solo si el acuerdo de fundadores existe y está firmado</strong>. Sin él, los socios de Chile y México son proveedores, no dueños, y no tienen a qué agarrarse. Ese documento no es opcional ni «lo hacemos después»: es la condición para que la Opción A sea aceptable.</p>
+    </div>
+
+    <h3>Checklist de constitución</h3>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Pasos, tiempos y costos aproximados</caption>
+      <thead><tr><th>Paso</th><th>Detalle</th><th class="num">Tiempo</th><th class="num">Costo</th></tr></thead>
+      <tbody>
+        <tr><td>Nombre y marca</td><td>Búsqueda de disponibilidad en registro estatal, dominio <code>.com</code>, redes. Registro de marca en USPTO opcional pero recomendable si la marca va a durar.</td><td class="num">1 sem</td><td class="num">$15–$350</td></tr>
+        <tr><td>Articles of Organization</td><td>Alta de la LLC ante el estado.</td><td class="num">1–5 días</td><td class="num">≈$125</td></tr>
+        <tr><td>Registered agent</td><td>Dirección de notificaciones en el estado. Obligatorio.</td><td class="num">—</td><td class="num">$50–$150/año</td></tr>
+        <tr><td>EIN</td><td>Número fiscal ante el IRS. El socio con green card lo tramita en línea con su SSN en minutos.</td><td class="num">1 día</td><td class="num">$0</td></tr>
+        <tr><td>Operating Agreement</td><td>Reglas internas de la LLC. Distinto del acuerdo de fundadores.</td><td class="num">1 sem</td><td class="num">$0–$800</td></tr>
+        <tr><td>Cuenta bancaria</td><td>Banco tradicional o fintech de negocios. Requiere EIN y documento de constitución.</td><td class="num">1–2 sem</td><td class="num">$0–$30/mes</td></tr>
+        <tr><td>BOI / beneficiarios finales</td><td>Régimen de reporte federal de titularidad real. <strong>Verificar estado vigente</strong> — ha cambiado varias veces desde 2024.</td><td class="num">1 día</td><td class="num">$0</td></tr>
+        <tr><td>Acuerdo de fundadores</td><td>Los tres. Equity, vesting, prima de originación, salida, gatillo de conversión.</td><td class="num">2 sem</td><td class="num">$500–$1.500</td></tr>
+        <tr><td>Entidades locales</td><td>SpA en Chile; persona física con actividad empresarial o S. de R.L. de C.V. en México.</td><td class="num">2–4 sem</td><td class="num">variable</td></tr>
+        <tr><td>Contratos de subagente</td><td>De la LLC hacia cada entidad local. Definen comisión, territorio y confidencialidad.</td><td class="num">1 sem</td><td class="num">—</td></tr>
+        <tr><td>Seguro de responsabilidad</td><td><em>Professional liability / E&amp;O</em>. Algunas instituciones lo exigen en el contrato.</td><td class="num">1 sem</td><td class="num">$600–$1.800/año</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="s08">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Cumplimiento y líneas rojas</h2></div>
+  <div class="col">
+    <p>Este negocio es perfectamente legal y lo practican miles de agencias. Pero tiene cuatro zonas donde equivocarse cuesta caro, y conviene conocerlas antes que después.</p>
+
+    <h3>1 · La prohibición de comisiones por reclutamiento <span class="tag">la más importante</span></h3>
+    <p>La ley federal de educación superior de EE.&nbsp;UU. prohíbe a las instituciones pagar comisión por captar estudiantes que sean elegibles para ayuda federal. Existe una <strong>excepción explícita para el reclutamiento de estudiantes extranjeros que residen en el extranjero y no son elegibles para ayuda federal</strong> — y esa excepción es exactamente el hueco donde vive esta industria.</p>
+    <p>Consecuencias prácticas, no teóricas:</p>
+    <ul class="tight">
+      <li>El reclutamiento ocurre <strong>fuera de Estados Unidos</strong>. Documenten dónde: el socio con green card hace alianzas institucionales, no capta familias dentro de EE.&nbsp;UU.</li>
+      <li>El estudiante debe ser extranjero, residente en el extranjero, y no elegible para ayuda federal. No trabajen a residentes ni ciudadanos estadounidenses bajo el modelo de comisión.</li>
+      <li>Todo contrato con institución debe decir explícitamente que la comisión es por estudiantes internacionales. Si un contrato no lo aclara, pídanlo por escrito.</li>
+    </ul>
+
+    <h3>2 · Cobrar a los dos lados</h3>
+    <p>Es legal y común, pero <strong>muchos contratos de representación lo restringen o exigen declararlo</strong>. Dos reglas que los protegen:</p>
+    <ul class="tight">
+      <li><strong>Lean esa cláusula en cada contrato antes de firmar.</strong> Si prohíbe cobrar al estudiante, o lo respetan para esa institución, o lo negocian.</li>
+      <li><strong>Declárenlo a la familia por escrito</strong>, en el contrato de servicios: «además de este honorario, la agencia puede recibir una comisión de la institución donde usted se matricule». Una línea. Elimina el único reclamo serio que puede tener un cliente, y es lo que exigen los estándares de la industria.</li>
+    </ul>
+
+    <h3>3 · Datos personales</h3>
+    <p>Van a manejar pasaportes, notas, estados de cuenta y datos de menores. Tres regímenes distintos:</p>
+    <ul class="tight">
+      <li><strong>España — RGPD.</strong> El más exigente de los tres, y aplica desde el primer lead español. Base legal, aviso de privacidad, derecho de supresión, y cuidado con transferir datos a EE.&nbsp;UU.: hace falta la cláusula correspondiente en los contratos.</li>
+      <li><strong>México — LFPDPPP.</strong> Aviso de privacidad visible y consentimiento para datos sensibles.</li>
+      <li><strong>Chile — Ley 21.719.</strong> La nueva ley de datos endurece bastante el régimen chileno; revisen su entrada en vigor y ajusten antes.</li>
+    </ul>
+    <p>En la práctica: un solo aviso de privacidad escrito al estándar del RGPD cubre a los tres, porque es el más estricto. Y nada de documentos de estudiantes en WhatsApp personal ni en Drive personal — carpeta de empresa, con permisos.</p>
+
+    <div class="note red">
+      <span class="lbl">4 · Líneas que no se cruzan nunca</span>
+      <p><strong>Nunca garanticen una visa</strong>, ni por escrito ni de palabra. La decisión es del oficial consular, no existe agencia que la controle, y prometerlo es lo que convierte un negocio en un fraude.</p>
+      <p><strong>Nunca toquen los documentos financieros del estudiante.</strong> Los estados de cuenta los produce el banco de la familia. No los «ayuden a que se vean mejor». Una carpeta financiera alterada es fraude ante el consulado y le puede costar al estudiante una inadmisibilidad de por vida.</p>
+      <p><strong>Nunca escriban un ensayo por el estudiante</strong> ni presenten como propias notas o certificados que no lo sean. Las instituciones detectan esto y lo castigan cancelando el contrato de la agencia.</p>
+      <p><strong>Nunca aparezcan como patrocinador financiero</strong> del estudiante en el I‑20 ni en la entrevista. Ustedes son la agencia; el dinero es de la familia.</p>
+      <p><strong>No den asesoría legal migratoria.</strong> Preparar la logística de un trámite y explicar requisitos es una cosa; representar legalmente a alguien ante inmigración es otra, y está reservada a abogados y representantes acreditados. Cuando un caso se complica —una negativa previa, una estancia irregular, un antecedente— se deriva a un abogado, y conviene tener uno de referencia desde el principio.</p>
+    </div>
+
+    <h3>Acreditaciones que abren puertas</h3>
+    <ul class="tight">
+      <li><strong>ICEF</strong> — el circuito de ferias donde se conoce a las instituciones. Su <em>Agent Status</em> se obtiene relativamente rápido y da credibilidad para las primeras conversaciones. Es lo primero.</li>
+      <li><strong>AIRC</strong> — la certificación que muchas universidades estadounidenses exigen para firmar. Es cara y toma más de un año, con auditoría de procesos y referencias. Es objetivo de año 2, pero conviene <strong>operar desde el día uno como si ya la tuvieran</strong>: contratos escritos, expedientes ordenados, declaraciones de comisión. Así la auditoría es un trámite y no una reconstrucción.</li>
+      <li><strong>NAFSA</strong> — membresía útil para networking con las oficinas internacionales.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 09 ============ -->
+<section id="s09">
+  <div class="sec-head"><span class="sec-num">09</span><h2>El proceso completo del estudiante</h2></div>
+  <div class="col">
+    <p>Catorce etapas, desde el primer mensaje hasta la comisión cobrada. Esto es a la vez el manual de operación interno y las columnas del CRM: cada estudiante está siempre en exactamente una etapa, y ese es el tablero de la empresa.</p>
+    <p>Los costos marcados <strong>los paga la familia directamente</strong> al organismo correspondiente, nunca a través de la agencia — es mejor para la caja y elimina cualquier duda sobre manejo de fondos ajenos.</p>
+  </div>
+
+  <ol class="stages">
+    <li>
+      <span class="stg-n">01</span>
+      <div class="stg-b">
+        <h4>Lead y calificación</h4>
+        <p>Entra por formulario web, WhatsApp, charla en colegio o referido. Llamada de 30–45 min con un guión fijo: presupuesto real anual, nivel de inglés, promedio, año de egreso, quién paga y si esa persona puede demostrarlo en un banco. Aquí se descarta el 60&nbsp;%, y está bien.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Socio local</span><span class="pill">45 min</span><span class="pill">Gratis</span></div>
+    </li>
+    <li>
+      <span class="stg-n">02</span>
+      <div class="stg-b">
+        <h4>Contrato y primer pago</h4>
+        <p>Contrato de servicios firmado electrónicamente: alcance, hitos, política de reembolso, declaración de comisión institucional y aviso de privacidad. Sin contrato firmado no se empieza a trabajar, nunca, ni con el sobrino de nadie.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Socio local</span><span class="pill">2–5 días</span><span class="pill go">Cobro 40–50 %</span></div>
+    </li>
+    <li>
+      <span class="stg-n">03</span>
+      <div class="stg-b">
+        <h4>Expediente académico</h4>
+        <p>Notas y títulos, apostillados (Convenio de La Haya: los tres países son parte) y traducidos por traductor certificado. Para pregrado y máster, muchas instituciones exigen además <strong>evaluación de credenciales</strong> con WES o ECE, que tarda semanas y hay que lanzar temprano.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Familia</span><span class="pill">3–6 sem</span><span class="pill">≈$100–$250 evaluación</span></div>
+    </li>
+    <li>
+      <span class="stg-n">04</span>
+      <div class="stg-b">
+        <h4>Acreditación de inglés</h4>
+        <p>TOEFL, IELTS o Duolingo English Test según lo que acepte cada institución — Duolingo es el más barato y rápido, y cada vez más aceptado. Si el nivel no da, la ruta correcta no es forzarlo: es un programa de inglés o un <em>pathway</em> con admisión condicional, que además es un producto que ustedes venden.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Familia</span><span class="pill">2–8 sem</span><span class="pill">$70–$255</span></div>
+    </li>
+    <li>
+      <span class="stg-n">05</span>
+      <div class="stg-b">
+        <h4>Lista corta de instituciones</h4>
+        <p>Entre 4 y 8 opciones, siempre con la misma estructura: una o dos ambiciosas, tres o cuatro realistas, una segura. <strong>Todas tienen que estar certificadas por SEVP</strong>, que es el requisito para poder emitir el I‑20 — se verifica en el directorio oficial de <em>Study in the States</em>, sin excepciones.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Socio local</span><span class="pill">1 sem</span></div>
+    </li>
+    <li>
+      <span class="stg-n">06</span>
+      <div class="stg-b">
+        <h4>Aplicaciones</h4>
+        <p>Formularios, ensayos, cartas de recomendación, envío de expedientes. Cada institución cobra su propia tasa de aplicación ($50–$100), que paga la familia. Aquí es donde el paquete Completo justifica su precio.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Socio local</span><span class="pill">3–6 sem</span><span class="pill go">Cobro 30 %</span></div>
+    </li>
+    <li>
+      <span class="stg-n">07</span>
+      <div class="stg-b">
+        <h4>Admisión y elección</h4>
+        <p>Llegan las respuestas. Se comparan costo total real, becas ofrecidas, ubicación y opciones de trabajo posterior (OPT). La familia elige; la agencia informa y no empuja hacia la que paga más comisión — eso se nota, se comenta y destruye el negocio de referidos.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Familia decide</span><span class="pill">2–10 sem</span></div>
+    </li>
+    <li>
+      <span class="stg-n">08</span>
+      <div class="stg-b">
+        <h4>Prueba financiera</h4>
+        <p>La institución exige demostrar fondos para el primer año completo: matrícula más manutención, según la cifra que ella misma publica. Estados de cuenta recientes, carta del banco y, si paga un tercero, carta de patrocinio. <strong>Esta etapa es la que más casos mata</strong>, y por eso se pregunta por ella en la etapa 01.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Familia</span><span class="pill">1–3 sem</span><span class="pill stop">Punto crítico</span></div>
+    </li>
+    <li>
+      <span class="stg-n">09</span>
+      <div class="stg-b">
+        <h4>Emisión del I‑20</h4>
+        <p>El <em>DSO</em> de la institución crea el registro en SEVIS y emite el <strong>Formulario I‑20</strong>. Hay que revisarlo carácter por carácter: nombre exactamente como en el pasaporte, fecha de nacimiento, fechas del programa, número SEVIS. Un error aquí se paga en el consulado.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Institución</span><span class="pill">1–3 sem</span><span class="pill go">Cobro 30 %</span></div>
+    </li>
+    <li>
+      <span class="stg-n">10</span>
+      <div class="stg-b">
+        <h4>Tasa SEVIS I‑901</h4>
+        <p>Se paga en línea con el número SEVIS del I‑20. Aproximadamente <strong>$350</strong> para F‑1. Se guarda el recibo: hay que llevarlo impreso a la entrevista.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Familia</span><span class="pill">1 día</span><span class="pill">≈$350</span></div>
+    </li>
+    <li>
+      <span class="stg-n">11</span>
+      <div class="stg-b">
+        <h4>DS‑160 y tasa consular</h4>
+        <p>Solicitud de visa en línea, con foto conforme a especificación. La tasa MRV ronda los <strong>$185</strong>. <strong>Verificar además si aplica ya la nueva tasa de integridad de visado (≈$250)</strong>, aprobada en 2025 y de implementación escalonada. La página de confirmación del DS‑160 se imprime y se lleva.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Agencia + familia</span><span class="pill">2–4 días</span><span class="pill">≈$185 (+$250 verificar)</span></div>
+    </li>
+    <li>
+      <span class="stg-n">12</span>
+      <div class="stg-b">
+        <h4>Entrevista consular</h4>
+        <p>Cita en Santiago; CDMX, Guadalajara, Monterrey y otros en México; Madrid en España. Los tiempos de espera varían muchísimo, se consultan con anticipación y son la razón número uno de perder un ciclo. La agencia hace <strong>dos simulacros</strong> centrados en las tres cosas que el oficial evalúa: que el programa tenga sentido para ese perfil, que haya con qué pagarlo, y que existan vínculos con el país de origen que expliquen el regreso.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Agencia prepara</span><span class="pill">Espera variable</span><span class="pill stop">Punto crítico</span></div>
+    </li>
+    <li>
+      <span class="stg-n">13</span>
+      <div class="stg-b">
+        <h4>Pre‑partida</h4>
+        <p>Seguro médico, alojamiento, vuelo, vacunas exigidas por la institución, SIM y banco en destino, y sesión de orientación. Casi todo esto son <strong>comisiones de proveedor</strong> sin costo extra para la familia. Recordar la regla dura: <strong>no se puede entrar a EE.&nbsp;UU. con más de 30 días de anticipación</strong> a la fecha de inicio del I‑20.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Agencia</span><span class="pill">4–8 sem</span><span class="pill go">Ingreso de partners</span></div>
+    </li>
+    <li>
+      <span class="stg-n">14</span>
+      <div class="stg-b">
+        <h4>Llegada, check‑in y comisión</h4>
+        <p>El estudiante se presenta ante el DSO, que activa su registro SEVIS. Pasado el <em>census date</em>, la agencia <strong>factura la comisión</strong> a la institución con la evidencia de referencia. Seguimiento a 30 y 90 días: es barato, evita bajas que gatillan clawback, y es de donde salen los referidos que bajan el CAC del año siguiente.</p>
+      </div>
+      <div class="stg-m"><span class="pill">Socio EE.&nbsp;UU.</span><span class="pill">Census + 30–60 d</span><span class="pill go">Cobro comisión</span></div>
+    </li>
+  </ol>
+
+  <div class="col">
+    <div class="note red">
+      <span class="lbl">Cifras a confirmar antes de publicarlas</span>
+      <p>Las tasas oficiales (I‑901, MRV, tasa de integridad) cambian y algunas están en implementación. <strong>Verifíquenlas en las fuentes oficiales</strong> —<code>fmjfee.com</code> para la SEVIS, y la web del Departamento de Estado para las consulares— antes de ponerlas en la web o en un contrato. En el material de marketing conviene escribir «tasas oficiales vigentes, aproximadamente X» y no un número duro.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+  <div class="sec-head"><span class="sec-num">10</span><h2>Calendario: cuándo hay que empezar</h2></div>
+  <div class="col">
+    <p>Todo el negocio está gobernado por dos fechas de ingreso. Leído al revés desde el día de clases, un estudiante de <em>Fall</em> hay que empezar a trabajarlo <strong>entre 11 y 14 meses antes</strong>. Quien llega en marzo pidiendo entrar en agosto casi siempre es un caso de <em>Spring</em> del año siguiente, y decírselo con honestidad es lo que gana el cliente.</p>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Retroplanificación desde la fecha de inicio de clases</caption>
+      <thead>
+        <tr><th>Momento</th><th>Etapa</th><th>Fall (clases en agosto)</th><th>Spring (clases en enero)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">−14 a −12 m</td><td>Captación y calificación</td><td>Jun – Ago año anterior</td><td>Nov – Ene año anterior</td></tr>
+        <tr><td class="num">−12 a −10 m</td><td>Contrato, expediente, inglés</td><td>Ago – Oct</td><td>Ene – Mar</td></tr>
+        <tr><td class="num">−10 a −8 m</td><td>Lista corta y aplicaciones</td><td>Oct – Dic</td><td>Mar – May</td></tr>
+        <tr><td class="num">−8 a −5 m</td><td>Admisiones y decisión</td><td>Dic – Mar</td><td>May – Ago</td></tr>
+        <tr><td class="num">−5 a −4 m</td><td>Prueba financiera e I‑20</td><td>Mar – Abr</td><td>Ago – Sep</td></tr>
+        <tr><td class="num">−4 a −2 m</td><td>SEVIS, DS‑160, entrevista</td><td>Abr – Jun</td><td>Sep – Nov</td></tr>
+        <tr><td class="num">−2 a −1 m</td><td>Pre‑partida</td><td>Jun – Jul</td><td>Nov – Dic</td></tr>
+        <tr><td class="num">−30 días máx.</td><td>Entrada a EE.&nbsp;UU.</td><td>Julio</td><td>Diciembre</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <div class="note">
+      <span class="lbl">Qué implica para el arranque</span>
+      <p>Hoy es septiembre de 2026. La ventana de <strong>Fall 2027 está abierta ahora mismo</strong> y es la primera cosecha realista: si firman contratos institucionales en el último trimestre de 2026 y captan durante ese periodo, el primer grupo entra a clases en agosto de 2027 y las comisiones se cobran hacia octubre de 2027. Las escuelas de inglés y algunos community colleges tienen ingresos mensuales o cada dos meses, así que <strong>sirven para facturar mucho antes</strong> mientras madura el ciclo universitario. Ese es el argumento para empezar por ahí.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+  <div class="sec-head"><span class="sec-num">11</span><h2>Operación diaria</h2></div>
+  <div class="col">
+    <h3>Herramientas y qué cuestan</h3>
+  </div>
+  <div class="scroller">
+    <table>
+      <caption>Pila operativa mínima</caption>
+      <thead><tr><th>Función</th><th>Opción</th><th class="num">USD/mes</th><th>Nota</th></tr></thead>
+      <tbody>
+        <tr><td>CRM / pipeline</td><td>HubSpot gratis, o Airtable</td><td class="num">$0–$60</td><td>Las 14 etapas como columnas. Nada de listas de Excel sueltas.</td></tr>
+        <tr><td>Firma electrónica</td><td>Documenso, Dropbox Sign</td><td class="num">$15–$25</td><td>Contratos con familias e instituciones</td></tr>
+        <tr><td>Documentos</td><td>Google Workspace</td><td class="num">$18</td><td>Una carpeta por estudiante, permisos por rol</td></tr>
+        <tr><td>Web y dominio</td><td>Hosting estático + dominio</td><td class="num">$10–$30</td><td>La landing va aparte de este documento</td></tr>
+        <tr><td>WhatsApp Business</td><td>API o app</td><td class="num">$0–$50</td><td>Es el canal real en los tres mercados</td></tr>
+        <tr><td>Contabilidad EE.&nbsp;UU.</td><td>Contador + software</td><td class="num">$150–$400</td><td>No lo hagan ustedes</td></tr>
+        <tr><td>Videollamadas</td><td>Google Meet / Zoom</td><td class="num">$0–$16</td><td>Con grabación para revisar simulacros</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>Ritmo de trabajo</h3>
+    <ul class="tight">
+      <li><strong>Reunión semanal de 45 minutos</strong>, los tres, misma hora. Tres números en pantalla: leads nuevos, contratos firmados, estudiantes por etapa. Nada de «cómo vamos» en abstracto.</li>
+      <li><strong>Revisión mensual de caja</strong>: cuánto entró, cuánto salió, cuántos meses de fijos hay en el banco.</li>
+      <li><strong>Revisión trimestral de contratos institucionales</strong>: cuántos firmados, cuántos en negociación, cuáles no produjeron ni un estudiante y hay que dejar morir.</li>
+    </ul>
+
+    <h3>Plantillas a escribir antes del primer cliente</h3>
+    <ul class="checks">
+      <li>Guión de llamada de calificación, con criterios de descarte explícitos</li>
+      <li>Contrato de servicios al estudiante (español, con la declaración de comisión y la política de reembolso)</li>
+      <li>Aviso de privacidad al estándar RGPD</li>
+      <li>Checklist de documentos por tipo de programa</li>
+      <li>Guía de prueba financiera con ejemplos de cartas de patrocinio</li>
+      <li>Batería de preguntas de entrevista consular y las respuestas que la hunden</li>
+      <li>Manual de pre‑partida por ciudad de destino</li>
+      <li>Carta de presentación de la agencia a instituciones, en inglés</li>
+      <li>Plantilla de factura de comisión con evidencia de referencia</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+  <div class="sec-head"><span class="sec-num">12</span><h2>Acuerdos con instituciones: a quién ir primero</h2></div>
+  <div class="col">
+    <p>El error clásico es empezar tocando la puerta de universidades conocidas, que dicen que no a una agencia sin historial. La secuencia correcta va de menor a mayor exigencia, y cada nivel financia la credibilidad para el siguiente.</p>
+
+    <h3>Nivel 1 · Escuelas de inglés y community colleges <span class="tag">semanas 4–12</span></h3>
+    <p>Firman rápido, muchas veces sin exigir certificación, y tienen ingresos frecuentes. Pagan menos por estudiante pero permiten facturar en meses, no en trimestres, y generan los primeros casos verificables. <strong>Meta: 8 a 12 acuerdos firmados en el primer trimestre.</strong></p>
+
+    <h3>Nivel 2 · Proveedores de <em>pathway</em> <span class="tag">meses 3–9</span></h3>
+    <p>Empresas que operan programas de acceso dentro de universidades estadounidenses —Shorelight, INTO, Navitas, Kaplan, Study Group y similares— y que tienen portales de alta de agentes. Un solo acuerdo con uno de ellos abre decenas de universidades a la vez, con comisiones de 12–17&nbsp;% del primer año. <strong>Es el mayor retorno por esfuerzo de todo el plan.</strong></p>
+
+    <h3>Nivel 3 · Universidades directas y colegios internado <span class="tag">año 2</span></h3>
+    <p>Piden historial, referencias y a menudo certificación AIRC. Se llega con los resultados de los niveles 1 y 2 en la mano.</p>
+
+    <h3>Cláusulas que hay que negociar, no aceptar</h3>
+    <ul class="tight">
+      <li><strong>Porcentaje y base de cálculo.</strong> ¿Sobre matrícula bruta o neta de becas? La diferencia puede ser la mitad de la comisión.</li>
+      <li><strong>Cuándo se paga.</strong> Post‑census está bien; «al final del año académico» no.</li>
+      <li><strong>Años 2 a 4.</strong> Pedir siempre comisión de continuación, aunque sea reducida.</li>
+      <li><strong>Atribución del estudiante.</strong> Cómo se prueba que el estudiante llegó por ustedes, y qué pasa si ya estaba en la base de datos de la institución. Definirlo antes evita la pelea más común del sector.</li>
+      <li><strong>Territorio.</strong> Chile, México y España — y pedir exclusividad solo si están dispuestos a comprometerse a un volumen.</li>
+      <li><strong>Clawback.</strong> Acotarlo: devolución solo si el estudiante se retira antes del census, no si abandona en el mes seis.</li>
+      <li><strong>Terminación.</strong> Que las comisiones de estudiantes ya matriculados se sigan pagando aunque el contrato se termine.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13">
+  <div class="sec-head"><span class="sec-num">13</span><h2>Roadmap</h2></div>
+
+  <div class="scroller">
+    <table>
+      <caption>Primeros 90 días</caption>
+      <thead><tr><th>Semanas</th><th>Objetivo</th><th>Entregables</th><th>Responsable</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1–2</td><td>Acuerdo entre socios</td><td>Acuerdo de fundadores firmado. Nombre y dominio. Cuentas de redes.</td><td class="who">Los tres</td></tr>
+        <tr><td class="num">2–4</td><td>Existir legalmente</td><td>LLC, EIN, cuenta bancaria, operating agreement, registered agent.</td><td class="who">Socio EE.UU.</td></tr>
+        <tr><td class="num">3–6</td><td>Ser presentable</td><td>Landing en línea, correo corporativo, carta de presentación en inglés, perfil ICEF.</td><td class="who">Los tres</td></tr>
+        <tr><td class="num">4–10</td><td>Primeros contratos</td><td>8–12 acuerdos con escuelas de inglés y community colleges.</td><td class="who">Socio EE.UU.</td></tr>
+        <tr><td class="num">5–8</td><td>Documentación operativa</td><td>Contrato al estudiante, aviso de privacidad, checklists, CRM configurado.</td><td class="who">Socio Chile</td></tr>
+        <tr><td class="num">6–12</td><td>Primeros clientes</td><td>3 clientes de pago. Prueba de precio y del guión de calificación.</td><td class="who">Socios CL + MX</td></tr>
+        <tr><td class="num">8–12</td><td>Canal de colegios</td><td>5 colegios en México y 3 en Chile con charla agendada.</td><td class="who">Socios CL + MX</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="scroller">
+    <table>
+      <caption>Meses 4 a 12</caption>
+      <thead><tr><th>Trimestre</th><th>Foco</th><th>Meta medible</th></tr></thead>
+      <tbody>
+        <tr><td>T2</td><td>Alta con un <em>pathway provider</em>. Primer ciclo completo de estudiantes hasta visa.</td><td class="num">10 clientes de pago acumulados</td></tr>
+        <tr><td>T3</td><td>Primer grupo entra a clases. Primeras comisiones facturadas. Feria ICEF.</td><td class="num">20 acumulados · 3 comisiones cobradas</td></tr>
+        <tr><td>T4</td><td>Entrada a España con representante local. Inicio del expediente AIRC.</td><td class="num">30 acumulados · punto de equilibrio</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="s14">
+  <div class="sec-head"><span class="sec-num">14</span><h2>Riesgos</h2></div>
+  <div class="scroller">
+    <table>
+      <caption>Qué puede salir mal y qué se hace al respecto</caption>
+      <thead><tr><th>Riesgo</th><th>Impacto</th><th>Mitigación</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cambios en la política de visas de EE.&nbsp;UU.</strong> Tasas nuevas, tiempos de espera, restricciones.</td><td><span class="pill stop">Alto</span></td><td>Es el riesgo estructural del negocio y no se elimina. Se reduce diversificando segmentos (inglés y community college son menos sensibles) y, en año 2–3, agregando un segundo destino.</td></tr>
+        <tr><td><strong>La primera comisión tarda más de lo previsto.</strong></td><td><span class="pill stop">Alto</span></td><td>Es exactamente por esto que se cobra al estudiante primero. Mantener seis meses de fijos en el banco como regla, no como aspiración.</td></tr>
+        <tr><td><strong>Un socio se apaga.</strong> Sin sueldo, con resultados a 12 meses, es lo más probable de esta lista.</td><td><span class="pill stop">Alto</span></td><td>Vesting con cliff de un año, prima de originación, y la reunión semanal fija: la desconexión se ve en dos semanas, no en seis meses.</td></tr>
+        <tr><td><strong>Una familia reclama por una visa negada.</strong></td><td><span class="pill">Medio</span></td><td>Contrato claro de que el fee cubre el trabajo, no el resultado; cero promesas verbales; política de reembolso escrita; expediente documentado de todo lo entregado.</td></tr>
+        <tr><td><strong>Una institución no paga la comisión.</strong></td><td><span class="pill">Medio</span></td><td>Contrato firmado siempre antes del primer referido, atribución documentada estudiante por estudiante, y facturar puntualmente pasado el census.</td></tr>
+        <tr><td><strong>Conflicto por cobrar a los dos lados.</strong></td><td><span class="pill">Medio</span></td><td>Declaración escrita en el contrato con la familia y revisión de la cláusula en cada contrato institucional.</td></tr>
+        <tr><td><strong>Fuga de datos de estudiantes.</strong> Pasaportes y estados de cuenta.</td><td><span class="pill">Medio</span></td><td>Nada en dispositivos personales, carpeta de empresa con permisos, doble factor obligatorio, borrado a los plazos del aviso de privacidad.</td></tr>
+        <tr><td><strong>Un competidor grande entra al mercado.</strong></td><td><span class="pill">Bajo</span></td><td>Ya están. Se compite con cercanía y con nombre propio en colegios concretos, no con presupuesto.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 15 ============ -->
+<section id="s15">
+  <div class="sec-head"><span class="sec-num">15</span><h2>Lo que hay que decidir entre los tres</h2></div>
+  <div class="col">
+    <p>Todo lo anterior son propuestas con un valor por defecto puesto. Estas son las que no se pueden dejar abiertas.</p>
+    <ul class="checks">
+      <li><strong>Nombre y marca.</strong> Tiene que funcionar en los tres mercados y en inglés frente a instituciones.</li>
+      <li><strong>Estado de constitución.</strong> Florida por defecto; confirmar con el socio con green card según dónde resida y tribute.</li>
+      <li><strong>Opción A u Opción B</strong> de propiedad, y con qué cifra se dispara la conversión.</li>
+      <li><strong>Capital inicial:</strong> cuánto pone cada uno, y si entra como capital o como préstamo de socio.</li>
+      <li><strong>Dedicación real declarada:</strong> horas semanales de cada uno, dichas en voz alta y escritas. Es la conversación incómoda que evita la ruptura.</li>
+      <li><strong>Prima de originación:</strong> ¿25&nbsp;% es el número correcto para los tres?</li>
+      <li><strong>Precios definitivos</strong> de los paquetes, y si se ajustan por mercado (España soporta más que Chile).</li>
+      <li><strong>España:</strong> ¿representante a comisión pura desde el mes uno, o se posterga al T4?</li>
+      <li><strong>Presupuesto de publicidad</strong> del primer semestre y quién lo opera.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap col">
+    <hr class="rule">
+    <p><strong>Sobre este documento.</strong> Es un plan de trabajo interno, no asesoría legal, fiscal ni migratoria. Las cifras de tasas oficiales, comisiones de mercado y volúmenes por país son estimaciones para dimensionar el negocio y <strong>deben verificarse en fuente oficial</strong> antes de usarse en un contrato, una web o una presentación a instituciones. Antes de constituir la sociedad y de fijar la estructura de propiedad, conviene una consulta con un contador estadounidense con experiencia en socios extranjeros y con un abogado en cada país de origen.</p>
+    <p style="font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--muted)">BORRADOR 1 · SEPTIEMBRE 2026 · PARA DISCUSIÓN ENTRE LOS TRES SOCIOS</p>
+  </div>
+</footer>

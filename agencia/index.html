@@ -1,0 +1,786 @@
+<title>Vía Norte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Karla:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground:  #f5f6f1;
+    --surface: #ffffff;
+    --sunk:    #eaece5;
+    --line:    #dcdfd6;
+    --ink:     #11202c;
+    --muted:   #5b6c78;
+    --accent:  #0e6a7c;
+    --accent-soft: #ddeef1;
+    --warm:    #c9741d;
+    --warm-soft: #f8ebd9;
+    --alert:   #b0432c;
+    --alert-soft: #f6e2dd;
+    --night:   #0d1b26;
+    --on-night:#eaf1f4;
+    --on-accent:#ffffff;
+    --hero-tint:#52b9cb;
+
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --body: "Karla", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+    --pad: clamp(20px, 5vw, 64px);
+    --r: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:  #0b1620;
+      --surface: #111f2b;
+      --sunk:    #162835;
+      --line:    #23394a;
+      --ink:     #e6eef2;
+      --muted:   #92a7b5;
+      --accent:  #52b9cb;
+      --accent-soft: #10303a;
+      --warm:    #eeab55;
+      --warm-soft: #33260f;
+      --alert:   #ec8b74;
+      --alert-soft: #38201a;
+      --night:   #08131b;
+      --on-night:#e6eef2;
+      --on-accent:#08131b;
+      --hero-tint:#52b9cb;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:  #0b1620;
+    --surface: #111f2b;
+    --sunk:    #162835;
+    --line:    #23394a;
+    --ink:     #e6eef2;
+    --muted:   #92a7b5;
+    --accent:  #52b9cb;
+    --accent-soft: #10303a;
+    --warm:    #eeab55;
+    --warm-soft: #33260f;
+    --alert:   #ec8b74;
+    --alert-soft: #38201a;
+    --night:   #08131b;
+    --on-night:#e6eef2;
+    --on-accent:#08131b;
+    --hero-tint:#52b9cb;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--body); font-size: 16.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .display { font-family: var(--display); letter-spacing: -.022em; text-wrap: balance; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--pad); }
+  .eyebrow {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  .prose { max-width: 62ch; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    background: var(--night); color: var(--on-night);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 14px; padding-bottom: 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 19px; letter-spacing: -.03em; }
+  .brand .mark {
+    width: 24px; height: 24px; flex: none; border-radius: 50%;
+    background: conic-gradient(from 210deg, #eeab55, var(--hero-tint) 55%, #eeab55);
+  }
+  .topbar nav { display: none; gap: 22px; font-size: 14.5px; }
+  .topbar nav a { text-decoration: none; opacity: .82; }
+  .topbar nav a:hover { opacity: 1; }
+  @media (min-width: 880px) { .topbar nav { display: flex; } }
+
+  .btn {
+    display: inline-block; border: 0; cursor: pointer; text-decoration: none;
+    font-family: var(--body); font-weight: 700; font-size: 15px;
+    padding: 12px 22px; border-radius: var(--r);
+    background: var(--warm); color: #17140d;
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.sm { padding: 9px 16px; font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } * { animation: none !important; } }
+
+  /* ---------- hero ---------- */
+  .hero { background: var(--night); color: var(--on-night); padding: clamp(48px,8vw,88px) 0 clamp(56px,8vw,96px); }
+  .hero-grid { display: grid; gap: clamp(36px, 5vw, 56px); align-items: start; }
+  @media (min-width: 940px) { .hero-grid { grid-template-columns: 1.05fr .95fr; } }
+  .hero h1 { font-size: clamp(38px, 6.2vw, 66px); line-height: 1.03; font-weight: 800; margin: 16px 0 0; }
+  .hero h1 .hl { color: var(--warm); }
+  .hero .sub { font-size: clamp(17px, 2vw, 19.5px); line-height: 1.55; color: rgba(234,241,244,.76); max-width: 44ch; margin: 20px 0 0; }
+  .hero .eyebrow { color: var(--warm); }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .hero-cta .btn.ghost { color: var(--on-night); border-color: rgba(255,255,255,.28); }
+  .hero-cta .btn.ghost:hover { border-color: var(--on-night); color: var(--on-night); }
+  .hero-facts { display: flex; flex-wrap: wrap; gap: 8px 26px; margin: 34px 0 0; padding: 0; list-style: none; font-size: 14px; color: rgba(234,241,244,.66); }
+  .hero-facts li { display: flex; align-items: center; gap: 8px; }
+  .hero-facts li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--hero-tint); flex: none; }
+
+  /* ---------- planner ---------- */
+  .planner {
+    background: var(--surface); color: var(--ink);
+    border-radius: 8px; padding: 24px; box-shadow: 0 24px 60px -30px rgba(0,0,0,.6);
+  }
+  .planner > .eyebrow { color: var(--accent); }
+  .planner h2 { font-size: 21px; margin: 10px 0 4px; font-weight: 700; }
+  .planner .hint { font-size: 14px; color: var(--muted); margin: 0 0 18px; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--sunk); padding: 4px; border-radius: 6px; }
+  .seg button {
+    border: 0; background: transparent; cursor: pointer; padding: 10px 6px; border-radius: 4px;
+    font-family: var(--body); font-size: 13.5px; font-weight: 600; color: var(--muted); line-height: 1.25;
+  }
+  .seg button span { display: block; font-size: 11px; font-weight: 500; opacity: .8; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+
+  .verdict { margin-top: 20px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .verdict-top { padding: 16px 18px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .verdict-top .big { font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: -.04em; }
+  .verdict-top .unit { font-size: 14px; color: var(--muted); }
+  .status {
+    margin-left: auto; font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .status.ok   { background: var(--accent-soft); color: var(--accent); }
+  .status.tight{ background: var(--warm-soft);   color: var(--warm); }
+  .status.late { background: var(--alert-soft);  color: var(--alert); }
+  .verdict-body { padding: 0 18px 18px; }
+  .verdict-body h3 { font-size: 15.5px; margin: 0 0 6px; font-weight: 700; }
+  .verdict-body p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .track { display: flex; gap: 3px; margin: 16px 18px 18px; }
+  .track div { height: 5px; flex: 1; border-radius: 999px; background: var(--sunk); }
+  .track div.on { background: var(--accent); }
+  .track div.here { background: var(--warm); }
+
+  /* ---------- generic section ---------- */
+  section { padding: clamp(56px, 8vw, 96px) 0; }
+  .band { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .sec-title { font-size: clamp(28px, 4vw, 42px); line-height: 1.08; font-weight: 700; margin: 14px 0 0; }
+  .sec-intro { color: var(--muted); font-size: 17px; margin: 16px 0 0; max-width: 58ch; }
+
+  /* ---------- routes ---------- */
+  .routes { display: grid; gap: 20px; margin-top: 44px; }
+  @media (min-width: 820px) { .routes { grid-template-columns: repeat(3, 1fr); } }
+  .route { border: 1px solid var(--line); border-radius: 6px; padding: 26px 24px 28px; background: var(--surface); display: flex; flex-direction: column; }
+  .band .route { background: var(--ground); }
+  .route .who { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--warm); }
+  .route h3 { font-size: 22px; margin: 10px 0 10px; font-weight: 700; }
+  .route p { margin: 0 0 18px; font-size: 15px; color: var(--muted); }
+  .route dl { margin: auto 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .route dt { color: var(--muted); }
+  .route dd { margin: 0; font-weight: 600; text-align: right; }
+
+  /* ---------- steps ---------- */
+  .steps { counter-reset: s; margin: 44px 0 0; padding: 0; list-style: none; }
+  .steps li {
+    counter-increment: s; display: grid; gap: 4px 22px; padding: 20px 0;
+    border-bottom: 1px solid var(--line); grid-template-columns: 44px 1fr;
+  }
+  .steps li:first-child { border-top: 1px solid var(--line); }
+  @media (min-width: 800px) { .steps li { grid-template-columns: 44px minmax(0,1fr) 190px; align-items: baseline; } }
+  .steps li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--accent);
+  }
+  .steps h3 { font-size: 17px; margin: 0 0 5px; font-weight: 700; }
+  .steps p { margin: 0; font-size: 15px; color: var(--muted); }
+  .steps .when { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+
+  /* ---------- pricing ---------- */
+  .plans { display: grid; gap: 20px; margin-top: 44px; align-items: start; }
+  @media (min-width: 860px) { .plans { grid-template-columns: repeat(3, 1fr); } }
+  .plan { border: 1px solid var(--line); border-radius: 6px; padding: 26px 24px 28px; background: var(--surface); }
+  .plan.feature { border: 1.5px solid var(--accent); box-shadow: 0 18px 40px -28px rgba(14,106,124,.75); }
+  .plan .tier { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .plan.feature .tier { color: var(--accent); }
+  .plan .price { font-family: var(--display); font-weight: 800; font-size: 38px; letter-spacing: -.04em; margin: 12px 0 2px; }
+  .plan .price small { font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  .plan > p { font-size: 14.5px; color: var(--muted); margin: 8px 0 18px; }
+  .plan ul { margin: 0 0 22px; padding: 0; list-style: none; font-size: 15px; }
+  .plan li { display: grid; grid-template-columns: 18px 1fr; gap: 9px; padding: 5px 0; }
+  .plan li::before { content: "→"; color: var(--accent); font-weight: 700; }
+  .plan .btn { width: 100%; text-align: center; }
+  .plan.feature .btn { background: var(--accent); color: var(--on-accent); }
+  .pay-note { margin-top: 24px; font-size: 14px; color: var(--muted); max-width: 62ch; }
+
+  /* ---------- honesty ---------- */
+  .honesty { display: grid; gap: 18px; margin-top: 40px; }
+  @media (min-width: 780px) { .honesty { grid-template-columns: repeat(2, 1fr); } }
+  .no { display: grid; grid-template-columns: 26px 1fr; gap: 14px; align-items: start; }
+  .no .x {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--alert-soft); color: var(--alert);
+    display: grid; place-items: center; font-weight: 700; font-size: 13px; margin-top: 3px;
+  }
+  .no h3 { font-size: 16.5px; margin: 0 0 4px; font-weight: 700; }
+  .no p { margin: 0; font-size: 14.5px; color: var(--muted); }
+
+  /* ---------- faq ---------- */
+  .faq { margin-top: 40px; border-top: 1px solid var(--line); max-width: 74ch; }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq summary {
+    cursor: pointer; list-style: none; padding: 18px 34px 18px 0; position: relative;
+    font-weight: 700; font-size: 16.5px; font-family: var(--display); letter-spacing: -.015em;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+"; position: absolute; right: 4px; top: 15px;
+    font-size: 22px; color: var(--accent); font-weight: 500; line-height: 1;
+  }
+  .faq details[open] summary::after { content: "–"; }
+  .faq .a { padding: 0 0 20px; font-size: 15.5px; color: var(--muted); max-width: 66ch; }
+  .faq .a p { margin: 0 0 10px; }
+  .faq .a p:last-child { margin: 0; }
+
+  /* ---------- form ---------- */
+  .contact { background: var(--night); color: var(--on-night); }
+  .contact-grid { display: grid; gap: clamp(32px,5vw,56px); }
+  @media (min-width: 900px) { .contact-grid { grid-template-columns: .9fr 1.1fr; } }
+  .contact h2 { font-size: clamp(30px,4.4vw,46px); line-height: 1.06; margin: 14px 0 0; font-weight: 800; }
+  .contact .sec-intro { color: rgba(234,241,244,.72); }
+  .contact .eyebrow { color: var(--warm); }
+  .form-card { background: var(--surface); color: var(--ink); border-radius: 8px; padding: 26px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; font-weight: 700; letter-spacing: .04em; margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; font-family: var(--body); font-size: 15.5px; color: var(--ink);
+    background: var(--ground); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 11px 12px;
+  }
+  .field textarea { min-height: 84px; resize: vertical; }
+  .row2 { display: grid; gap: 16px; }
+  @media (min-width: 520px) { .row2 { grid-template-columns: 1fr 1fr; } }
+  .consent { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 13px; color: var(--muted); margin: 4px 0 18px; }
+  .consent input { width: 16px; height: 16px; margin-top: 3px; }
+  .sent { display: none; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 20px; }
+  .sent.on { display: block; }
+  .sent h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
+  .sent pre {
+    white-space: pre-wrap; word-break: break-word; font-family: var(--body); font-size: 14px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 14px; margin: 0 0 16px; color: var(--muted); max-height: 210px; overflow: auto;
+  }
+  .sent .acts { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  footer { background: var(--night); color: rgba(234,241,244,.6); border-top: 1px solid rgba(255,255,255,.09); font-size: 13.5px; }
+  footer .wrap { padding-top: 40px; padding-bottom: 48px; display: grid; gap: 22px; }
+  @media (min-width: 760px) { footer .wrap { grid-template-columns: 1.4fr 1fr; align-items: start; } }
+  footer a { color: rgba(234,241,244,.78); }
+  .draft {
+    display: inline-block; margin-top: 14px; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 3px 10px; color: rgba(234,241,244,.55);
+  }
+</style>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="mark" aria-hidden="true"></span> Vía Norte</div>
+    <nav aria-label="Principal">
+      <a href="#rutas">Rutas</a>
+      <a href="#proceso">Cómo funciona</a>
+      <a href="#precios">Precios</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a class="btn sm" href="#contacto">Evaluación gratuita</a>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Chile · México · España → Estados Unidos</p>
+      <h1>Estudiar en Estados&nbsp;Unidos <span class="hl">empieza un año antes</span> de lo que crees.</h1>
+      <p class="sub">Te acompañamos desde elegir la universidad hasta el día que entras al aula: aplicaciones, admisión, I‑20, visa F‑1 y llegada. En español, con alguien de tu país al otro lado del teléfono.</p>
+      <div class="hero-cta">
+        <a class="btn" href="#contacto">Agenda tu evaluación gratuita</a>
+        <a class="btn ghost" href="#proceso">Ver cómo funciona</a>
+      </div>
+      <ul class="hero-facts">
+        <li>Solo instituciones certificadas SEVP</li>
+        <li>Asesores en Santiago y Ciudad de México</li>
+        <li>Acompañamiento hasta el primer día de clases</li>
+      </ul>
+    </div>
+
+    <div class="planner">
+      <p class="eyebrow">Calculadora de plazos</p>
+      <h2>¿Llegas a tiempo?</h2>
+      <p class="hint">Elige cuándo te gustaría empezar y te decimos en qué etapa deberías estar hoy.</p>
+
+      <div class="seg" role="group" aria-label="Fecha de ingreso deseada">
+        <button type="button" data-date="2027-08-20" aria-pressed="true">Agosto 2027<span>Fall</span></button>
+        <button type="button" data-date="2028-01-10" aria-pressed="false">Enero 2028<span>Spring</span></button>
+        <button type="button" data-date="2028-08-20" aria-pressed="false">Agosto 2028<span>Fall</span></button>
+      </div>
+
+      <div class="verdict">
+        <div class="verdict-top">
+          <span class="big" id="p-months">—</span>
+          <span class="unit" id="p-unit">meses por delante</span>
+          <span class="status ok" id="p-status">—</span>
+        </div>
+        <div class="track" id="p-track" aria-hidden="true"></div>
+        <div class="verdict-body">
+          <h3 id="p-stage">—</h3>
+          <p id="p-detail">—</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="rutas" class="band">
+  <div class="wrap">
+    <p class="eyebrow">Tres rutas</p>
+    <h2 class="sec-title">No hay un solo camino a una universidad estadounidense.</h2>
+    <p class="sec-intro">La ruta correcta depende de tu nivel de inglés, tu promedio y tu presupuesto. En la evaluación gratuita te decimos cuál es la tuya, aunque no sea la que viniste a buscar.</p>
+
+    <div class="routes">
+      <article class="route">
+        <span class="who">Recién salido del colegio</span>
+        <h3>Pregrado</h3>
+        <p>Cuatro años de <em>bachelor</em>, o dos en un community college y transferencia a la universidad con la carrera que quieres. La segunda vía cuesta bastante menos y termina en el mismo título.</p>
+        <dl>
+          <dt>Empezar antes</dt><dd>12–14 meses</dd>
+          <dt>Inglés</dt><dd>TOEFL / IELTS / Duolingo</dd>
+          <dt>Visa</dt><dd>F‑1</dd>
+        </dl>
+      </article>
+      <article class="route">
+        <span class="who">Ya titulado</span>
+        <h3>Máster</h3>
+        <p>Programas de uno a dos años, con opción de trabajar en EE.&nbsp;UU. al terminar bajo el esquema OPT. Requiere evaluación de tu título y, en muchos casos, GRE o GMAT.</p>
+        <dl>
+          <dt>Empezar antes</dt><dd>12–15 meses</dd>
+          <dt>Inglés</dt><dd>Nivel alto exigido</dd>
+          <dt>Visa</dt><dd>F‑1</dd>
+        </dl>
+      </article>
+      <article class="route">
+        <span class="who">Inglés en construcción</span>
+        <h3>Inglés y <em>pathway</em></h3>
+        <p>Si el inglés todavía no alcanza, existe la admisión condicional: entras a un programa de idioma dentro de la universidad y pasas a la carrera al aprobarlo. Es la ruta más subestimada de todas.</p>
+        <dl>
+          <dt>Empezar antes</dt><dd>5–8 meses</dd>
+          <dt>Inglés</dt><dd>Desde nivel intermedio</dd>
+          <dt>Visa</dt><dd>F‑1</dd>
+        </dl>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="proceso">
+  <div class="wrap">
+    <p class="eyebrow">Cómo funciona</p>
+    <h2 class="sec-title">Siete pasos, y sabes en cuál estás en todo momento.</h2>
+    <p class="sec-intro">Cada etapa tiene documentos, plazos y un responsable. Nada queda en «te aviso cuando sepa algo».</p>
+
+    <ol class="steps">
+      <li>
+        <div><h3>Evaluación gratuita</h3><p>Media hora por videollamada: tus notas, tu inglés, tu presupuesto real y qué es viable. Sales con un informe de una página, aunque decidas no seguir con nosotros.</p></div>
+        <span class="when">45 minutos</span>
+      </li>
+      <li>
+        <div><h3>Tu expediente</h3><p>Notas y títulos apostillados y traducidos, y —según el programa— evaluación de credenciales con WES o ECE. Es la parte más lenta, así que la arrancamos primero.</p></div>
+        <span class="when">3 a 6 semanas</span>
+      </li>
+      <li>
+        <div><h3>Inglés acreditado</h3><p>Te decimos qué examen acepta cada universidad de tu lista y te preparamos para él. Si el nivel no da todavía, la ruta es <em>pathway</em>, no forzar la puerta.</p></div>
+        <span class="when">2 a 8 semanas</span>
+      </li>
+      <li>
+        <div><h3>Lista corta y aplicaciones</h3><p>Entre cuatro y ocho universidades: alguna ambiciosa, varias realistas, una segura. Todas certificadas SEVP. Ensayos, cartas y envíos los trabajamos contigo.</p></div>
+        <span class="when">4 a 8 semanas</span>
+      </li>
+      <li>
+        <div><h3>Admisión y carpeta financiera</h3><p>Llegan las respuestas y comparamos costo real, becas y ubicación. Después hay que demostrar fondos para el primer año completo: es donde más solicitudes se caen y donde más te acompañamos.</p></div>
+        <span class="when">6 a 12 semanas</span>
+      </li>
+      <li>
+        <div><h3>I‑20, SEVIS y visa F‑1</h3><p>La universidad emite tu I‑20; nosotros revisamos que cada dato coincida con tu pasaporte, preparamos el DS‑160 y hacemos dos simulacros de entrevista consular antes de tu cita.</p></div>
+        <span class="when">6 a 10 semanas</span>
+      </li>
+      <li>
+        <div><h3>Llegada</h3><p>Seguro médico, alojamiento, vuelo, banco y SIM. Recuerda: no se puede entrar a Estados Unidos más de 30 días antes de la fecha de inicio de tu I‑20. Te escribimos a los 30 y a los 90 días de llegar.</p></div>
+        <span class="when">4 a 8 semanas</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="precios" class="band">
+  <div class="wrap">
+    <p class="eyebrow">Precios</p>
+    <h2 class="sec-title">Precio cerrado, publicado y por etapas.</h2>
+    <p class="sec-intro">Sabes cuánto cuesta antes de empezar y pagas a medida que avanzamos. Las tasas oficiales —examen de inglés, aplicaciones, SEVIS y consulado— las pagas tú directamente a cada organismo, nunca a través nuestro.</p>
+
+    <div class="plans">
+      <article class="plan">
+        <span class="tier">Esencial</span>
+        <div class="price">$890 <small>USD</small></div>
+        <p>Para quien ya tiene claro qué quiere estudiar.</p>
+        <ul>
+          <li>Hasta 4 aplicaciones</li>
+          <li>Revisión completa del expediente</li>
+          <li>Guía de apostilla y traducciones</li>
+          <li>Seguimiento hasta la carta de admisión</li>
+        </ul>
+        <a class="btn ghost" href="#contacto">Empezar</a>
+      </article>
+
+      <article class="plan feature">
+        <span class="tier">Completo · el más elegido</span>
+        <div class="price">$1.950 <small>USD</small></div>
+        <p>Todo el camino, incluida la visa.</p>
+        <ul>
+          <li>Hasta 10 aplicaciones</li>
+          <li>Trabajo de ensayos y cartas de recomendación</li>
+          <li>Búsqueda de becas académicas y deportivas</li>
+          <li>Preparación de la carpeta financiera</li>
+          <li>Trámite de visa F‑1 y dos simulacros de entrevista</li>
+          <li>Plan de pre‑partida y seguimiento al llegar</li>
+        </ul>
+        <a class="btn" href="#contacto">Empezar</a>
+      </article>
+
+      <article class="plan">
+        <span class="tier">Solo visa F‑1</span>
+        <div class="price">$490 <small>USD</small></div>
+        <p>Ya te admitieron por tu cuenta y falta lo difícil.</p>
+        <ul>
+          <li>Revisión del I‑20 dato por dato</li>
+          <li>DS‑160 y pago de tasas</li>
+          <li>Armado de la carpeta financiera</li>
+          <li>Dos simulacros de entrevista consular</li>
+        </ul>
+        <a class="btn ghost" href="#contacto">Empezar</a>
+      </article>
+    </div>
+
+    <p class="pay-note"><strong>Cómo se paga.</strong> El plan Esencial, mitad al firmar y mitad al enviar la primera aplicación. El Completo, en tres pagos: al firmar, al enviar aplicaciones y al recibir tu I‑20. Si dentro de los 14 días de firmar decides no seguir y aún no enviamos ninguna aplicación, se devuelve el 100&nbsp;%.</p>
+  </div>
+</section>
+
+<section id="honestidad">
+  <div class="wrap">
+    <p class="eyebrow">Antes de que preguntes</p>
+    <h2 class="sec-title">Lo que no hacemos.</h2>
+    <p class="sec-intro">En este rubro se promete mucho de lo que nadie puede cumplir. Preferimos decirte esto ahora y no en el mes ocho.</p>
+
+    <div class="honesty">
+      <div class="no">
+        <span class="x" aria-hidden="true">✕</span>
+        <div><h3>No garantizamos la visa</h3><p>La decisión es del oficial consular y ninguna agencia del mundo la controla. Lo que sí hacemos es que llegues con la carpeta impecable y sabiendo responder — que es donde de verdad se juega.</p></div>
+      </div>
+      <div class="no">
+        <span class="x" aria-hidden="true">✕</span>
+        <div><h3>No tocamos tus documentos financieros</h3><p>Los estados de cuenta salen de tu banco tal como son. Alterarlos es fraude ante el consulado y puede costarte la entrada a Estados Unidos de por vida. Si los fondos no alcanzan, buscamos otra ruta.</p></div>
+      </div>
+      <div class="no">
+        <span class="x" aria-hidden="true">✕</span>
+        <div><h3>No escribimos tus ensayos</h3><p>Te ayudamos a estructurarlos, a editarlos y a que suenen a ti en inglés. Escribirlos por ti es motivo de expulsión cuando se descubre, y se descubre.</p></div>
+      </div>
+      <div class="no">
+        <span class="x" aria-hidden="true">✕</span>
+        <div><h3>No somos abogados de inmigración</h3><p>Preparamos y ordenamos tu trámite. Si tu caso tiene una negativa previa, una estancia irregular o un antecedente, te derivamos a un abogado en vez de improvisar.</p></div>
+      </div>
+      <div class="no">
+        <span class="x" aria-hidden="true">✕</span>
+        <div><h3>No te empujamos a la universidad que más nos conviene</h3><p>Recibimos comisión de las instituciones donde te matriculas, y te lo decimos por escrito en el contrato. Por eso la lista corta te la entregamos con los costos de todas, incluidas las que no nos pagan.</p></div>
+      </div>
+      <div class="no">
+        <span class="x" aria-hidden="true">✕</span>
+        <div><h3>No trabajamos con quien no califica</h3><p>Si tus notas, tu inglés o tu presupuesto no dan para lo que buscas, te lo decimos en la primera llamada y no te cobramos por intentarlo igual.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="preguntas" class="band">
+  <div class="wrap">
+    <p class="eyebrow">Preguntas frecuentes</p>
+    <h2 class="sec-title">Lo que todo el mundo pregunta.</h2>
+
+    <div class="faq">
+      <details open>
+        <summary>¿Cuánto cuesta estudiar en Estados Unidos, de verdad?</summary>
+        <div class="a">
+          <p>Depende enormemente del tipo de institución. Un community college puede rondar los 10.000–15.000 USD al año en matrícula; una universidad privada, entre 30.000 y 55.000. A eso hay que sumar manutención, seguro médico y vuelos.</p>
+          <p>La cifra que importa no es la publicada sino el <strong>costo real después de becas</strong>, y muchas universidades ofrecen ayuda a estudiantes internacionales. Eso es exactamente lo que calculamos contigo en la evaluación gratuita.</p>
+        </div>
+      </details>
+      <details>
+        <summary>¿Tengo que demostrar que tengo el dinero?</summary>
+        <div class="a">
+          <p>Sí, y es el requisito que más solicitudes frena. Antes de emitirte el I‑20, la universidad exige prueba de fondos suficientes para el primer año completo: matrícula más manutención, según la cifra que ella misma publica.</p>
+          <p>Sirven estados de cuenta recientes, una carta del banco y, si paga un familiar, una carta de patrocinio. Por eso te preguntamos por esto en la primera llamada y no en el mes seis.</p>
+        </div>
+      </details>
+      <details>
+        <summary>¿Puedo trabajar mientras estudio?</summary>
+        <div class="a">
+          <p>Con visa F‑1 puedes trabajar dentro del campus con límite de horas durante el periodo de clases, y existen esquemas de prácticas relacionadas con tu carrera (CPT durante los estudios, OPT al terminar) que requieren autorización previa.</p>
+          <p>Lo que no puedes es contar con un trabajo para financiar la carrera: la prueba de fondos se exige antes, y trabajar sin autorización te cuesta el estatus.</p>
+        </div>
+      </details>
+      <details>
+        <summary>¿Cuánto se demora todo?</summary>
+        <div class="a">
+          <p>De la primera llamada al primer día de clases pasan normalmente entre 11 y 14 meses. Los programas de inglés y algunos community colleges tienen ingresos varias veces al año y pueden hacerse en cinco o seis meses.</p>
+          <p>Usa la calculadora de arriba: te dice, según cuándo quieras empezar, en qué etapa deberías estar hoy.</p>
+        </div>
+      </details>
+      <details>
+        <summary>¿Y si me niegan la visa?</summary>
+        <div class="a">
+          <p>Pasa, y no siempre por algo que hiciste mal. Analizamos la causa contigo, y según cuál sea puede volverse a intentar con documentación reforzada o replantear el programa.</p>
+          <p>Nuestro honorario cubre el trabajo de preparación, no el resultado del consulado — te lo decimos así de claro en el contrato, antes de que firmes.</p>
+        </div>
+      </details>
+      <details>
+        <summary>¿Cómo ganan ustedes dinero?</summary>
+        <div class="a">
+          <p>De dos formas, y las dos van escritas en tu contrato. Cobramos el honorario publicado en esta página, y además recibimos una comisión de la institución en la que te matriculas, que ella paga de su presupuesto de admisiones y que no encarece tu matrícula.</p>
+          <p>Por eso te entregamos siempre el costo comparado de toda tu lista corta, incluidas las opciones que no nos pagan comisión.</p>
+        </div>
+      </details>
+      <details>
+        <summary>¿Atienden desde España?</summary>
+        <div class="a">
+          <p>Sí. Tenemos asesores en Chile y México, y atendemos España por videollamada con horario europeo. Todo el proceso —contrato, documentos y firma— es en línea.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="contacto" class="contact">
+  <div class="wrap contact-grid">
+    <div>
+      <p class="eyebrow">Evaluación gratuita</p>
+      <h2>Media hora que te ahorra un año de vueltas.</h2>
+      <p class="sec-intro">Cuéntanos dónde estás y te escribimos para coordinar la videollamada. Si no calificas para lo que buscas, te lo decimos ahí mismo y sin costo.</p>
+      <p class="sec-intro" style="font-size:15px">También puedes escribirnos directo por WhatsApp:<br>
+        <strong style="color:var(--warm)">+56 9 XXXX XXXX</strong> (Chile) · <strong style="color:var(--warm)">+52 55 XXXX XXXX</strong> (México)</p>
+    </div>
+
+    <div>
+      <form class="form-card" id="lead-form" novalidate>
+        <div class="row2">
+          <div class="field">
+            <label for="f-name">Nombre completo</label>
+            <input id="f-name" name="nombre" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="f-country">País donde vives</label>
+            <select id="f-country" name="pais">
+              <option>Chile</option>
+              <option selected>México</option>
+              <option>España</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-email">Correo</label>
+            <input id="f-email" name="correo" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="f-phone">WhatsApp</label>
+            <input id="f-phone" name="whatsapp" type="tel" autocomplete="tel" required>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-route">Qué quieres estudiar</label>
+            <select id="f-route" name="ruta">
+              <option>Pregrado</option>
+              <option>Máster</option>
+              <option>Inglés o pathway</option>
+              <option>Todavía no lo sé</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-when">Cuándo quieres empezar</label>
+            <select id="f-when" name="ingreso">
+              <option>Agosto 2027</option>
+              <option>Enero 2028</option>
+              <option>Agosto 2028</option>
+              <option>Aún no lo decido</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-msg">Algo que debamos saber <span style="font-weight:400;color:var(--muted)">— opcional</span></label>
+          <textarea id="f-msg" name="mensaje" placeholder="Tu promedio, tu nivel de inglés, el presupuesto anual con el que cuentas…"></textarea>
+        </div>
+        <label class="consent">
+          <input type="checkbox" id="f-ok" required>
+          <span>Acepto que Vía Norte trate mis datos para contactarme sobre esta consulta, según su <a href="#">aviso de privacidad</a>. Puedo pedir su eliminación cuando quiera.</span>
+        </label>
+        <button class="btn" type="submit" style="width:100%">Solicitar mi evaluación gratuita</button>
+      </form>
+
+      <div class="sent" id="sent" role="status" aria-live="polite">
+        <h3>Listo, esto es lo que le llega a tu asesor</h3>
+        <pre id="sent-body"></pre>
+        <div class="acts">
+          <a class="btn" id="wa-link" href="#" target="_blank" rel="noopener">Enviarlo por WhatsApp</a>
+          <button class="btn ghost" type="button" id="edit-again">Editar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="brand" style="color:var(--on-night)"><span class="mark" aria-hidden="true"></span> Vía Norte</div>
+      <p style="margin:12px 0 0;max-width:52ch">Asesoría para estudiar en Estados Unidos. Trabajamos únicamente con instituciones certificadas SEVP. No somos abogados de inmigración ni garantizamos la aprobación de visados.</p>
+      <span class="draft">Borrador · nombre y datos de contacto por definir</span>
+    </div>
+    <div>
+      <p style="margin:0 0 8px"><a href="#precios">Precios</a> · <a href="#proceso">Proceso</a> · <a href="#preguntas">Preguntas</a></p>
+      <p style="margin:0 0 8px"><a href="#">Aviso de privacidad</a> · <a href="#">Términos del servicio</a> · <a href="#">Política de reembolso</a></p>
+      <p style="margin:0">hola@vianorte.example</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- calculadora de plazos ---------- */
+  var STAGES = [
+    { min: 14,  key: "explorar",  label: "Explorar con calma",
+      text: "Vas con tiempo de sobra. Ahora toca definir carrera y presupuesto, y empezar a mejorar el inglés: es lo que más tarda y lo que más opciones abre." },
+    { min: 10,  key: "expediente", label: "Armar el expediente",
+      text: "Es el momento de apostillar notas y títulos, pedir traducciones y —si aplica— lanzar la evaluación de credenciales. También de rendir el examen de inglés." },
+    { min: 7.5, key: "aplicar",   label: "Enviar aplicaciones",
+      text: "Deberías estar cerrando tu lista corta y enviando aplicaciones. Todavía se llega bien, pero sin pausas largas entre etapas." },
+    { min: 5,   key: "admision",  label: "Admisión y carpeta financiera",
+      text: "Van llegando respuestas y hay que tener lista la prueba de fondos del primer año. Si aún no has aplicado, este ingreso está muy ajustado." },
+    { min: 3,   key: "i20",       label: "I‑20, SEVIS y DS‑160",
+      text: "Con la admisión en mano, toca el I‑20, la tasa SEVIS y la solicitud de visa. Sin admisión a esta altura, conviene mirar el siguiente ingreso." },
+    { min: 1.5, key: "consulado", label: "Entrevista consular",
+      text: "El plazo está mandado por la cita en el consulado, y la espera varía mucho por ciudad. Solo es viable si ya tienes I‑20." },
+    { min: -99, key: "tarde",     label: "Este ingreso ya está cerrado",
+      text: "Para esta fecha ya no alcanza a hacerse bien. La buena noticia: el siguiente ingreso te da margen para llegar con una candidatura mucho más fuerte." }
+  ];
+
+  var seg = document.querySelector(".seg");
+  var elMonths = document.getElementById("p-months");
+  var elUnit   = document.getElementById("p-unit");
+  var elStatus = document.getElementById("p-status");
+  var elStage  = document.getElementById("p-stage");
+  var elDetail = document.getElementById("p-detail");
+  var elTrack  = document.getElementById("p-track");
+
+  function monthsUntil(iso) {
+    var now = new Date();
+    var t = new Date(iso + "T00:00:00");
+    var m = (t.getFullYear() - now.getFullYear()) * 12 + (t.getMonth() - now.getMonth());
+    m += (t.getDate() - now.getDate()) / 30.4;
+    return m;
+  }
+
+  function render(iso) {
+    var m = monthsUntil(iso);
+    var months = Math.max(0, Math.round(m));
+    var stage = STAGES[STAGES.length - 1];
+    for (var i = 0; i < STAGES.length; i++) {
+      if (m >= STAGES[i].min) { stage = STAGES[i]; break; }
+    }
+
+    elMonths.textContent = months;
+    elUnit.textContent = months === 1 ? "mes por delante" : "meses por delante";
+    elStage.textContent = stage.label;
+    elDetail.textContent = stage.text;
+
+    var cls, txt;
+    if (m >= 10)      { cls = "ok";    txt = "A tiempo"; }
+    else if (m >= 5)  { cls = "tight"; txt = "Justo"; }
+    else              { cls = "late";  txt = "Muy justo"; }
+    elStatus.className = "status " + cls;
+    elStatus.textContent = txt;
+
+    // barra de etapas: 7 tramos, del más lejano al más cercano
+    var here = STAGES.indexOf(stage);
+    elTrack.innerHTML = "";
+    for (var s = 0; s < STAGES.length; s++) {
+      var d = document.createElement("div");
+      if (s === here) d.className = "here";
+      else if (s < here) d.className = "on";
+      elTrack.appendChild(d);
+    }
+  }
+
+  seg.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-date]");
+    if (!btn) return;
+    var all = seg.querySelectorAll("button[data-date]");
+    for (var i = 0; i < all.length; i++) all[i].setAttribute("aria-pressed", String(all[i] === btn));
+    render(btn.getAttribute("data-date"));
+  });
+
+  render(seg.querySelector('button[aria-pressed="true"]').getAttribute("data-date"));
+
+  /* ---------- formulario ---------- */
+  var form = document.getElementById("lead-form");
+  var sent = document.getElementById("sent");
+  var sentBody = document.getElementById("sent-body");
+  var waLink = document.getElementById("wa-link");
+  // Reemplazar por el número real de WhatsApp Business, en formato internacional sin signos.
+  var WA_NUMBER = "56900000000";
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = document.getElementById("f-name");
+    var email = document.getElementById("f-email");
+    var phone = document.getElementById("f-phone");
+    var ok = document.getElementById("f-ok");
+
+    if (!name.value.trim())  { name.focus();  return; }
+    if (!email.value.trim()) { email.focus(); return; }
+    if (!phone.value.trim()) { phone.focus(); return; }
+    if (!ok.checked)         { ok.focus();    return; }
+
+    var msg =
+      "Hola, quiero mi evaluación gratuita.\n\n" +
+      "Nombre: " + name.value.trim() + "\n" +
+      "País: " + document.getElementById("f-country").value + "\n" +
+      "Correo: " + email.value.trim() + "\n" +
+      "WhatsApp: " + phone.value.trim() + "\n" +
+      "Quiero estudiar: " + document.getElementById("f-route").value + "\n" +
+      "Ingreso deseado: " + document.getElementById("f-when").value;
+
+    var extra = document.getElementById("f-msg").value.trim();
+    if (extra) msg += "\n\nSobre mí: " + extra;
+
+    sentBody.textContent = msg;
+    waLink.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(msg);
+    form.style.display = "none";
+    sent.classList.add("on");
+    sent.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  document.getElementById("edit-again").addEventListener("click", function () {
+    sent.classList.remove("on");
+    form.style.display = "";
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+})();
+</script>
