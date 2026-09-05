@@ -297,7 +297,7 @@
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <p class="eyebrow">Chile · México · España → Estados Unidos</p>
+      <p class="eyebrow">España · México · Chile → Estados Unidos</p>
       <h1>Estudiar en Estados&nbsp;Unidos <span class="hl">empieza un año antes</span> de lo que crees.</h1>
       <p class="sub">Te acompañamos desde elegir la universidad hasta el día que entras al aula: aplicaciones, admisión, I‑20, visa F‑1 y llegada. En español, con alguien de tu país al otro lado del teléfono.</p>
       <div class="hero-cta">
@@ -306,7 +306,7 @@
       </div>
       <ul class="hero-facts">
         <li>Solo instituciones certificadas SEVP</li>
-        <li>Asesores en Santiago y Ciudad de México</li>
+        <li>Asesores en Madrid, Ciudad de México y Santiago</li>
         <li>Acompañamiento hasta el primer día de clases</li>
       </ul>
     </div>
@@ -557,7 +557,8 @@
       <details>
         <summary>¿Atienden desde España?</summary>
         <div class="a">
-          <p>Sí. Tenemos asesores en Chile y México, y atendemos España por videollamada con horario europeo. Todo el proceso —contrato, documentos y firma— es en línea.</p>
+          <p>Sí, y con alguien en España. Uno de los socios de Vía Norte es español y atiende el mercado español directamente, en horario europeo — no te va a contestar alguien a seis husos horarios de distancia.</p>
+          <p>Los otros dos socios están en México y Chile, y uno de ellos reside en Estados Unidos, que es quien lleva la relación con las universidades allí. Todo el proceso —contrato, documentos y firma— es en línea.</p>
         </div>
       </details>
     </div>
@@ -571,7 +572,7 @@
       <h2>Media hora que te ahorra un año de vueltas.</h2>
       <p class="sec-intro">Cuéntanos dónde estás y te escribimos para coordinar la videollamada. Si no calificas para lo que buscas, te lo decimos ahí mismo y sin costo.</p>
       <p class="sec-intro" style="font-size:15px">También puedes escribirnos directo por WhatsApp:<br>
-        <strong style="color:var(--warm)">+56 9 XXXX XXXX</strong> (Chile) · <strong style="color:var(--warm)">+52 55 XXXX XXXX</strong> (México)</p>
+        <strong style="color:var(--warm)">+34 618 18 95 63</strong> (España) · <strong style="color:var(--warm)">+52 55 XXXX XXXX</strong> (México) · <strong style="color:var(--warm)">+56 9 XXXX XXXX</strong> (Chile)</p>
     </div>
 
     <div>
@@ -654,7 +655,7 @@
     <div>
       <p style="margin:0 0 8px"><a href="#precios">Precios</a> · <a href="#proceso">Proceso</a> · <a href="#preguntas">Preguntas</a></p>
       <p style="margin:0 0 8px"><a href="#">Aviso de privacidad</a> · <a href="#">Términos del servicio</a> · <a href="#">Política de reembolso</a></p>
-      <p style="margin:0">hola@vianorte.example</p>
+      <p style="margin:0">hola@vianorte.example · WhatsApp España +34 618 18 95 63</p>
     </div>
   </div>
 </footer>
@@ -743,8 +744,9 @@
   var sent = document.getElementById("sent");
   var sentBody = document.getElementById("sent-body");
   var waLink = document.getElementById("wa-link");
-  // Reemplazar por el número real de WhatsApp Business, en formato internacional sin signos.
-  var WA_NUMBER = "56900000000";
+  // WhatsApp que recibe los leads del formulario, en formato internacional sin signos.
+  // Cambiar por el número de WhatsApp Business cuando lo tengan dado de alta.
+  var WA_NUMBER = "34618189563";
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
