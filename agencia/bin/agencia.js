@@ -52,7 +52,8 @@ ${col.neg(`${config.marca} · el programa que corre la agencia`)}
 
   ${col.azul('agencia abrir')}                      LA APLICACIÓN: la ventana con botones, en el navegador
       --puerto N         si el 4321 está ocupado
-      --red              además, desde el móvil o el iPad de tu misma wifi
+      --red              además, desde el móvil o el PC (misma wifi, o por VPN/túnel)
+      --nueva-clave      cambia la llave de acceso (invalida los enlaces guardados)
 
   ${col.azul('agencia arranque')}                   DE CERO A TODO: carga los leads, audita todas sus webs,
                                      saca los diagnósticos y deja los correos escritos. Se deja corriendo.
@@ -332,7 +333,7 @@ function cmdEscaneos() {
 /** Abre la aplicación: el programa con botones, en el navegador. */
 async function cmdAbrir(pos, op) {
   const puerto = op.puerto ? +op.puerto : 4321;
-  const { direccion, enRed, yaAbierta } = await arrancar({ puerto, red: !!op.red });
+  const { direccion, enRed, yaAbierta } = await arrancar({ puerto, red: !!op.red, nuevaClave: !!op['nueva-clave'] });
 
   if (yaAbierta) {
     // Ya había una copia corriendo (doble clic dos veces). Se usa esa.

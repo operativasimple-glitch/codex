@@ -9,10 +9,10 @@
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { randomBytes } from 'node:crypto';
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import { config } from '../config.js';
-import { DATOS, euros, diasDesde, slug } from '../util.js';
+import { DATOS, euros, diasDesde, slug, asegurarDir } from '../util.js';
 import { cargar, guardar, sembrarLeads, buscarLead, listarEscaneos, cargarEscaneo, anotarEvento, ESTADOS_LEAD } from '../almacen.js';
 import { calcularAgenda, marcador, ventanaLlamadas } from '../agente/hoy.js';
 import { nuevoPresupuesto, ejecutar, bandeja, marcarEnviado, leerBitacora } from '../agente/herramientas.js';
@@ -320,6 +320,27 @@ const json = (res, codigo, datos) => {
   res.end(JSON.stringify(datos));
 };
 
+const RUTA_ACCESO = join(DATOS, 'acceso.json');
+
+/**
+ * La llave de entrada, guardada en disco.
+ *
+ * Tiene que ser la misma siempre: si cambiara en cada arranque, el enlace que has
+ * guardado en favoritos en el móvil dejaría de valer cada vez que abres el programa.
+ */
+export function claveDeAcceso({ nueva = false } = {}) {
+  asegurarDir(DATOS);
+  if (!nueva && existsSync(RUTA_ACCESO)) {
+    try {
+      const { clave } = JSON.parse(readFileSync(RUTA_ACCESO, 'utf8'));
+      if (clave) return clave;
+    } catch { /* si el fichero está roto, se hace otra */ }
+  }
+  const clave = randomBytes(8).toString('hex');
+  writeFileSync(RUTA_ACCESO, JSON.stringify({ clave, creada: new Date().toISOString() }, null, 2));
+  return clave;
+}
+
 /** La IP de esta máquina en la red de casa, para abrirlo desde el móvil. */
 export function ipLocal() {
   for (const tarjetas of Object.values(networkInterfaces())) {
@@ -394,9 +415,9 @@ export function crearServidor() {
   });
 }
 
-export function arrancar({ puerto = 4321, intentos = 10, red = false } = {}) {
+export function arrancar({ puerto = 4321, intentos = 10, red = false, nuevaClave = false } = {}) {
   hayIA().then((v) => { IA_DISPONIBLE = v; });
-  if (red) CLAVE = randomBytes(8).toString('hex');
+  if (red) CLAVE = claveDeAcceso({ nueva: nuevaClave });
   // La sesión diaria, mientras la aplicación esté abierta.
   arrancarProgramador(() => {
     if (hayTrabajo()) return;
