@@ -7,6 +7,8 @@
  * programa se instala en veinte segundos y no hereda vulnerabilidades de nadie.
  */
 import { createServer } from 'node:http';
+import { networkInterfaces } from 'node:os';
+import { randomBytes } from 'node:crypto';
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import { config } from '../config.js';
@@ -30,6 +32,7 @@ import { PAGINA } from './pagina.js';
 let IA_DISPONIBLE = false;
 
 // La conversación con el director: lo que ve el usuario y lo que ve el modelo.
+let CLAVE = null;       // si se sirve a la red local, la llave de entrada
 let charla = [];        // [{quien:'tu'|'agente', texto, hora}]
 let mensajesIA = [];    // el historial en el formato de la API
 
@@ -317,10 +320,48 @@ const json = (res, codigo, datos) => {
   res.end(JSON.stringify(datos));
 };
 
+/** La IP de esta máquina en la red de casa, para abrirlo desde el móvil. */
+export function ipLocal() {
+  for (const tarjetas of Object.values(networkInterfaces())) {
+    for (const t of tarjetas || []) {
+      if (t.family === 'IPv4' && !t.internal) return t.address;
+    }
+  }
+  return null;
+}
+
+const esLocal = (req) => {
+  const ip = req.socket.remoteAddress || '';
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+};
+
+/**
+ * ¿Puede entrar esta petición?
+ *
+ * Desde el propio ordenador, siempre. Desde el móvil o el portátil de al lado, solo
+ * con la llave: la aplicación tiene los datos de los clientes y los correos sin
+ * mandar, y una red de casa la comparten más cosas de las que uno cree.
+ */
+export function permitido(req, url, clave) {
+  if (!clave) return true;                       // no se está sirviendo a la red
+  if (esLocal(req)) return true;
+  if (url.searchParams.get('clave') === clave) return true;
+  return (req.headers.cookie || '').includes(`agencia_clave=${clave}`);
+};
+
 export function crearServidor() {
   return createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     try {
+      if (!permitido(req, url, CLAVE)) {
+        res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end('<p style="font:16px system-ui;padding:40px">Falta la llave. Abre el enlace '
+          + 'completo que sale en la ventana del programa, con <code>?clave=…</code> al final.</p>');
+      }
+      // La llave llega una vez por la URL y se queda en una cookie del dispositivo.
+      if (CLAVE && url.searchParams.get('clave') === CLAVE) {
+        res.setHeader('Set-Cookie', `agencia_clave=${CLAVE}; Path=/; Max-Age=2592000; SameSite=Lax`);
+      }
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         return res.end(PAGINA);
@@ -353,14 +394,15 @@ export function crearServidor() {
   });
 }
 
-export function arrancar({ puerto = 4321, intentos = 10 } = {}) {
+export function arrancar({ puerto = 4321, intentos = 10, red = false } = {}) {
   hayIA().then((v) => { IA_DISPONIBLE = v; });
+  if (red) CLAVE = randomBytes(8).toString('hex');
   // La sesión diaria, mientras la aplicación esté abierta.
   arrancarProgramador(() => {
     if (hayTrabajo()) return;
     ACCIONES.sesion({ conIA: IA_DISPONIBLE });
   });
-  return buscarPuerto(puerto, intentos);
+  return buscarPuerto(puerto, intentos, red);
 }
 
 /**
@@ -371,11 +413,11 @@ export function arrancar({ puerto = 4321, intentos = 10 } = {}) {
  * lo ocupa cualquier otra cosa, se prueba el siguiente. Que el usuario tenga que
  * escribir un comando para esquivar un puerto no es una opción.
  */
-async function buscarPuerto(inicial, intentos) {
+async function buscarPuerto(inicial, intentos, red = false) {
   for (let i = 0; i < intentos; i++) {
     const puerto = inicial + i;
     try {
-      return await escuchar(puerto);
+      return await escuchar(puerto, red);
     } catch (e) {
       if (e.code !== 'EADDRINUSE') throw e;
       if (await esNuestra(puerto)) {
@@ -386,14 +428,22 @@ async function buscarPuerto(inicial, intentos) {
   throw new Error(`No hay ningún puerto libre entre el ${inicial} y el ${inicial + intentos - 1}.`);
 }
 
-function escuchar(puerto) {
+function escuchar(puerto, red = false) {
   return new Promise((resolver, rechazar) => {
     const servidor = crearServidor();
     servidor.once('error', rechazar);
-    // Solo en local: esto es la ventana del programa, no un servidor de internet.
-    servidor.listen(puerto, '127.0.0.1', () => {
+    // Por defecto solo en local: esto es la ventana del programa, no un servidor de
+    // internet. Con `red`, también desde el móvil de casa, y entonces con llave.
+    servidor.listen(puerto, red ? '0.0.0.0' : '127.0.0.1', () => {
       servidor.removeListener('error', rechazar);
-      resolver({ servidor, direccion: `http://localhost:${puerto}`, puerto });
+      const ip = red ? ipLocal() : null;
+      resolver({
+        servidor,
+        puerto,
+        direccion: `http://localhost:${puerto}`,
+        enRed: ip ? `http://${ip}:${puerto}/?clave=${CLAVE}` : null,
+        clave: CLAVE,
+      });
     });
   });
 }

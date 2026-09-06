@@ -63,6 +63,20 @@ auditoría tarda minutos y la página no se queda colgada.
 
 Solo escucha en `127.0.0.1`: no es un servidor de internet, es la ventana del programa.
 
+### Abrirlo desde el móvil
+
+```bash
+node bin/agencia.js abrir --red
+```
+
+Además de en el ordenador, queda accesible desde el móvil o el iPad **de la misma wifi**. La ventana
+imprime un segundo enlace con una llave dentro (`?clave=…`): guárdalo en favoritos en el móvil y ya
+entra siempre. Sin esa llave nadie de la red puede abrirlo, porque aquí dentro están los datos de los
+clientes y los correos sin mandar. Desde el propio ordenador nunca hace falta llave.
+
+Es la red de casa, no internet: fuera de esa wifi no se ve, y no hay que abrir ningún puerto del
+router (no lo hagas).
+
 Si el puerto 4321 está ocupado se busca el siguiente libre solo. Y si lo que lo ocupa es otra copia
 de la propia aplicación (pasa al abrirla dos veces), no se levanta una segunda: se abre la que ya
 estaba corriendo.

@@ -52,6 +52,7 @@ ${col.neg(`${config.marca} · el programa que corre la agencia`)}
 
   ${col.azul('agencia abrir')}                      LA APLICACIÓN: la ventana con botones, en el navegador
       --puerto N         si el 4321 está ocupado
+      --red              además, desde el móvil o el iPad de tu misma wifi
 
   ${col.azul('agencia arranque')}                   DE CERO A TODO: carga los leads, audita todas sus webs,
                                      saca los diagnósticos y deja los correos escritos. Se deja corriendo.
@@ -331,7 +332,7 @@ function cmdEscaneos() {
 /** Abre la aplicación: el programa con botones, en el navegador. */
 async function cmdAbrir(pos, op) {
   const puerto = op.puerto ? +op.puerto : 4321;
-  const { direccion, yaAbierta } = await arrancar({ puerto });
+  const { direccion, enRed, yaAbierta } = await arrancar({ puerto, red: !!op.red });
 
   if (yaAbierta) {
     // Ya había una copia corriendo (doble clic dos veces). Se usa esa.
@@ -345,6 +346,12 @@ async function cmdAbrir(pos, op) {
 
   console.log(`\n  ${col.neg(config.marca)} ${col.gris('· la aplicación está abierta en')}`);
   console.log(`  ${col.azul(direccion)}\n`);
+  if (enRed) {
+    console.log(`  ${col.gris('Desde el móvil o el iPad, en la misma wifi:')}`);
+    console.log(`  ${col.azul(enRed)}\n`);
+    console.log(col.gris('  Ese enlace lleva la llave dentro: guárdalo en favoritos y no lo compartas.'));
+    console.log(col.gris('  Quien esté en tu red y no tenga la llave, no entra.\n'));
+  }
   console.log(col.gris('  Deja esta ventana abierta mientras la uses. Para cerrar el programa: Control + C.\n'));
   if (!op['sin-abrir']) abrir(direccion);
 }
