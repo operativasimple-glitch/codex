@@ -1,0 +1,25 @@
+# Servicio para un servidor sin Docker.
+#   sudo cp agencia.service /etc/systemd/system/
+#   sudo systemctl enable --now agencia
+[Unit]
+Description=Agencia de cumplimiento digital
+After=network.target
+
+[Service]
+Type=simple
+User=agencia
+WorkingDirectory=/opt/agencia
+Environment=NODE_ENV=production
+# La clave, si se usa, en /etc/agencia.env con  ANTHROPIC_API_KEY=...
+EnvironmentFile=-/etc/agencia.env
+ExecStart=/usr/bin/node bin/agencia.js abrir --red --sin-abrir
+Restart=always
+RestartSec=5
+# Endurecido básico: el programa solo necesita escribir en sus datos.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/agencia/datos
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+# Levantar la agencia en un servidor:  docker compose up -d
+services:
+  agencia:
+    build:
+      context: ..
+      dockerfile: despliegue/Dockerfile
+    container_name: agencia
+    restart: unless-stopped
+    ports:
+      # Solo escucha en la propia máquina. Para llegar desde fuera se usa
+      # Tailscale o un túnel, nunca abriendo el puerto al internet abierto.
+      - "127.0.0.1:4321:4321"
+    volumes:
+      - ./datos:/app/datos
+    environment:
+      # Opcional: sin esto funciona igual, con el piloto sin IA.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}

@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agencia · cumplimiento digital</title>
+<style>
+:root{
+  color-scheme:light;
+  --fondo:#f4f3ef; --lienzo:#fbfaf7; --tarjeta:#fff; --linea:#e6e4dd; --linea-suave:#efedE7;
+  --tinta:#14150f; --suave:#63625a; --tenue:#8c8b81;
+  --acento:#12513f; --acento-flojo:#e7f0eb; --acento-texto:#0d3d2f;
+  --serie:#2a78d6; --bien:#0f7a3d; --aviso:#b45309; --critico:#c0362c;
+  --sombra:0 1px 2px rgba(20,21,15,.05), 0 4px 14px rgba(20,21,15,.04);
+  --sombra-alta:0 2px 6px rgba(20,21,15,.08), 0 12px 32px rgba(20,21,15,.07);
+  --radio:14px;
+}
+@media (prefers-color-scheme:dark){:root{
+  color-scheme:dark;
+  --fondo:#100f0d; --lienzo:#16150f; --tarjeta:#1c1b17; --linea:#2c2b25; --linea-suave:#232219;
+  --tinta:#f6f5ef; --suave:#b3b1a4; --tenue:#8a887c;
+  --acento:#6cc9a4; --acento-flojo:#17322a; --acento-texto:#8ad9b8;
+  --serie:#4f97e8; --bien:#3fbb6d; --aviso:#e0a33c; --critico:#e2695e;
+  --sombra:0 1px 2px rgba(0,0,0,.4); --sombra-alta:0 8px 30px rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--fondo);color:var(--tinta);
+font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.env{max-width:1060px;margin:0 auto;padding:26px 22px 90px}
+
+/* ── Cabecera */
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.logo{display:flex;align-items:center;gap:11px}
+.sello{width:34px;height:34px;border-radius:10px;background:var(--acento);color:var(--lienzo);
+display:grid;place-items:center;font-weight:700;font-size:15px;letter-spacing:-.02em;flex:none}
+@media (prefers-color-scheme:dark){.sello{color:#0d1210}}
+.logo h1{font-size:16.5px;margin:0;letter-spacing:-.01em;line-height:1.2}
+.logo p{margin:1px 0 0;font-size:12.5px;color:var(--tenue)}
+.reloj{font-size:12.5px;color:var(--suave);text-align:right;line-height:1.45}
+.reloj b{color:var(--tinta)}
+.abierta{color:var(--bien);font-weight:600}
+
+/* ── Bloque principal */
+.hero{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--radio);
+padding:20px 22px;box-shadow:var(--sombra);margin-bottom:14px;
+display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.hero .texto{min-width:260px;flex:1}
+.hero .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--tenue);font-weight:600}
+.hero h2{margin:5px 0 3px;font-size:20px;letter-spacing:-.02em}
+.hero p{margin:0;color:var(--suave);font-size:13.5px}
+.hero .botones{display:flex;gap:9px;flex-wrap:wrap}
+
+/* ── Botones */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--linea);
+background:var(--tarjeta);color:var(--tinta);padding:9px 15px;border-radius:10px;
+box-shadow:var(--sombra);cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--acento);box-shadow:var(--sombra-alta);transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+.btn.fuerte{background:var(--acento);border-color:var(--acento);color:#fff;font-weight:600}
+@media (prefers-color-scheme:dark){.btn.fuerte{color:#0d1210}}
+.btn.fantasma{background:transparent;box-shadow:none;border-color:transparent;color:var(--suave)}
+.btn.fantasma:hover:not(:disabled){background:var(--tarjeta);border-color:var(--linea)}
+.btn.chico{padding:5.5px 11px;font-size:13px;border-radius:8px;box-shadow:none}
+.btn.peligro:hover:not(:disabled){border-color:var(--critico);color:var(--critico)}
+.btn svg{width:15px;height:15px;flex:none}
+
+/* ── Aviso de leads */
+.alerta{background:var(--acento-flojo);border:1px solid color-mix(in srgb,var(--acento) 25%,transparent);
+border-radius:var(--radio);padding:17px 20px;margin-bottom:14px}
+.alerta h3{margin:0 0 4px;font-size:15px;color:var(--acento-texto)}
+.alerta p{margin:0 0 11px;font-size:13.5px;color:var(--suave)}
+.alerta textarea{width:100%;min-height:74px;border-radius:10px;border:1px solid var(--linea);
+padding:10px 12px;background:var(--tarjeta);resize:vertical;font-size:13.5px}
+.alerta .botones{display:flex;gap:9px;margin-top:10px;flex-wrap:wrap;align-items:center}
+
+/* ── Trabajo en marcha */
+#trabajo{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--radio);
+padding:16px 18px;margin-bottom:16px;box-shadow:var(--sombra)}
+.cabeza-trabajo{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.cabeza-trabajo b{font-size:14.5px}
+.pulso{width:9px;height:9px;border-radius:50%;background:var(--serie);flex:none;
+box-shadow:0 0 0 4px color-mix(in srgb,var(--serie) 18%,transparent);animation:late 1.3s ease-in-out infinite}
+@keyframes late{0%,100%{opacity:1}50%{opacity:.35}}
+.barra{height:6px;border-radius:99px;background:var(--linea);overflow:hidden;margin-bottom:11px}
+.barra i{display:block;height:100%;background:var(--acento);border-radius:99px;transition:width .4s}
+#registro{max-height:220px;overflow-y:auto;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;
+color:var(--suave);white-space:pre-wrap;word-break:break-word;padding-right:4px}
+#registro::-webkit-scrollbar{width:8px}
+#registro::-webkit-scrollbar-thumb{background:var(--linea);border-radius:99px}
+
+/* ── Pestañas */
+nav{display:flex;gap:2px;border-bottom:1px solid var(--linea);margin-bottom:22px;overflow-x:auto}
+nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--suave);
+padding:10px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-size:14px}
+nav button:hover{color:var(--tinta)}
+nav button.activa{color:var(--tinta);border-bottom-color:var(--acento);font-weight:600}
+nav .cuenta{background:var(--linea);border-radius:99px;padding:1px 8px;font-size:11.5px;font-weight:600}
+nav button.activa .cuenta{background:var(--acento);color:#fff}
+@media (prefers-color-scheme:dark){nav button.activa .cuenta{color:#0d1210}}
+
+h2.seccion{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue);
+margin:26px 0 11px;font-weight:600}
+h2.seccion:first-child{margin-top:0}
+.sub{color:var(--suave);font-size:13.5px;margin:-4px 0 14px}
+
+/* ── Fichas y tarjetas */
+.fichas{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px}
+.ficha{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--radio);
+padding:15px 17px;box-shadow:var(--sombra)}
+.ficha b{display:block;font-size:26px;letter-spacing:-.035em;line-height:1.15}
+.ficha span{font-size:12px;color:var(--tenue)}
+.tarjeta{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--radio);
+padding:16px 18px;margin-bottom:10px;box-shadow:var(--sombra)}
+.tarjeta.accion{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.tarjeta.accion .txt{flex:1;min-width:200px}
+.tarjeta.accion b{font-size:14.5px}
+.suave{color:var(--suave)}.tenue{color:var(--tenue)}
+.mini{font-size:12.5px}
+
+/* ── Tablas */
+.caja{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--radio);
+overflow:hidden;box-shadow:var(--sombra)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tenue);
+padding:11px 14px;border-bottom:1px solid var(--linea);font-weight:600;background:var(--lienzo)}
+td{padding:12px 14px;border-bottom:1px solid var(--linea-suave);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--lienzo)}
+td.der{text-align:right;white-space:nowrap}
+td.der .btn{margin-left:6px}
+
+/* ── Chips */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;
+font-size:11.5px;font-weight:600;white-space:nowrap;background:var(--linea);color:var(--suave)}
+.chip i{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.e-auditado{background:#e3ecfd;color:#1c4fa8}
+.e-contactado,.e-recordado{background:#fdf0d5;color:#8a5209}
+.e-respondido,.e-llamada{background:#dff5e6;color:#116b36}
+.e-cliente{background:var(--acento);color:#fff}
+.e-descartado{background:transparent;color:var(--tenue);border:1px dashed var(--linea)}
+@media (prefers-color-scheme:dark){
+.e-auditado{background:#16305c;color:#bcd5fb}.e-contactado,.e-recordado{background:#3d2a0c;color:#f2c97c}
+.e-respondido,.e-llamada{background:#12331f;color:#8fdba8}.e-cliente{background:var(--acento);color:#0d1210}}
+
+.correo{white-space:pre-wrap;font-size:13.5px;line-height:1.6;background:var(--lienzo);
+border:1px solid var(--linea);border-radius:11px;padding:15px 17px;margin-top:12px;max-height:430px;overflow-y:auto}
+select,input[type=text],textarea{padding:6px 10px;border-radius:9px;border:1px solid var(--linea);
+background:var(--tarjeta);font-size:13.5px}
+.detalle{background:var(--lienzo)}
+.vacio{text-align:center;padding:44px 20px;color:var(--tenue)}
+.vacio b{display:block;color:var(--tinta);font-size:15px;margin-bottom:5px}
+/* Guion y encargos */
+.paso{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:1px solid var(--linea-suave)}
+.paso:last-child{border-bottom:none}
+.paso input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--acento);flex:none;cursor:pointer}
+.paso input:disabled{cursor:default}
+.paso .txt{flex:1}
+.paso b{font-size:14px;font-weight:600}
+.paso.listo b{color:var(--suave);text-decoration:line-through;text-decoration-color:var(--linea)}
+.paso .ayuda{display:block;font-size:12.5px;color:var(--tenue);margin-top:2px}
+.progreso{height:5px;border-radius:99px;background:var(--linea);overflow:hidden;margin:10px 0 4px}
+.progreso i{display:block;height:100%;background:var(--acento);transition:width .3s}
+.acordeon{background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;
+box-shadow:var(--sombra);overflow:hidden}
+.acordeon summary{padding:13px 17px;cursor:pointer;font-weight:600;font-size:14.5px;list-style:none;
+display:flex;justify-content:space-between;align-items:center;gap:10px}
+.acordeon summary::-webkit-details-marker{display:none}
+.acordeon summary::after{content:'+';color:var(--tenue);font-weight:400;font-size:17px}
+.acordeon[open] summary::after{content:'–'}
+.acordeon .cuerpo{padding:0 17px 15px;font-size:13.8px;line-height:1.6}
+.cita{background:var(--acento-flojo);border-left:3px solid var(--acento);border-radius:0 9px 9px 0;
+padding:12px 15px;margin:4px 0 10px;font-size:14px;line-height:1.6}
+.nota-guion{color:var(--suave);font-size:12.5px;font-style:italic}
+.objecion{border-top:1px solid var(--linea-suave);padding:11px 0}
+.objecion:first-of-type{border-top:none}
+.objecion b{display:block;color:var(--critico);font-size:13.5px;margin-bottom:4px}
+
+/* Agente */
+.charla{display:flex;flex-direction:column;gap:10px;max-height:440px;overflow-y:auto;padding:4px 2px 8px}
+.burbuja{max-width:80%;padding:11px 14px;border-radius:14px;font-size:14px;line-height:1.55;white-space:pre-wrap}
+.burbuja.tu{align-self:flex-end;background:var(--acento);color:#fff;border-bottom-right-radius:5px}
+@media (prefers-color-scheme:dark){.burbuja.tu{color:#0d1210}}
+.burbuja.agente{align-self:flex-start;background:var(--lienzo);border:1px solid var(--linea);border-bottom-left-radius:5px}
+.escribir{display:flex;gap:9px;margin-top:12px}
+.escribir textarea{flex:1;min-height:46px;max-height:150px;resize:vertical;border-radius:11px;padding:11px 13px}
+.equipo{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.miembro{background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px;padding:13px 15px;box-shadow:var(--sombra)}
+.miembro b{display:block;font-size:14px}
+.miembro span{font-size:12.5px;color:var(--suave)}
+.ajuste{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.interruptor{position:relative;width:46px;height:26px;flex:none}
+.interruptor input{opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.interruptor i{position:absolute;inset:0;border-radius:99px;background:var(--linea);transition:.18s;pointer-events:none}
+.interruptor i::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;
+top:3px;left:3px;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.interruptor input:checked + i{background:var(--acento)}
+.interruptor input:checked + i::after{transform:translateX(20px)}
+
+#aviso{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(140%);
+background:var(--tinta);color:var(--fondo);padding:12px 20px;border-radius:11px;font-size:13.5px;
+box-shadow:var(--sombra-alta);max-width:min(620px,92vw);transition:transform .24s cubic-bezier(.2,.8,.2,1);z-index:9}
+#aviso.visible{transform:translateX(-50%) translateY(0)}
+#aviso.malo{background:var(--critico);color:#fff}
+#aviso:empty{display:none}
+@media (max-width:620px){
+  .env{padding:18px 14px 70px}
+  .hero{flex-direction:column;align-items:stretch}
+  td.der{text-align:left}
+  .reloj{text-align:left}
+}
+</style>
+</head>
+<body>
+<div class="env">
+
+<header>
+  <div class="logo">
+    <div class="sello" id="sello">N</div>
+    <div><h1 id="marca">Agencia</h1><p>Cumplimiento digital · accesibilidad web</p></div>
+  </div>
+  <div class="reloj" id="reloj"></div>
+</header>
+
+<div class="hero">
+  <div class="texto">
+    <div class="eyebrow">Lo siguiente</div>
+    <h2 id="hero-titulo">Cargando…</h2>
+    <p id="hero-texto"></p>
+  </div>
+  <div class="botones">
+    <button class="btn fuerte" id="btn-principal"></button>
+    <button class="btn" id="btn-sesion" title="Hace el trabajo pendiente del día">Sesión de hoy</button>
+    <button class="btn fantasma" id="btn-simulacro" title="Enseña lo que haría sin tocar nada">Simulacro</button>
+  </div>
+</div>
+
+<div class="alerta" id="alerta-leads" hidden>
+  <h3 id="alerta-titulo"></h3>
+  <p id="alerta-texto"></p>
+  <textarea id="leads-nuevos" placeholder="Una empresa por línea:&#10;Agencia Pepe, agenciapepe.es, Agencia web, Valencia&#10;tiendaramirez.com"></textarea>
+  <div class="botones">
+    <button class="btn fuerte" id="btn-anadir-leads">Añadir estos</button>
+    <button class="btn" id="btn-buscar-leads">Buscar automáticamente</button>
+    <span class="tenue mini" id="nota-ia"></span>
+  </div>
+</div>
+
+<div id="trabajo" hidden>
+  <div class="cabeza-trabajo"><span class="pulso"></span><b id="trabajo-titulo"></b>
+    <span class="tenue mini" id="trabajo-cuenta"></span></div>
+  <div class="barra" id="barra" hidden><i id="barra-relleno" style="width:0%"></i></div>
+  <div id="registro"></div>
+</div>
+
+<nav id="pestanas">
+  <button data-tab="panel" class="activa">Panel</button>
+  <button data-tab="agente">Agente</button>
+  <button data-tab="guion">Guion <span class="cuenta" id="n-encargos">0</span></button>
+  <button data-tab="leads">Leads <span class="cuenta" id="n-leads">0</span></button>
+  <button data-tab="auditorias">Auditorías <span class="cuenta" id="n-escaneos">0</span></button>
+  <button data-tab="bandeja">Bandeja <span class="cuenta" id="n-bandeja">0</span></button>
+  <button data-tab="bitacora">Bitácora</button>
+</nav>
+
+<main>
+  <section id="tab-panel"></section>
+  <section id="tab-agente" hidden></section>
+  <section id="tab-guion" hidden></section>
+  <section id="tab-leads" hidden></section>
+  <section id="tab-auditorias" hidden></section>
+  <section id="tab-bandeja" hidden></section>
+  <section id="tab-bitacora" hidden></section>
+</main>
+
+</div>
+<div id="aviso"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let estado = null;
+let pestana = 'panel';
+const abiertos = new Set();
+
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (m) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const euros = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0);
+
+function avisar(texto, malo = false) {
+  const a = $('#aviso');
+  a.textContent = texto;
+  a.className = 'visible' + (malo ? ' malo' : '');
+  clearTimeout(a._t);
+  a._t = setTimeout(() => { a.className = ''; a.textContent = ''; }, malo ? 8000 : 4200);
+}
+
+async function pedir(cuerpo) {
+  const r = await fetch('/api/accion', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo),
+  });
+  const datos = await r.json().catch(() => ({ error: 'Respuesta ilegible del programa.' }));
+  if (!r.ok || datos.error) { avisar(datos.error || 'No ha salido', true); return null; }
+  if (datos.mensaje) avisar(datos.mensaje);
+  await refrescar();
+  return datos;
+}
+
+async function refrescar() {
+  try {
+    estado = await (await fetch('/api/estado')).json();
+    pintar();
+  } catch {
+    avisar('Se ha perdido la conexión con el programa. ¿Sigue abierta la ventana negra?', true);
+  }
+}
+
+// ── Pintado general
+
+function pintar() {
+  if (!estado) return;
+  const m = estado.marcador;
+
+  $('#sello').textContent = estado.marca.slice(0, 1).toUpperCase();
+  $('#marca').textContent = estado.marca;
+  $('#reloj').innerHTML = 'Día <b>' + m.dias + '</b> de los 90 · quedan ' + m.restantes
+    + '<br>En España son las <b>' + estado.ventana.horaEspana + '</b>'
+    + (estado.ventana.abierta ? ' · <span class="abierta">se puede llamar</span>' : ' · fuera de la ventana de llamadas');
+
+  $('#n-leads').textContent = estado.leads.length;
+  $('#n-escaneos').textContent = estado.escaneos.length;
+  $('#n-bandeja').textContent = estado.bandeja.length;
+  $('#n-encargos').textContent = estado.encargos.length;
+
+  pintarHero();
+  pintarAlerta();
+  pintarTrabajo();
+  ({ panel: pintarPanel, agente: pintarAgente, guion: pintarGuion, leads: pintarLeads, auditorias: pintarAuditorias,
+     bandeja: pintarBandeja, bitacora: pintarBitacora })[pestana]();
+
+  const ocupado = estado.trabajo.activo;
+  for (const b of document.querySelectorAll('.hero .btn, .alerta .btn')) b.disabled = ocupado;
+  if (!ocupado) $('#btn-principal').disabled = !accionPrincipal().puede;
+}
+
+/** Qué es lo siguiente que hay que hacer. Manda la aplicación entera. */
+function accionPrincipal() {
+  const sinAuditar = estado.leads.filter((l) => l.estado === 'sin-auditar' && l.auditable).length;
+  const enBandeja = estado.bandeja.length;
+  if (estado.trabajo.activo) {
+    return { puede: false, boton: 'Trabajando…', titulo: estado.trabajo.titulo,
+      texto: 'Puedes seguir mirando el resto mientras tanto.' };
+  }
+  if (enBandeja) {
+    return { puede: true, accion: 'bandeja', boton: 'Ver los correos',
+      titulo: enBandeja + (enBandeja === 1 ? ' correo listo para mandar' : ' correos listos para mandar'),
+      texto: 'Los ha escrito el programa con los fallos reales de cada web. Los lees, los copias y los mandas tú.' };
+  }
+  if (sinAuditar) {
+    return { puede: true, accion: 'arranque', boton: 'Auditar las ' + sinAuditar + ' webs',
+      titulo: 'Auditar la cartera entera',
+      texto: sinAuditar + ' webs sin revisar. Cada una tarda un par de minutos: se lanza y te vas. Al volver tendrás su informe y su correo escrito.' };
+  }
+  if (estado.faltanLeads) {
+    return { puede: true, accion: 'leads', boton: 'Conseguir leads',
+      titulo: 'Te has quedado sin lista',
+      texto: 'Con menos de ' + estado.umbralLeads + ' por contactar la máquina se para. Añade más ahí arriba.' };
+  }
+  return { puede: true, accion: 'sesion', boton: 'Hacer la sesión de hoy',
+    titulo: 'Todo al día', texto: 'No hay nada urgente. La sesión de hoy repasa lo pendiente y avisa de lo que toque.' };
+}
+
+function pintarHero() {
+  const a = accionPrincipal();
+  $('#hero-titulo').textContent = a.titulo;
+  $('#hero-texto').textContent = a.texto;
+  const b = $('#btn-principal');
+  b.textContent = a.boton;
+  b.dataset.accion = a.accion || '';
+}
+
+function pintarAlerta() {
+  const caja = $('#alerta-leads');
+  caja.hidden = !estado.faltanLeads;
+  if (caja.hidden) return;
+  $('#alerta-titulo').textContent = `Quedan ${estado.leadsPorContactar} leads por contactar`;
+  $('#alerta-texto').textContent = `Por debajo de ${estado.umbralLeads} esto se para: sin lista no hay a quién auditar `
+    + 'ni a quién escribir. Pega abajo empresas nuevas, o deja que las busque el programa. '
+    + 'Ninguna entra en la lista sin que su web responda de verdad.';
+  $('#btn-buscar-leads').disabled = !estado.ia;
+  $('#nota-ia').textContent = estado.ia ? '' : 'La búsqueda automática necesita clave de API. Mientras tanto, pégalos tú.';
+}
+
+function pintarTrabajo() {
+  const t = estado.trabajo;
+  const caja = $('#trabajo');
+  if (!t.titulo) { caja.hidden = true; return; }
+  caja.hidden = false;
+  $('#trabajo-titulo').textContent = t.activo ? t.titulo + '…' : t.titulo;
+  $('#trabajo-cuenta').textContent = t.total ? `${t.hechos} de ${t.total}` : (t.activo ? '' : '· terminado');
+  const punto = caja.querySelector('.pulso');
+  punto.style.animationPlayState = t.activo ? 'running' : 'paused';
+  punto.style.background = t.error ? 'var(--critico)' : t.activo ? 'var(--serie)' : 'var(--bien)';
+  const barra = $('#barra');
+  barra.hidden = !t.total;
+  if (t.total) $('#barra-relleno').style.width = Math.min(100, (t.hechos / t.total) * 100) + '%';
+  const reg = $('#registro');
+  const abajo = reg.scrollTop + reg.clientHeight >= reg.scrollHeight - 40;
+  reg.textContent = t.lineas.join('\n');
+  if (abajo) reg.scrollTop = reg.scrollHeight;
+}
+
+// ── Pestañas
+
+function pintarPanel() {
+  const m = estado.marcador;
+  const embudo = [['En la lista', m.leads], ['Auditados', m.auditados], ['Contactados', m.contactados],
+    ['Han respondido', m.respuestas], ['Clientes', m.clientes]];
+  const tope = Math.max(1, ...embudo.map(([, n]) => n));
+
+  $('#tab-panel').innerHTML = `
+    <div class="fichas">
+      <div class="ficha"><b>${m.clientes}</b><span>clientes pagando</span></div>
+      <div class="ficha"><b>${euros(m.mrr)}</b><span>recurrente al mes</span></div>
+      <div class="ficha"><b>${m.tasaRespuesta} %</b><span>responden (${m.respuestas} de ${m.contactados})</span></div>
+      <div class="ficha"><b>${m.auditados}</b><span>webs auditadas</span></div>
+      <div class="ficha"><b>${m.restantes}</b><span>días hasta la decisión</span></div>
+    </div>
+
+    <h2 class="seccion">Embudo</h2>
+    <div class="tarjeta">
+      ${embudo.map(([etq, n]) => `<div style="display:grid;grid-template-columns:130px 1fr 42px;align-items:center;gap:12px;margin:9px 0">
+        <span class="suave mini">${etq}</span>
+        <span style="height:14px;border-radius:0 5px 5px 0;background:var(--serie);width:${(n / tope) * 100}%"></span>
+        <span class="tenue mini" style="text-align:right">${n}</span></div>`).join('')}
+    </div>
+
+    ${ultimaSesion() ? `<h2 class="seccion">Lo último que hizo el agente</h2>
+      <div class="tarjeta"><span class="suave" style="white-space:pre-wrap">${esc(ultimaSesion())}</span></div>` : ''}
+
+    <h2 class="seccion">Qué toca ahora</h2>
+    ${estado.acciones.length ? estado.acciones.map((a) => `
+      <div class="tarjeta accion">
+        <div class="txt"><b>${esc(a.titulo)}</b><br><span class="suave mini">${esc(a.porque)}</span></div>
+        <div>${botonAccion(a)}</div>
+      </div>`).join('')
+    : '<div class="tarjeta"><span class="suave">Nada pendiente ahora mismo.</span></div>'}
+
+    ${estado.clientes.length ? `<h2 class="seccion">Clientes</h2><div class="caja"><table>
+      <thead><tr><th>Cliente</th><th>Plan</th><th>Cuota</th><th>Último escaneo</th><th></th></tr></thead><tbody>
+      ${estado.clientes.map((c) => `<tr><td><b>${esc(c.nombre)}</b></td><td class="suave">${esc(c.plan)}</td>
+        <td>${euros(c.cuota)}/mes</td><td class="suave mini">${c.dias === null ? '—' : 'hace ' + c.dias + ' días'}</td>
+        <td class="der"><button class="btn chico" data-vigilar="${esc(c.nombre)}">Reescanear</button></td></tr>`).join('')}
+      </tbody></table></div>` : ''}`;
+}
+
+function pintarGuion() {
+  const leadsElegibles = estado.leads.filter((l) => !estado.encargos.some((e) => e.id === l.id)
+    && !['descartado'].includes(l.estado) && !l.empresa.startsWith('['));
+
+  $('#tab-guion').innerHTML = `
+    <h2 class="seccion">Encargos en marcha</h2>
+    ${estado.encargos.length ? estado.encargos.map(tarjetaEncargo).join('') : `
+      <div class="caja vacio"><b>Ningún encargo abierto</b>
+        Cuando alguien te diga que sí en una llamada, ábrelo aquí y el programa te va llevando
+        paso a paso hasta la vigilancia mensual.</div>`}
+
+    <div class="tarjeta ajuste" style="margin-top:10px">
+      <span class="mini">Abrir un encargo para</span>
+      <select id="nuevo-encargo">
+        ${leadsElegibles.map((l) => `<option value="${l.id}">${esc(l.empresa)}</option>`).join('')}
+      </select>
+      <button class="btn chico" id="btn-abrir-encargo">Ha dicho que sí</button>
+    </div>
+
+    <h2 class="seccion">El guion de la llamada</h2>
+    <p class="sub">Tenlo abierto mientras hablas. No es para leerlo entero: es para no quedarte en blanco.</p>
+    ${estado.guion.map((sec, i) => `
+      <details class="acordeon" ${i < 2 ? 'open' : ''}>
+        <summary>${esc(sec.titulo)}</summary>
+        <div class="cuerpo">
+          ${sec.guion ? `<div class="cita">${esc(sec.guion)}</div>` : ''}
+          ${sec.puntos ? `<ul style="margin:0;padding-left:18px">${sec.puntos.map((p) => `<li style="margin-bottom:7px">${esc(p)}</li>`).join('')}</ul>` : ''}
+          ${sec.pares ? sec.pares.map(([o, r]) => `<div class="objecion"><b>"${esc(o)}"</b>${esc(r)}</div>`).join('') : ''}
+          ${sec.nota ? `<div class="nota-guion" style="margin-top:9px">${esc(sec.nota)}</div>` : ''}
+        </div>
+      </details>`).join('')}`;
+
+  const b = $('#btn-abrir-encargo');
+  if (b) b.onclick = () => pedir({ tipo: 'paso', lead: $('#nuevo-encargo').value, paso: 'llamada', hecho: true });
+}
+
+function tarjetaEncargo(e) {
+  const pct = Math.round((e.hechos / e.total) * 100);
+  return `<div class="tarjeta">
+    <div class="fila-tarjeta" style="align-items:baseline">
+      <div><b style="font-size:15px">${esc(e.empresa)}</b>
+        <span class="tenue mini"> · ${esc(e.web || '')}</span></div>
+      <span class="tenue mini">${e.hechos} de ${e.total}${e.completo ? ' · completo' : ''}</span>
+    </div>
+    <div class="progreso"><i style="width:${pct}%"></i></div>
+    ${e.pasos.map((p) => `
+      <label class="paso ${p.hecho ? 'listo' : ''}">
+        <input type="checkbox" ${p.hecho ? 'checked' : ''} ${p.auto ? 'disabled' : ''}
+          data-paso="${p.id}" data-encargo="${e.id}">
+        <span class="txt"><b>${esc(p.titulo)}</b>
+          <span class="ayuda">${esc(p.ayuda)}${p.auto ? ' · lo marca el programa solo' : ''}</span>
+          ${p.id === 'presupuesto' && !p.hecho ? `<button class="btn chico" style="margin-top:7px" data-correo-encargo='{"lead":"${e.id}","tipo":"confirmacion"}'>Copiar el correo de presupuesto</button>` : ''}
+          ${p.id === 'entregado' && !p.hecho ? `<button class="btn chico" style="margin-top:7px" data-correo-encargo='{"lead":"${e.id}","tipo":"entrega"}'>Copiar el correo de entrega</button>` : ''}
+        </span>
+      </label>`).join('')}
+  </div>`;
+}
+
+function ultimaSesion() {
+  const e = estado.bitacora.find((x) => x.tipo === 'sesion' && x.resumen);
+  return e ? String(e.resumen).slice(0, 600) : null;
+}
+
+function pintarAgente() {
+  const p = estado.programacion;
+  const proxima = p.proxima
+    ? new Date(p.proxima).toLocaleString('es-ES', { weekday: 'long', hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  $('#tab-agente').innerHTML = `
+    <h2 class="seccion">La sesión diaria</h2>
+    <div class="tarjeta">
+      <div class="ajuste">
+        <label class="interruptor"><input type="checkbox" id="prog-activo" ${p.activo ? 'checked' : ''}><i></i></label>
+        <div style="flex:1;min-width:200px">
+          <b>Trabajar solo todos los días</b>
+          <div class="suave mini">Audita lo pendiente, escribe los correos y reescanea a los clientes,
+          sin que tengas que abrir nada. Necesita que la aplicación esté abierta a esa hora; si el
+          ordenador estaba apagado, lo hace en cuanto la abras.</div>
+        </div>
+        <span class="mini">a las <input type="text" id="prog-hora" value="${esc(p.hora)}" style="width:70px"></span>
+        <button class="btn chico" id="btn-guardar-prog">Guardar</button>
+      </div>
+      ${p.activo && proxima ? `<div class="tenue mini" style="margin-top:10px">Próxima sesión: ${proxima}</div>` : ''}
+    </div>
+
+    <h2 class="seccion">El equipo</h2>
+    <div class="equipo">
+      <div class="miembro"><b>Director</b><span>Mira el estado, decide y reparte. No ejecuta.</span></div>
+      <div class="miembro"><b>Auditor</b><span>Rastrea webs y saca los informes.</span></div>
+      <div class="miembro"><b>Comercial</b><span>Escribe los correos y mantiene la lista viva.</span></div>
+      <div class="miembro"><b>Vigilante</b><span>Cuida a los clientes que ya pagan.</span></div>
+      <div class="miembro"><b>Analista</b><span>Mira los números y dice la verdad.</span></div>
+    </div>
+
+    <h2 class="seccion">Hablar con el agente</h2>
+    ${estado.ia ? `
+      <div class="tarjeta">
+        <div class="charla" id="charla">
+          ${estado.charla.length ? estado.charla.map((m) => `<div class="burbuja ${m.quien}">${esc(m.texto)}</div>`).join('')
+            : `<div class="tenue mini">Pídele lo que quieras: «audita las agencias de Madrid»,
+               «¿cómo va el negocio?», «escribe a los que llevan una semana sin contestar»,
+               «busca diez leads nuevos». Hace el trabajo de verdad, no te lo cuenta.</div>`}
+        </div>
+        <div class="escribir">
+          <textarea id="mensaje" placeholder="Escríbele…"></textarea>
+          <button class="btn fuerte" id="btn-enviar">Enviar</button>
+        </div>
+        ${estado.charla.length ? '<div style="margin-top:8px"><button class="btn chico fantasma" id="btn-olvidar">Borrar la conversación</button></div>' : ''}
+      </div>`
+    : `<div class="caja vacio"><b>Hablar con el agente necesita clave de API</b>
+        Con <code>ANTHROPIC_API_KEY</code> puesta, aquí le pides las cosas en tu idioma y las hace.
+        Sin ella tienes los botones, que hacen el mismo trabajo sin decidir por su cuenta.</div>`}`;
+
+  const c = $('#charla');
+  if (c) c.scrollTop = c.scrollHeight;
+  const prog = $('#btn-guardar-prog');
+  if (prog) prog.onclick = () => pedir({ tipo: 'programacion', activo: $('#prog-activo').checked, hora: $('#prog-hora').value.trim() });
+  const activo = $('#prog-activo');
+  if (activo) activo.onchange = () => pedir({ tipo: 'programacion', activo: activo.checked, hora: $('#prog-hora').value.trim() });
+  const enviar = $('#btn-enviar');
+  if (enviar) enviar.onclick = mandarMensaje;
+  const olvidar = $('#btn-olvidar');
+  if (olvidar) olvidar.onclick = () => pedir({ tipo: 'olvidarCharla' });
+  const caja = $('#mensaje');
+  if (caja) {
+    caja.onkeydown = (ev) => { if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) mandarMensaje(); };
+    if (document.activeElement === document.body) caja.focus();
+  }
+}
+
+async function mandarMensaje() {
+  const caja = $('#mensaje');
+  const texto = caja.value.trim();
+  if (!texto) return;
+  caja.value = '';
+  await pedir({ tipo: 'chat', mensaje: texto });
+}
+
+function botonAccion(a) {
+  if (!a.herramienta) return '<span class="chip e-contactado"><i></i>lo haces tú</span>';
+  const args = esc(JSON.stringify(a.argumentos));
+  const mapa = {
+    auditar_web: `<button class="btn chico" data-auditar='${args}'>Auditar</button>`,
+    redactar_correo: `<button class="btn chico" data-correo='${args}'>Escribir correo</button>`,
+    vigilar_cliente: `<button class="btn chico" data-vigilar="${esc(a.argumentos.cliente)}">Reescanear</button>`,
+    actualizar_lead: `<button class="btn chico peligro" data-lead='${args}'>Descartar</button>`,
+    buscar_leads: '<button class="btn chico" data-buscar-leads="1">Buscar leads</button>',
+  };
+  return mapa[a.herramienta] || '';
+}
+
+function pintarLeads() {
+  const orden = ['respondido', 'llamada', 'cliente', 'auditado', 'contactado', 'recordado', 'sin-auditar', 'descartado'];
+  const leads = [...estado.leads].sort((a, b) =>
+    orden.indexOf(a.estado) - orden.indexOf(b.estado) || a.prioridad - b.prioridad || a.empresa.localeCompare(b.empresa));
+
+  $('#tab-leads').innerHTML = `
+    <p class="sub">${estado.leadsPorContactar} por contactar de ${estado.leads.length}.
+    Auditar una web es lo que desbloquea su correo: sin hallazgo concreto no se escribe a nadie.</p>
+    <div class="caja"><table>
+      <thead><tr><th>Empresa</th><th>Segmento</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${leads.map((l) => `<tr>
+        <td><b>${esc(l.empresa)}</b><br><span class="tenue mini">${esc(l.web || 'sin web anotada')}${l.origen ? ' · ' + esc(l.origen) : ''}</span></td>
+        <td class="suave mini">${esc(l.segmento || '')}${l.sede ? '<br>' + esc(l.sede) : ''}</td>
+        <td><span class="chip e-${l.estado}"><i></i>${l.estado.replace('-', ' ')}</span>
+          ${l.diasContacto !== null ? `<br><span class="tenue mini">hace ${l.diasContacto} d</span>` : ''}</td>
+        <td class="der">
+          ${l.auditable ? `<button class="btn chico" data-auditar='{"lead":"${l.id}"}'>${l.escaneos.length ? 'Reauditar' : 'Auditar'}</button>` : ''}
+          ${l.escaneos.length ? `<button class="btn chico" data-correo='{"lead":"${l.id}","plantilla":"${l.plantilla}"}'>Correo</button>` : ''}
+          ${!l.auditable ? `<button class="btn chico" data-web="${l.id}">Poner su web</button>` : ''}
+          <button class="btn chico fantasma" data-detalle="${l.id}" title="Ver más">···</button>
+        </td></tr>
+        <tr id="detalle-${l.id}" class="detalle" hidden><td colspan="4">
+          <div class="suave mini"><b>Por qué es buen lead:</b> ${esc(l.porQue || '—')}</div>
+          <div class="suave mini"><b>Cómo contactarle:</b> ${esc(l.via || '—')}</div>
+          ${l.notas ? `<div class="suave mini"><b>Notas:</b> ${esc(l.notas)}</div>` : ''}
+          <div style="margin-top:10px" class="mini">Estado:
+            <select data-estado="${l.id}">
+              ${estado.estadosLead.map((e) => `<option value="${e}" ${e === l.estado ? 'selected' : ''}>${e}</option>`).join('')}
+            </select>
+            <span class="tenue">— cámbialo cuando te contesten o cierres la venta</span>
+          </div></td></tr>`).join('')}
+      </tbody></table></div>`;
+}
+
+function pintarAuditorias() {
+  const color = { rojo: 'var(--critico)', ambar: 'var(--aviso)', verde: 'var(--bien)' };
+  const etiqueta = { rojo: 'Incumple', ambar: 'Con fallos', verde: 'Limpio' };
+  if (!estado.escaneos.length) {
+    $('#tab-auditorias').innerHTML = `<div class="caja vacio"><b>Todavía no has auditado ninguna web</b>
+      El botón verde de arriba las hace todas, una detrás de otra.</div>`;
+    return;
+  }
+  $('#tab-auditorias').innerHTML = `<p class="sub">Cada auditoría guarda sus capturas y su informe.
+    El diagnóstico gratuito es lo que se manda; la auditoría completa de pago necesita además la revisión
+    manual con teclado y lector de pantalla, que la haces tú.</p>` + estado.escaneos.map((e) => `
+    <div class="tarjeta accion">
+      <div class="txt">
+        <b><span class="chip" style="background:transparent;color:${color[e.semaforo]};padding-left:0"><i></i>${etiqueta[e.semaforo]}</span>
+        ${esc(e.cliente)}</b>
+        <div class="tenue mini">${esc(e.dominio)} · ${e.totales.paginas} páginas · ${e.totales.incidencias} incidencias ·
+          ${Math.round(e.totales.minutosCorreccion / 60 * 10) / 10} h de corrección (${euros(e.totales.costeCorreccion)})
+          · ${e.manual ? 'revisión manual hecha' : 'sin revisión manual'}</div>
+        <div class="suave mini" style="margin-top:7px">${e.hallazgos.map((h) => esc(h.titulo) + ' (' + h.incidencias + ')').join(' · ')}</div>
+      </div>
+      <div style="text-align:right">
+        ${(e.informes || []).map((f) => `<a class="btn chico" style="text-decoration:none;margin:0 0 6px 6px"
+          href="/informes/${encodeURIComponent(f.archivo)}" target="_blank">${f.archivo.endsWith('.pdf') ? 'PDF' : 'Informe'}</a>`).join('')}
+        <button class="btn chico" data-informe='{"escaneo":"${e.id}","tipo":"diagnostico"}'>Rehacer</button>
+      </div></div>`).join('');
+}
+
+function pintarBandeja() {
+  if (!estado.bandeja.length) {
+    $('#tab-bandeja').innerHTML = `<div class="caja vacio"><b>No hay correos esperando</b>
+      Se escriben solos cuando el programa audita una web.</div>`;
+    return;
+  }
+  $('#tab-bandeja').innerHTML = `<p class="sub">El programa no manda correos: los escribe y los deja aquí.
+    Los mandas tú por el formulario de su web o por LinkedIn, que es lo que funciona y lo que la ley española espera.</p>`
+    + estado.bandeja.map((c) => `
+    <div class="tarjeta">
+      <div class="tarjeta accion" style="border:0;padding:0;margin:0;box-shadow:none;background:none">
+        <div class="txt"><b>${esc(c.empresa)}</b> <span class="chip e-auditado"><i></i>${esc(c.plantilla)}</span>
+          <div class="suave mini" style="margin-top:3px">${esc(c.asunto)}</div>
+          <div class="tenue mini">Mándalo por: ${esc(c.via || 'el formulario de su web')}</div></div>
+        <div style="text-align:right;white-space:nowrap">
+          <button class="btn chico" data-abrir="${c.id}">${abiertos.has(c.id) ? 'Cerrar' : 'Leer'}</button>
+          <button class="btn chico" data-copiar="${c.id}">Copiar</button>
+          <button class="btn chico fuerte" data-enviado="${c.id}">Ya lo he mandado</button>
+        </div>
+      </div>
+      ${abiertos.has(c.id) ? `<div class="correo">Asunto: ${esc(c.asunto)}\n\n${esc(c.cuerpo)}</div>` : ''}
+    </div>`).join('');
+}
+
+function pintarBitacora() {
+  if (!estado.bitacora.length) {
+    $('#tab-bitacora').innerHTML = '<div class="caja vacio"><b>Sin actividad todavía</b>Aquí queda todo lo que hace el programa.</div>';
+    return;
+  }
+  $('#tab-bitacora').innerHTML = `<div class="caja"><table>
+    <thead><tr><th>Cuándo</th><th>Qué</th><th>Detalle</th></tr></thead><tbody>
+    ${estado.bitacora.map((e) => {
+      const cuando = new Date(e.fecha).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const texto = e.texto || e.resumen || (e.nombre ? e.nombre + ' ' + JSON.stringify(e.argumentos || {}) : '');
+      return `<tr><td class="tenue mini">${cuando}</td><td><span class="chip"><i></i>${esc(e.tipo || '')}</span></td>
+        <td class="mini">${esc(String(texto).split('\n')[0].slice(0, 130))}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+// ── Interacción
+
+function irA(tab) {
+  pestana = tab;
+  for (const x of document.querySelectorAll('#pestanas button')) x.classList.toggle('activa', x.dataset.tab === tab);
+  for (const s of document.querySelectorAll('main section')) s.hidden = s.id !== 'tab-' + tab;
+  pintar();
+}
+
+$('#pestanas').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-tab]');
+  if (b) irA(b.dataset.tab);
+});
+
+function lanzarArranque() {
+  const n = estado.leads.filter((l) => l.estado === 'sin-auditar' && l.auditable).length;
+  if (!confirm(`Se van a auditar ${n} webs, una detrás de otra. Entre veinte minutos y una hora.\n\nAl terminar tendrás el diagnóstico en PDF de cada una y su correo escrito en la bandeja.\n\n¿Lo lanzo?`)) return;
+  pedir({ tipo: 'arranque' });
+}
+
+$('#btn-principal').onclick = () => {
+  const a = $('#btn-principal').dataset.accion;
+  if (a === 'arranque') return lanzarArranque();
+  if (a === 'bandeja') return irA('bandeja');
+  if (a === 'leads') return $('#leads-nuevos').focus();
+  pedir({ tipo: 'sesion', conIA: true });
+};
+$('#btn-sesion').onclick = () => pedir({ tipo: 'sesion', conIA: true });
+$('#btn-simulacro').onclick = () => pedir({ tipo: 'sesion', simulacro: true });
+$('#btn-buscar-leads').onclick = () => pedir({ tipo: 'buscarLeads' });
+$('#btn-anadir-leads').onclick = async () => {
+  const texto = $('#leads-nuevos').value.trim();
+  if (!texto) { avisar('Escribe al menos una empresa, con su web.', true); return; }
+  const r = await pedir({ tipo: 'anadirLeads', texto });
+  if (r) $('#leads-nuevos').value = '';
+};
+
+document.addEventListener('click', async (ev) => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  const d = b.dataset;
+
+  if (d.auditar) return void pedir({ tipo: 'auditar', ...JSON.parse(d.auditar) });
+  if (d.correo) return void pedir({ tipo: 'correo', ...JSON.parse(d.correo) });
+  if (d.vigilar) return void pedir({ tipo: 'vigilar', cliente: d.vigilar });
+  if (d.informe) return void pedir({ tipo: 'informe', ...JSON.parse(d.informe) });
+  if (d.buscarLeads) return void pedir({ tipo: 'buscarLeads' });
+  if (d.lead) {
+    const args = JSON.parse(d.lead);
+    if (!confirm('¿Descartar este lead? Deja de aparecer en lo pendiente.')) return;
+    return void pedir({ tipo: 'lead', id: args.lead, estado: args.estado, nota: args.nota });
+  }
+  if (d.enviado) {
+    if (!confirm('¿Ya lo has mandado?\n\nEsto pone el lead en "contactado" y arranca el reloj de los 7 días del recordatorio.')) return;
+    abiertos.delete(d.enviado);
+    return void pedir({ tipo: 'enviado', id: d.enviado });
+  }
+  if (d.abrir) { abiertos.has(d.abrir) ? abiertos.delete(d.abrir) : abiertos.add(d.abrir); return void pintar(); }
+  if (d.correoEncargo) {
+    const r = await pedir({ tipo: 'correoEncargo', ...JSON.parse(d.correoEncargo) });
+    if (!r?.correo) return;
+    const texto = `Asunto: ${r.correo.asunto}\n\n${r.correo.cuerpo}`;
+    try { await navigator.clipboard.writeText(texto); avisar('Correo copiado. Pégalo en tu cliente de correo y rellena lo que va entre corchetes.'); }
+    catch { alert(texto); }
+    return;
+  }
+  if (d.copiar) {
+    const c = estado.bandeja.find((x) => x.id === d.copiar);
+    try { await navigator.clipboard.writeText(c.asunto + '\n\n' + c.cuerpo); avisar('Copiado. Pégalo en su formulario o en LinkedIn.'); }
+    catch { avisar('El navegador no deja copiar: dale a "Leer" y cópialo a mano.', true); }
+    return;
+  }
+  if (d.detalle) {
+    const f = document.getElementById('detalle-' + d.detalle);
+    if (f) f.hidden = !f.hidden;
+    return;
+  }
+  if (d.web) {
+    const web = prompt('¿Cuál es su web? Por ejemplo: empresa.es');
+    if (web) pedir({ tipo: 'lead', id: d.web, web: web.trim() });
+  }
+});
+
+document.addEventListener('change', (ev) => {
+  const s = ev.target.closest('select[data-estado]');
+  if (s) return void pedir({ tipo: 'lead', id: s.dataset.estado, estado: s.value });
+  const c = ev.target.closest('input[data-paso]');
+  if (c) pedir({ tipo: 'paso', lead: c.dataset.encargo, paso: c.dataset.paso, hecho: c.checked });
+});
+
+// Mientras algo está en marcha se mira cada segundo; si no, cada diez.
+(async function latido() {
+  await refrescar();
+  setTimeout(latido, estado?.trabajo?.activo ? 1200 : 10000);
+})();
+</script>
+</body>
+</html>

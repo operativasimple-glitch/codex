@@ -1,0 +1,16 @@
+node_modules/
+datos/escaneos/
+datos/capturas/
+datos/informes/
+datos/correos/
+datos/bandeja/
+datos/bitacora.jsonl
+datos/programacion.json
+datos/cantera.json
+datos/auto.log
+datos/acceso.json
+datos/estado.json
+datos/acceso.json
+datos/estado.json.bak
+agencia.config.json
+.env
