@@ -18,6 +18,13 @@ que dejarla abierta mientras se usa: es el programa por dentro.
 La primera vez macOS puede decir que no puede abrirlo por venir de internet: clic derecho sobre
 el fichero → Abrir → Abrir. Solo pasa una vez.
 
+**Para usarlo desde el iPhone y el PC:** doble clic en `Abrir-en-mis-dispositivos.command`. Busca tu
+dirección de Tailscale, te escribe el enlace completo con la llave dentro y arranca el programa
+impidiendo que el Mac se duerma.
+
+**Para escribir comandos a mano:** doble clic en `Terminal-aqui.command`, que abre una terminal ya
+colocada en esta carpeta.
+
 **A mano:**
 
 ```bash
