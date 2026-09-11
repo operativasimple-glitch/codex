@@ -1,0 +1,17 @@
+{
+  "name": "shopify-ops",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pipeline para lanzar productos digitales en Shopify y operar campanas de Meta/TikTok con reglas automaticas de kill y escalado.",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "ops": "./src/cli.js"
+  },
+  "scripts": {
+    "ops": "node src/cli.js",
+    "test": "node test/metrics.test.js"
+  }
+}

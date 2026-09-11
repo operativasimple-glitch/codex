@@ -1,0 +1,132 @@
+{
+  "slug": "pack-notion-freelance",
+  "name": "Sistema Notion para Freelances",
+  "vendor": "Operativa Simple",
+  "brand": { "name": "Operativa Simple", "accent": "#4338ca", "accentDark": "#312e81" },
+  "supportEmail": "soporte@operativasimple.com",
+  "currency": "EUR",
+  "price": 34,
+  "compareAtPrice": 59,
+
+  "audience": "Freelances y autonomos que llevan clientes, proyectos y facturas en sitios distintos",
+  "promise": "Lleva clientes, proyectos y facturas en un solo Notion, montado en una tarde",
+
+  "eyebrow": "Para freelances y autonomos",
+  "headline": "Tu negocio entero en un Notion, montado esta tarde",
+  "subheadline": "Seis plantillas conectadas entre si que sustituyen al Excel, las notas sueltas y los recordatorios en el movil. Duplicas, rellenas tus datos y ya esta funcionando.",
+  "cta": "Descargar el sistema",
+  "heroImage": null,
+  "heroBullets": [
+    "6 plantillas de Notion ya conectadas entre si",
+    "Funciona en la version gratuita de Notion",
+    "Video de 22 minutos montandolo paso a paso",
+    "Acceso inmediato, un solo pago"
+  ],
+
+  "painsTitle": "Si eres freelance, esto te va a sonar",
+  "pains": [
+    "Los presupuestos estan en Drive, los clientes en el movil y las facturas en un Excel que solo entiendes tu",
+    "Cada vez que un cliente pregunta por donde va su proyecto, tardas diez minutos en reconstruirlo",
+    "Has empezado tres veces a montarte un Notion y las tres lo has abandonado a medias",
+    "No sabes a cierre de mes cuanto has facturado de verdad hasta que te sientas a sumar",
+    "Facturas tarde porque no tienes un sitio que te avise de que toca"
+  ],
+  "painsClose": "No es que te falte disciplina. Es que estas montando el sistema y trabajando a la vez.",
+
+  "stepsTitle": "Como funciona",
+  "steps": [
+    { "title": "Duplicas", "text": "Un clic y las seis plantillas aparecen en tu Notion, ya enlazadas entre si." },
+    { "title": "Rellenas", "text": "Metes tus clientes y proyectos activos siguiendo el video. Una tarde, no una semana." },
+    { "title": "Lo usas", "text": "Cada manana abres una sola pagina y ves que toca hoy, que esta cobrado y que no." }
+  ],
+
+  "deliverablesTitle": "Que te llevas exactamente",
+  "deliverables": [
+    { "name": "Panel de control", "detail": "Una sola pagina con lo de hoy, lo atrasado y lo pendiente de cobro.", "value": 19 },
+    { "name": "CRM de clientes", "detail": "Ficha por cliente con historico, tarifas acordadas y contacto.", "value": 15 },
+    { "name": "Gestor de proyectos", "detail": "Tareas por proyecto enlazadas al cliente, con estado y fecha limite.", "value": 15 },
+    { "name": "Control de facturacion", "detail": "Facturas emitidas, cobradas y pendientes, con total por mes y por cliente.", "value": 19 },
+    { "name": "Registro de tiempo", "detail": "Horas por proyecto para saber que cliente te sale rentable y cual no.", "value": 12 },
+    { "name": "Biblioteca de plantillas", "detail": "Presupuesto, propuesta y email de seguimiento listos para copiar.", "value": 12 }
+  ],
+
+  "bonuses": [
+    { "name": "Video de montaje (22 min)", "detail": "Te veo montarlo de cero con un caso real. Sin relleno.", "value": 25 },
+    { "name": "Guia de mantenimiento", "detail": "La rutina de 10 minutos los viernes para que el sistema no se pudra.", "value": 9 }
+  ],
+
+  "testimonials": [],
+
+  "guarantee": {
+    "short": "14 dias de garantia",
+    "title": "Si no te encaja, te devuelvo el dinero",
+    "text": "Tienes 14 dias para probarlo. Si ves que no es para ti, escribes a soporte y te devuelvo el importe integro. No hace falta que expliques nada y te quedas el material."
+  },
+
+  "faq": [
+    { "q": "¿Necesito Notion de pago?", "a": "No. Todo funciona en el plan gratuito de Notion. Si ya tienes plan de pago, tambien." },
+    { "q": "¿Nunca he usado Notion, me va a servir?", "a": "Si. El video empieza desde cero, asumiendo que abres Notion por primera vez. Lo unico que necesitas es duplicar la plantilla y escribir." },
+    { "q": "¿Cuanto tardo en tenerlo funcionando?", "a": "Duplicar es un clic. Meter tus clientes y proyectos activos lleva entre dos y tres horas segun cuantos tengas." },
+    { "q": "¿Puedo modificarlo?", "a": "Si. Una vez duplicado es tuyo: puedes anadir campos, quitar bases de datos o cambiar las vistas. La guia explica que piezas conviene no tocar y por que." },
+    { "q": "¿Como lo recibo?", "a": "Inmediatamente despues del pago recibes un email con el enlace de duplicado y el acceso al video. Si no llega en 15 minutos, revisa spam y escribenos." },
+    { "q": "¿Es un pago unico o una suscripcion?", "a": "Pago unico. Las actualizaciones futuras del sistema te llegan sin coste adicional." },
+    { "q": "¿Sirve si trabajo en equipo?", "a": "Esta pensado para freelance en solitario o con un colaborador puntual. Si sois un equipo de cinco o mas, se queda corto." }
+  ],
+
+  "seoTitle": "Sistema Notion para Freelances · Clientes, proyectos y facturas en un sitio",
+  "seoDescription": "Seis plantillas de Notion conectadas para llevar clientes, proyectos y facturacion sin Excel ni notas sueltas. Montado en una tarde. Pago unico.",
+
+  "ads": {
+    "landingPath": "/pages/pack-notion-freelance",
+    "meta": {
+      "dailyBudget": 20,
+      "countries": ["ES"],
+      "ageMin": 25,
+      "ageMax": 50,
+      "variants": [
+        {
+          "name": "dolor-caos",
+          "primaryText": "Los clientes en el movil, los presupuestos en Drive y las facturas en un Excel que solo entiendes tu.\n\nSeis plantillas de Notion ya conectadas entre si: clientes, proyectos, facturacion, tiempo y plantillas de propuesta. Duplicas, rellenas y en una tarde lo tienes funcionando.\n\nFunciona en el Notion gratuito. Pago unico, 14 dias de garantia.",
+          "headline": "Tu negocio entero en un Notion",
+          "description": "6 plantillas conectadas · montaje en una tarde",
+          "cta": "SHOP_NOW",
+          "image": null
+        },
+        {
+          "name": "objecion-abandono",
+          "primaryText": "¿Has empezado a montarte un Notion y lo has dejado a medias? Normal: estabas construyendo el sistema y trabajando al mismo tiempo.\n\nEsto viene montado. Un clic para duplicar, un video de 22 minutos para rellenarlo con tus datos, y ya lo usas.\n\n14 dias de garantia.",
+          "headline": "El Notion que si vas a terminar",
+          "description": "Ya montado · solo rellenar",
+          "cta": "LEARN_MORE",
+          "image": null
+        },
+        {
+          "name": "beneficio-claridad",
+          "primaryText": "Abrir una sola pagina por la manana y ver que toca hoy, que esta cobrado y que sigue pendiente.\n\nSistema de Notion para freelances: clientes, proyectos, facturacion y tiempo, todo enlazado. Plan gratuito de Notion. Pago unico.",
+          "headline": "Una pagina. Todo tu negocio.",
+          "description": "Clientes, proyectos y facturas",
+          "cta": "SHOP_NOW",
+          "image": null
+        }
+      ]
+    },
+    "tiktok": {
+      "dailyBudget": 20,
+      "locationIds": ["2724"],
+      "variants": [
+        { "name": "screen-recording", "text": "Monte mi Notion de freelance en una tarde. Asi quedo.", "cta": "SHOP_NOW", "videoId": null }
+      ]
+    }
+  },
+
+  "economics": {
+    "variableCostRate": 0.04,
+    "refundRate": 0.06,
+    "targetRoas": 2.2,
+    "killRoas": 1.2,
+    "learningDays": 3,
+    "scaleStepPct": 0.2,
+    "maxDailyBudget": 150,
+    "frequencyRotate": 2.5
+  }
+}
