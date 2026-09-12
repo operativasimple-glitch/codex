@@ -9,6 +9,10 @@ shopify-ops · pipeline de productos digitales
 
   npm run ops -- <comando> [opciones]
 
+Si no sabes que toca ahora
+  next                           Te dice el siguiente paso y el comando exacto
+  done  --offer <s> --step <p>   Marca como hecho un paso manual
+
 Montar un producto
   preflight                      Comprueba accesos a Shopify, Meta y TikTok
   new-offer <slug>               Crea una oferta nueva a partir de la plantilla
@@ -65,7 +69,13 @@ async function main() {
   const cmd = argv[0];
   const args = parseArgs(argv.slice(1));
 
-  if (!cmd || cmd === 'help' || args.help) { console.log(HELP); return; }
+  if (cmd === 'help' || args.help) { console.log(HELP); return; }
+
+  // Sin comando, la pregunta siempre es la misma: ¿y ahora que?
+  if (!cmd) {
+    const { next } = await import('./commands/next.js');
+    return void next(args.offer);
+  }
 
   const days = Number(args.days || 7);
   const apply = args.apply === true || args.apply === 'true';
@@ -129,6 +139,17 @@ async function main() {
         learning: typeof args.learning === 'string' ? args.learning : null,
         apply,
       });
+    }
+    case 'next': {
+      const { next } = await import('./commands/next.js');
+      return void next(args.offer || args._[0]);
+    }
+    case 'done': {
+      const { done: markDone } = await import('./commands/next.js');
+      const slug = args.offer || args._[0];
+      const step = args.step || args._[1];
+      if (!slug || !step) throw new Error('Uso: ops done --offer <slug> --step <paso>');
+      return void markDone(slug, step);
     }
     case 'board': {
       const { board } = await import('./commands/board.js');

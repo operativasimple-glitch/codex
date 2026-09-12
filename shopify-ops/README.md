@@ -28,6 +28,41 @@ Sin `--apply` todo es simulacion: enseña lo que haria y no toca nada.
 
 ---
 
+## No hace falta que recuerdes nada
+
+```bash
+npm run ops
+```
+
+Sin mas. Te dice en que paso estas y el comando exacto que toca ahora:
+
+```
+Producto: pack-notion-freelance
+  ✓  Conectar tus cuentas
+  ✓  Escribir la oferta
+  ✓  Generar y revisar la landing
+  ▸  Fabricar el producto digital   ← estas aqui
+  ○  Montar la tienda en Shopify
+  ○  Crear las campanas
+  ○  Abrir el test
+  ○  Dejar correr el ciclo
+
+SIGUIENTE PASO — Fabricar el producto digital
+  La landing ya promete unos entregables. Ahora hay que fabricarlos.
+
+  · Monta de verdad lo que prometes en "deliverables".
+  · Vender algo que aun no existe acaba en devoluciones y reseñas malas.
+  · Sube el fichero a la app Digital Downloads de Shopify.
+
+      npm run ops -- done --offer pack-notion-freelance --step producto
+      marca este paso cuando lo tengas hecho
+```
+
+Cuando el producto muere, el mismo comando te manda a montar el siguiente.
+Es el bucle entero sin tener que acordarte de nada.
+
+---
+
 ## La idea que lo sostiene
 
 **Matar es barato. Coronar es caro.** Con un producto de 34 €, demostrar que NO

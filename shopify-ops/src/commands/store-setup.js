@@ -1,6 +1,7 @@
 import { log } from '../lib/log.js';
 import * as shopify from '../lib/shopify.js';
 import { renderLanding, renderProductDescription } from '../templates/landing.js';
+import { markStep } from '../lib/progress.js';
 
 const LEGAL_PAGES = (offer) => {
   const brand = offer.brand?.name || offer.vendor || 'la tienda';
@@ -101,6 +102,8 @@ export async function storeSetup(offer, { apply = false } = {}) {
     out.legal.push(r.page);
     log[r.created ? 'ok' : 'dim'](`${r.created ? 'Creada' : 'Actualizada'}: /pages/${p.handle}`);
   }
+
+  markStep(offer.slug, 'tienda');
 
   log.step('Pendiente de hacer a mano en Shopify');
   log.warn('Instala la app gratuita "Digital Downloads" de Shopify y adjunta el fichero al producto.');
