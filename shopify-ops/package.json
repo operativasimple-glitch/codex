@@ -12,6 +12,6 @@
   },
   "scripts": {
     "ops": "node src/cli.js",
-    "test": "node test/metrics.test.js"
+    "test": "node test/metrics.test.js && node test/verdict.test.js && node test/cycle.test.js"
   }
 }

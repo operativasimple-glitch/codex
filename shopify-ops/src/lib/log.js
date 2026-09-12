@@ -27,8 +27,11 @@ export function table(rows, cols) {
   const head = cols.map((c) => c.label);
   const body = rows.map((r) => cols.map((c) => String(c.get(r) ?? '')));
   const w = head.map((h, i) => Math.max(h.length, ...body.map((b) => b[i].length)));
-  const line = (cells) => '  ' + cells.map((c, i) => c.padEnd(w[i])).join('  ');
-  console.log(p(C.bold, line(head)));
-  console.log(p(C.grey, '  ' + w.map((n) => '─'.repeat(n)).join('  ')));
+  const line = (cells) => ('  ' + cells.map((c, i) => c.padEnd(w[i])).join('  ')).trimEnd();
+  // Una tabla de pares clave/valor no lleva cabecera: seria una fila en blanco.
+  if (head.some((h) => h !== '')) {
+    console.log(p(C.bold, line(head)));
+    console.log(p(C.grey, '  ' + w.map((n) => '─'.repeat(n)).join('  ')));
+  }
   body.forEach((b) => console.log(line(b)));
 }

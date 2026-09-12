@@ -9,30 +9,41 @@ shopify-ops · pipeline de productos digitales
 
   npm run ops -- <comando> [opciones]
 
-Comandos
+Montar un producto
   preflight                      Comprueba accesos a Shopify, Meta y TikTok
-  offers                         Lista las ofertas definidas
   new-offer <slug>               Crea una oferta nueva a partir de la plantilla
   page-build   --offer <slug>    Genera la landing en dist/ y audita la oferta
   store-setup  --offer <slug>    Crea producto, landing y paginas legales en Shopify
   ads-launch   --offer <slug>    Crea la campana (en pausa) en Meta o TikTok
+
+Probar productos en serie
+  test-start   --offer <slug>    Abre un test con tope de gasto y fecha de caducidad
+  cycle        --offer <slug>    El comando de cada dia: vigila el tope, optimiza y dicta veredicto
+  kill         --offer <slug>    Para todo el gasto y descarta el producto
+  board                          La cartera entera: que se prueba, que murio y a que coste
+
+Consultar
+  offers                         Lista las ofertas definidas
   report       --offer <slug>    Gasto vs ingresos reales, por ad set y anuncio
-  optimize     --offer <slug>    Decide que matar, escalar o rotar
+  optimize     --offer <slug>    Decide que matar, escalar o rotar dentro de una campana
 
 Opciones
   --offer <slug>       Oferta sobre la que actuar
   --platform <p>       meta | tiktok | all        (por defecto: meta en launch, all en report)
   --days <n>           Ventana de dias            (por defecto: 7)
+  --budget <n>         Tope de gasto del test     (por defecto: presupuesto diario x dias)
+  --learning "..."     Que aprendiste, al matar un producto
+  --auto-extend        En cycle: amplia el tope solo si el producto pinta a ganador
   --apply              Ejecuta de verdad. Sin esto, todo es simulacion.
 
-Flujo tipico
-  1. npm run ops -- new-offer mi-producto
-  2. (rellenas offers/mi-producto.json)
-  3. npm run ops -- page-build --offer mi-producto
-  4. npm run ops -- preflight
-  5. npm run ops -- store-setup --offer mi-producto --apply
-  6. npm run ops -- ads-launch --offer mi-producto --apply
-  7. cada dia: npm run ops -- optimize --offer mi-producto
+El ciclo, de principio a fin
+  1. npm run ops -- new-offer mi-producto        y rellenas offers/mi-producto.json
+  2. npm run ops -- page-build  --offer mi-producto
+  3. npm run ops -- store-setup --offer mi-producto --apply
+  4. npm run ops -- ads-launch  --offer mi-producto --apply
+  5. npm run ops -- test-start  --offer mi-producto --days 7 --budget 150
+  6. cada dia:  npm run ops -- cycle --offer mi-producto --apply
+  7. cuando dicte KILL, vuelve al paso 1 con el siguiente producto
 `;
 
 function parseArgs(argv) {
@@ -94,6 +105,34 @@ async function main() {
     case 'optimize': {
       const { optimize } = await import('./commands/optimize.js');
       return void await optimize(withOffer(), { days, platform: args.platform || 'all', apply });
+    }
+    case 'test-start': {
+      const { testStart } = await import('./commands/test-start.js');
+      return void testStart(withOffer(), {
+        days, budget: args.budget,
+        maxIterations: Number(args['max-iterations'] || 2),
+        note: typeof args.note === 'string' ? args.note : null,
+      });
+    }
+    case 'cycle': {
+      const { cycle } = await import('./commands/cycle.js');
+      return void await cycle(withOffer(), {
+        apply, platform: args.platform || 'all',
+        autoExtend: args['auto-extend'] === true,
+      });
+    }
+    case 'kill': {
+      const { killOffer } = await import('./commands/kill.js');
+      const slug = args.offer || args._[0];
+      if (!slug) throw new Error('Indica que producto matar: --offer <slug>');
+      return void await killOffer(slug, {
+        learning: typeof args.learning === 'string' ? args.learning : null,
+        apply,
+      });
+    }
+    case 'board': {
+      const { board } = await import('./commands/board.js');
+      return void board();
     }
     default:
       log.err(`Comando desconocido: ${cmd}`);
