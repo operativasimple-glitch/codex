@@ -260,6 +260,17 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
       </div>
 
       <div class="card" style="margin-bottom:14px">
+        <h2>¿Qué sesión rinde más?</h2>
+        <p class="hint" style="margin:0 0 10px">Tu plan tal cual, cambiando solo la sesión (hora de Nueva York). Hace falta un CSV con velas de 24 h (Globex) para que Londres y Asia tengan datos.</p>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>Sesión</th><th>Ops</th><th>% acierto</th><th>PF</th><th>Neto</th><th>Máx. DD</th><th>$/op</th><th>Neto 30 % final</th></tr></thead>
+            <tbody id="sessBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
         <h2>Optimizar</h2>
         <p class="hint" style="margin:0 0 10px">Prueba combinaciones de EMAs, stop y objetivo con el resto de ajustes actuales. Se eligen con el <b>70 % inicial</b> de los datos y se comprueban en el <b>30 % final</b>, que no se usó para elegir: si ahí se hunden, la combinación está sobreajustada.</p>
         <div class="opt-grid">

@@ -249,10 +249,10 @@
     const ef = ema(closes, fast), es = ema(closes, slow);
     const start = hhmm(sess[0]), end = hhmm(sess[1]);
     // Lunes–viernes según el día de sesión de CME (el domingo a las 18:00 ya cuenta como lunes)
-    const inWindow = b => b.g.wd >= 1 && b.g.wd <= 5 &&
-      (start < end ? b.et.min >= start && b.et.min < end : b.et.min >= start || b.et.min < end);
+    const inWin = (et, g) => g.wd >= 1 && g.wd <= 5 &&
+      (start < end ? et.min >= start && et.min < end : et.min >= start || et.min < end);
 
-    // Duración típica de vela (para detectar huecos)
+    // Duración típica de vela: la vela siguiente empieza en t + barMs (como time_close en TradingView)
     const gaps = [];
     for (let i = 1; i < Math.min(bars.length, 500); i++) gaps.push(bars[i].t - bars[i - 1].t);
     gaps.sort((a, b) => a - b);
@@ -352,8 +352,10 @@
         else if (side > 0 ? b.c <= b.vwap : b.c >= b.vwap) { valid = false; why = side > 0 ? 'cierre bajo VWAP' : 'cierre sobre VWAP'; }
       }
       if (valid && (p.direction === 'long' && side < 0 || p.direction === 'short' && side > 0)) { valid = false; why = 'dirección desactivada'; }
-      const sameSession = next && next.g.date === b.g.date && next.t - b.t <= barMs * 3;
-      if (valid && !(next && sameSession && inWindow(next))) { valid = false; why = 'fuera de horario'; }
+      // ¿La vela siguiente (cierre de esta) cae en la sesión? Igual que time_close en TradingView
+      if (!b.nx) { b.nx = tzParts(b.t + barMs); b.nxg = tzParts(b.t + barMs + 6 * 3600e3); }
+      const nextIn = inWin(b.nx, b.nxg);
+      if (valid && !(next && nextIn)) { valid = false; why = 'fuera de horario'; }
       if (valid && maxTrades > 0 && dayTrades >= maxTrades) { valid = false; why = 'máx. operaciones del día'; }
       if (valid && maxLoss > 0 && net - dayStart <= -maxLoss) { valid = false; why = 'límite de pérdida diaria'; }
       if (valid && maxVwapDist > 0 && b.vwap != null && Math.abs(b.c - b.vwap) > maxVwapDist) { valid = false; why = 'lejos del VWAP'; }
@@ -365,7 +367,7 @@
         if (p.exitOnCross && side === -pos.side) exitReason = 'Cruce contrario';
         else if (p.exitOnVwap && b.vwap != null && (pos.side > 0 ? b.c < b.vwap : b.c > b.vwap)) exitReason = 'Cruce VWAP';
         if (!next) { close(i, b.c, 'Fin de datos'); continue; }
-        const endOfDay = p.flatAtEnd && (!inWindow(next) || !sameSession);
+        const endOfDay = p.flatAtEnd && !nextIn;
         if (endOfDay) { pending = { exit: 'Cierre de horario' }; continue; }
         if (exitReason) {
           pending = { exit: exitReason };

@@ -467,6 +467,17 @@
       <td><b>${r.s} pts</b></td><td>${r.st.n}</td><td>${(r.st.winRate * 100).toFixed(0)}%</td><td>${pf(r.st)}</td>
       <td class="${cls(r.st.net)}">${money(r.st.net)}</td><td class="neg">${money(-r.st.maxDD)}</td>
       <td class="${cls(r.st.expectancy)}">${money(r.st.expectancy)}</td><td class="${cls(r.oos.net)}">${money(r.oos.net)}</td></tr>`).join('');
+    // Tu plan en cada sesión
+    const sessions = [['ny', 'Nueva York 09:30–15:55'], ['london', 'Londres 03:00–09:30'], ['asia', 'Asia 18:00–03:00'], ['all', '24 h 18:00–16:55']];
+    const srows = sessions.map(([k, name]) => {
+      const tr = E.backtest(bars, Object.assign({}, params, { session: k })).trades.filter(t => t.reason !== 'Fin de datos');
+      return { name, st: E.stats(tr), oos: E.stats(tr.filter(t => t.entryTime >= split)) };
+    });
+    const bestS = Math.max(...srows.map(r => r.st.net));
+    $('sessBody').innerHTML = srows.map(r => `<tr${r.st.n && r.st.net === bestS ? ' class="sel"' : ''}>
+      <td><b>${r.name}</b></td><td>${r.st.n}</td><td>${(r.st.winRate * 100).toFixed(0)}%</td><td>${pf(r.st)}</td>
+      <td class="${cls(r.st.net)}">${money(r.st.net)}</td><td class="neg">${money(-r.st.maxDD)}</td>
+      <td class="${cls(r.st.expectancy)}">${money(r.st.expectancy)}</td><td class="${cls(r.oos.net)}">${money(r.oos.net)}</td></tr>`).join('');
     // Recalcula el plan con los parámetros reales (backtest reescribe anotaciones de las velas)
     result = E.backtest(bars, params);
   }

@@ -70,6 +70,12 @@ for (const seed of SEEDS) for (const set of SETS) {
     const net = E.backtest(bars.map(b => Object.assign({}, b)), v).trades.filter(t => t.reason !== 'Fin de datos').reduce((a, t) => a + t.pnl, 0);
     if (!close(pine.last('net' + (k + 1)), net)) problems.push(`stop ${s}: ${net.toFixed(2)} vs ${pine.last('net' + (k + 1))}`);
   });
+  // Tu plan en cada sesión
+  [['ny', 'sessNY'], ['london', 'sessLondon'], ['asia', 'sessAsia'], ['all', 'sessAll']].forEach(([sess, plot]) => {
+    const v = Object.assign({}, params, { session: sess });
+    const net = E.backtest(bars.map(b => Object.assign({}, b)), v).trades.filter(t => t.reason !== 'Fin de datos').reduce((a, t) => a + t.pnl, 0);
+    if (!close(pine.last(plot), net)) problems.push(`sesión ${sess}: ${net.toFixed(2)} vs ${pine.last(plot)}`);
+  });
   total++;
   if (problems.length) failed++;
   console.log(`${problems.length ? 'MAL' : 'ok '} semilla ${seed} ${JSON.stringify(set)} · ${plan.length} ops · neto ${netPlan.toFixed(0)}${problems.length ? ' · ' + problems.slice(0, 4).join(' | ') : ''}`);

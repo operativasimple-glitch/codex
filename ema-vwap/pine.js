@@ -87,28 +87,38 @@ isNY = sessPreset == "Nueva York 09:30–15:55"
 startMin = isNY ? 570 : sessPreset == "Londres 03:00–09:30" ? 180 : sessPreset == "Asia 18:00–03:00" ? 1080 : sessPreset == "24 h 18:00–16:55" ? 1080 : toMin(tStart)
 endMin = isNY ? 955 : sessPreset == "Londres 03:00–09:30" ? 570 : sessPreset == "Asia 18:00–03:00" ? 180 : sessPreset == "24 h 18:00–16:55" ? 1015 : toMin(tEnd)
 // Lunes–viernes según el día de sesión de CME (el domingo a las 18:00 ya cuenta como lunes)
-inWindow(t) => isWeekday(t + 6 * 3600000) and (startMin < endMin ? minOf(t) >= startMin and minOf(t) < endMin : minOf(t) >= startMin or minOf(t) < endMin)
+winAt(t, sm, em) => isWeekday(t + 6 * 3600000) and (sm < em ? minOf(t) >= sm and minOf(t) < em : minOf(t) >= sm or minOf(t) < em)
+inWindow(t) => winAt(t, startMin, endMin)
 
 // ───── Indicadores ─────
 emaFast = ta.ema(close, fastLen)
 emaSlow = ta.ema(close, slowLen)
 
 isRth = vwapMode == "RTH 09:30" or vwapMode == "Auto" and isNY
-sessKey = isRth ? dayKey(time) : dayKey(time + 6 * 3600000)
-vwapActive = isRth ? (isWeekday(time) and minOf(time) >= 570 and minOf(time) < 960) : true
-var float pv = 0.0
-var float vv = 0.0
-var int lastKey = -1
-float vwapVal = na
-if vwapActive
-    if sessKey != lastKey
-        pv := 0.0
-        vv := 0.0
-        lastKey := sessKey
-    w = volume > 0 ? volume : 1.0
-    pv := pv + hlc3 * w
-    vv := vv + w
-    vwapVal := pv / vv
+// VWAP que reinicia a las 09:30 (solo sesión regular) y VWAP de Globex (reinicia a las 18:00)
+var float pvR = 0.0
+var float vvR = 0.0
+var int keyR = -1
+float vwapR = na
+if isWeekday(time) and minOf(time) >= 570 and minOf(time) < 960
+    if dayKey(time) != keyR
+        pvR := 0.0
+        vvR := 0.0
+        keyR := dayKey(time)
+    pvR := pvR + hlc3 * (volume > 0 ? volume : 1.0)
+    vvR := vvR + (volume > 0 ? volume : 1.0)
+    vwapR := pvR / vvR
+var float pvG = 0.0
+var float vvG = 0.0
+var int keyG = -1
+if dayKey(time + 6 * 3600000) != keyG
+    pvG := 0.0
+    vvG := 0.0
+    keyG := dayKey(time + 6 * 3600000)
+pvG := pvG + hlc3 * (volume > 0 ? volume : 1.0)
+vvG := vvG + (volume > 0 ? volume : 1.0)
+float vwapG = pvG / vvG
+float vwapVal = isRth ? vwapR : vwapG
 
 swingLow = ta.lowest(low, swingBars) - stopBuffer * syminfo.mintick
 swingHigh = ta.highest(high, swingBars) + stopBuffer * syminfo.mintick
@@ -135,6 +145,9 @@ if valid and useFrom and time < fromTime
 type Sim
     float stopPts
     bool swing
+    int sMin
+    int eMin
+    bool rthV
     int side = 0
     float entry = na
     float stop = na
@@ -182,7 +195,21 @@ method closeAt(Sim s, float px, string why) =>
     s.side := 0
     s
 
-method step(Sim s, int sg, bool vld, bool isWarm, bool nextIn, float vw, float swL, float swH) =>
+method step(Sim s, int sg, float vwR, float vwG, bool isWarm, float swL, float swH) =>
+    // Filtros de la señal con la sesión y el VWAP de este simulador
+    float vw = s.rthV ? vwR : vwG
+    bool nextIn = winAt(time_close, s.sMin, s.eMin)
+    bool vld = sg != 0
+    if vld and useVwap
+        vld := not na(vw) and (sg > 0 ? close > vw : close < vw)
+    if vld and (direction == "Solo largos" and sg < 0 or direction == "Solo cortos" and sg > 0)
+        vld := false
+    if vld and not nextIn
+        vld := false
+    if vld and maxVwapDist > 0 and not na(vw) and math.abs(close - vw) > maxVwapDist
+        vld := false
+    if vld and useFrom and time < fromTime
+        vld := false
     s.evEntry := false
     s.evBE := false
     s.evExit := false
@@ -262,17 +289,26 @@ method step(Sim s, int sg, bool vld, bool isWarm, bool nextIn, float vw, float s
             s.pendStopPx := sg > 0 ? swL : swH
     s
 
-// Sim 0 = tu plan; el resto = un stop fijo por cada valor de la lista
+// Sim 0 = tu plan; después un stop fijo por cada valor de la lista;
+// al final tu plan en cada sesión: Nueva York, Londres, Asia y 24 h
 var array<Sim> sims = array.new<Sim>()
+var int nStops = 0
 if barstate.isfirst
-    sims.push(Sim.new(stopPts, stopMode == "Estructura"))
+    bool sw = stopMode == "Estructura"
+    sims.push(Sim.new(stopPts, sw, startMin, endMin, isRth))
     for part in str.split(stopList, ",")
         float v = str.tonumber(str.replace_all(part, " ", ""))
-        if not na(v) and v > 0
-            sims.push(Sim.new(v, false))
+        if not na(v) and v > 0 and nStops < 10
+            sims.push(Sim.new(v, false, startMin, endMin, isRth))
+            nStops := nStops + 1
+    bool rthAll = vwapMode == "RTH 09:30"
+    sims.push(Sim.new(stopPts, sw, 570, 955, rthAll or vwapMode == "Auto"))
+    sims.push(Sim.new(stopPts, sw, 180, 570, rthAll))
+    sims.push(Sim.new(stopPts, sw, 1080, 180, rthAll))
+    sims.push(Sim.new(stopPts, sw, 1080, 1015, rthAll))
 
 for s in sims
-    s.step(sig, valid, warm, nextInWindow, vwapVal, swingLow, swingHigh)
+    s.step(sig, vwapR, vwapG, warm, swingLow, swingHigh)
 
 // ───── Gráfico ─────
 plot(emaFast, "EMA rápida", color = cFast, linewidth = 1)
@@ -405,41 +441,62 @@ if plan.evBE
 if plan.pendExit
     alert("NQ: cerrar en la apertura · " + plan.pendReason, alert.freq_once_per_bar_close)
 
-// ───── Tabla: ¿stop corto o largo? ─────
+// ───── Tablas: ¿qué stop y qué sesión rinden más? ─────
 var int firstTime = time
 tbPos = tablePos == "Abajo derecha" ? position.bottom_right : tablePos == "Abajo izquierda" ? position.bottom_left : tablePos == "Arriba izquierda" ? position.top_left : position.top_right
-var table tb = table.new(tbPos, 7, 13, bgcolor = color.new(#131722, 8), frame_color = color.new(#434651, 0), frame_width = 1, border_color = color.new(#2A2E39, 0), border_width = 1)
+var table tb = table.new(tbPos, 7, 22, bgcolor = color.new(#131722, 8), frame_color = color.new(#434651, 0), frame_width = 1, border_color = color.new(#2A2E39, 0), border_width = 1)
+
+statRow(int row, string name, Sim s, color c, color bg) =>
+    tb.cell(0, row, name, text_color = c, bgcolor = bg, text_size = size.small, text_halign = text.align_left)
+    tb.cell(1, row, str.tostring(s.n), text_color = c, bgcolor = bg, text_size = size.small)
+    tb.cell(2, row, s.n > 0 ? str.tostring(100.0 * s.wins / s.n, "#") + "%" : "—", text_color = c, bgcolor = bg, text_size = size.small)
+    tb.cell(3, row, s.gl > 0 ? str.tostring(s.gw / s.gl, "#.##") : "—", text_color = c, bgcolor = bg, text_size = size.small)
+    tb.cell(4, row, fmtUsd(s.net), text_color = s.net >= 0 ? cLong : cShort, bgcolor = bg, text_size = size.small)
+    tb.cell(5, row, fmtUsd(-s.dd), text_color = c, bgcolor = bg, text_size = size.small)
+    tb.cell(6, row, s.n > 0 ? fmtUsd(s.net / s.n) : "—", text_color = c, bgcolor = bg, text_size = size.small)
+    row
+
+headRow(int row, string first) =>
+    color hc = color.new(#B2B5BE, 0)
+    tb.cell(0, row, first, text_color = hc, text_size = size.tiny)
+    tb.cell(1, row, "Ops", text_color = hc, text_size = size.tiny)
+    tb.cell(2, row, "Acierto", text_color = hc, text_size = size.tiny)
+    tb.cell(3, row, "PF", text_color = hc, text_size = size.tiny)
+    tb.cell(4, row, "Neto", text_color = hc, text_size = size.tiny)
+    tb.cell(5, row, "Máx. DD", text_color = hc, text_size = size.tiny)
+    tb.cell(6, row, "$/op", text_color = hc, text_size = size.tiny)
+    row
+
+int stopRows = 1 + nStops
+int sessTitle = stopRows + 2
 if showTable and barstate.islastconfirmedhistory
     tb.merge_cells(0, 0, 6, 0)
+    tb.merge_cells(0, sessTitle, 6, sessTitle)
 if showTable and barstate.islast
-    color hc = color.new(#B2B5BE, 0)
     string tfTxt = timeframe.isminutes ? timeframe.period + " min" : timeframe.period
-    tb.cell(0, 0, "¿Qué stop rinde más?  ·  " + tfTxt + "  ·  desde " + str.format_time(useFrom ? math.max(fromTime, firstTime) : firstTime, "dd/MM/yy", "America/New_York") + "  ·  " + str.tostring(qty) + " contrato(s)", text_color = color.white, text_size = size.small, text_halign = text.align_left)
-    tb.cell(0, 1, "Stop", text_color = hc, text_size = size.tiny)
-    tb.cell(1, 1, "Ops", text_color = hc, text_size = size.tiny)
-    tb.cell(2, 1, "Acierto", text_color = hc, text_size = size.tiny)
-    tb.cell(3, 1, "PF", text_color = hc, text_size = size.tiny)
-    tb.cell(4, 1, "Neto", text_color = hc, text_size = size.tiny)
-    tb.cell(5, 1, "Máx. DD", text_color = hc, text_size = size.tiny)
-    tb.cell(6, 1, "$/op", text_color = hc, text_size = size.tiny)
+    string since = str.format_time(useFrom ? math.max(fromTime, firstTime) : firstTime, "dd/MM/yy", "America/New_York")
+    tb.cell(0, 0, "¿Qué stop rinde más?  ·  " + tfTxt + "  ·  desde " + since + "  ·  " + str.tostring(qty) + " contrato(s)", text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    headRow(1, "Stop")
     float bestNet = na
-    int rows = math.min(sims.size(), 11)
-    if rows > 1
-        for i = 1 to rows - 1
+    if nStops > 0
+        for i = 1 to stopRows - 1
             bestNet := na(bestNet) ? sims.get(i).net : math.max(bestNet, sims.get(i).net)
-    for i = 0 to rows - 1
+    for i = 0 to stopRows - 1
         Sim s = sims.get(i)
         bool isBest = i > 0 and s.net == bestNet
         string name = i == 0 ? (stopMode == "Estructura" ? "Tu plan (estructura)" : "Tu plan · " + str.tostring(s.stopPts) + " pts") : str.tostring(s.stopPts) + " pts" + (isBest ? "  ★" : "")
-        color c = isBest ? cLong : i == 0 ? cBE : color.white
-        color bg = isBest ? color.new(cLong, 85) : na
-        tb.cell(0, i + 2, name, text_color = c, bgcolor = bg, text_size = size.small, text_halign = text.align_left)
-        tb.cell(1, i + 2, str.tostring(s.n), text_color = c, bgcolor = bg, text_size = size.small)
-        tb.cell(2, i + 2, s.n > 0 ? str.tostring(100.0 * s.wins / s.n, "#") + "%" : "—", text_color = c, bgcolor = bg, text_size = size.small)
-        tb.cell(3, i + 2, s.gl > 0 ? str.tostring(s.gw / s.gl, "#.##") : "—", text_color = c, bgcolor = bg, text_size = size.small)
-        tb.cell(4, i + 2, fmtUsd(s.net), text_color = s.net >= 0 ? cLong : cShort, bgcolor = bg, text_size = size.small)
-        tb.cell(5, i + 2, fmtUsd(-s.dd), text_color = c, bgcolor = bg, text_size = size.small)
-        tb.cell(6, i + 2, s.n > 0 ? fmtUsd(s.net / s.n) : "—", text_color = c, bgcolor = bg, text_size = size.small)
+        statRow(i + 2, name, s, isBest ? cLong : i == 0 ? cBE : color.white, isBest ? color.new(cLong, 85) : na)
+    // Tu plan en cada sesión
+    tb.cell(0, sessTitle, "¿Qué sesión rinde más?  ·  tu plan en cada sesión (hora de Nueva York)", text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    headRow(sessTitle + 1, "Sesión")
+    float bestSess = na
+    for k = 0 to 3
+        bestSess := na(bestSess) ? sims.get(stopRows + k).net : math.max(bestSess, sims.get(stopRows + k).net)
+    for k = 0 to 3
+        Sim s = sims.get(stopRows + k)
+        bool isBest = s.net == bestSess
+        string name = (k == 0 ? "Nueva York 09:30–15:55" : k == 1 ? "Londres 03:00–09:30" : k == 2 ? "Asia 18:00–03:00" : "24 h 18:00–16:55") + (isBest ? "  ★" : "")
+        statRow(sessTitle + 2 + k, name, s, isBest ? cLong : color.white, isBest ? color.new(cLong, 85) : na)
 
 // Valores internos para comprobar el cálculo (ocultos)
 plot(plan.net, "net0", display = display.none)
@@ -451,6 +508,10 @@ plot(sims.size() > 4 ? sims.get(4).net : na, "net4", display = display.none)
 plot(sims.size() > 5 ? sims.get(5).net : na, "net5", display = display.none)
 plot(sims.size() > 6 ? sims.get(6).net : na, "net6", display = display.none)
 plot(sims.size() > 7 ? sims.get(7).net : na, "net7", display = display.none)
+plot(sims.get(1 + nStops).net, "sessNY", display = display.none)
+plot(sims.get(2 + nStops).net, "sessLondon", display = display.none)
+plot(sims.get(3 + nStops).net, "sessAsia", display = display.none)
+plot(sims.get(4 + nStops).net, "sessAll", display = display.none)
 plot(plan.evEntry ? plan.entry : na, "entryPx", display = display.none)
 plot(plan.evExit ? plan.exitPrice : na, "exitPx", display = display.none)
 `;
