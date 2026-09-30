@@ -151,6 +151,7 @@ method closeAt(Sim s, float px, string why) =>
     s.exitPts := pts
     s.exitPnl := pnl
     s.side := 0
+    s
 
 method step(Sim s, int sg, bool vld, bool isWarm, bool nextIn, float vw, float swL, float swH) =>
     s.evEntry := false
@@ -230,6 +231,7 @@ method step(Sim s, int sg, bool vld, bool isWarm, bool nextIn, float vw, float s
         else if vld
             s.pendEnter := sg
             s.pendStopPx := sg > 0 ? swL : swH
+    s
 
 // Sim 0 = tu plan; el resto = un stop fijo por cada valor de la lista
 var array<Sim> sims = array.new<Sim>()
