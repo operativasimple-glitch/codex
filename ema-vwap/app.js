@@ -27,9 +27,9 @@
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   // ---------- parámetros ----------
-  const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts'];
+  const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts', 'beTrigger', 'maxTradesDay', 'dailyLossLimit'];
   const boolFields = ['vwapFilter', 'exitOnCross', 'reverse', 'exitOnVwap', 'flatAtEnd'];
-  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz'];
+  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar'];
 
   function fillForm() {
     numFields.forEach(k => { $(k).value = k === 'commission' && params.commission == null ? E.CONTRACTS[params.contract].commission : params[k]; });
@@ -101,7 +101,7 @@
     if (!bars.length) return;
     result = E.backtest(bars, params);
     selected = -1;
-    renderKpis(); renderTable();
+    renderKpis(); renderTable(); renderPine();
     if (resetView) toEnd();
     drawChart(); drawEquity();
   }
@@ -202,7 +202,8 @@
     let lo = Infinity, hi = -Infinity;
     for (let i = i0; i <= i1; i++) {
       const b = bars[i];
-      lo = Math.min(lo, b.l, result.emaSlow[i], result.emaFast[i]); hi = Math.max(hi, b.h, result.emaSlow[i], result.emaFast[i]);
+      lo = Math.min(lo, b.l); hi = Math.max(hi, b.h);
+      for (const v of [result.emaSlow[i], result.emaFast[i]]) if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
       if (b.vwap != null) { lo = Math.min(lo, b.vwap); hi = Math.max(hi, b.vwap); }
     }
     if (!isFinite(lo)) { lo = 0; hi = 1; }
@@ -284,7 +285,7 @@
     for (const s of result.signals) {
       if (s.valid || s.idx < i0 || s.idx > i1) continue;
       ctx.strokeStyle = s.side > 0 ? col.up : col.down;
-      ctx.beginPath(); ctx.arc(X(s.idx), Y(result.emaFast[s.idx]), 4, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(X(s.idx), Y(result.emaFast[s.idx] ?? bars[s.idx].c), 4, 0, Math.PI * 2); ctx.stroke();
     }
 
     // Operaciones
@@ -431,6 +432,66 @@
     c.fillStyle = /^#[0-9a-f]{6}$/i.test(color) ? g : 'transparent'; c.fill();
     c.beginPath(); eq.forEach((v, i) => i ? c.lineTo(X(i), Y(v)) : c.moveTo(X(i), Y(v)));
     c.strokeStyle = color; c.lineWidth = 2; c.stroke();
+  }
+
+
+  // ---------- Pine Script y copiar ----------
+  function renderPine() { $('pineCode').textContent = window.EmaVwapPine.pineScript(params, E.CONTRACTS); }
+  function copyText(text, okMsg) {
+    const done = () => { $('copyStatus').textContent = okMsg; setTimeout(() => { $('copyStatus').textContent = ''; }, 2500); };
+    const fallback = () => {
+      const r = document.createRange(); r.selectNodeContents($('pineCode'));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      $('copyStatus').textContent = 'Selecciona y copia el texto (Ctrl/⌘+C).';
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  }
+  $('pineCopy').addEventListener('click', () => copyText($('pineCode').textContent, 'Script copiado.'));
+  $('tradesCopy').addEventListener('click', () => {
+    if (!result) return;
+    const rows = [['n', 'lado', 'entrada_ny', 'precio_entrada', 'salida_ny', 'precio_salida', 'motivo', 'puntos', 'pnl_usd']];
+    result.trades.forEach((t, i) => rows.push([i + 1, t.side > 0 ? 'largo' : 'corto', fmtDT(t.entryTime), t.entry.toFixed(2), fmtDT(t.exitTime), t.exit.toFixed(2), t.reason, t.pts.toFixed(2), t.pnl.toFixed(2)]));
+    copyText(rows.map(r => r.join(',')).join('\n'), `${result.trades.length} operaciones copiadas.`);
+  });
+
+  // ---------- optimizador ----------
+  const parseList = id => $(id).value.split(/[,;\s]+/).map(Number).filter(v => isFinite(v) && v >= 0);
+  let optJob = null;
+  $('optRun').addEventListener('click', () => {
+    if (!bars.length) return;
+    if (optJob) { optJob.cancel = true; optJob = null; $('optRun').textContent = 'Optimizar'; $('optStatus').textContent = 'Cancelado.'; return; }
+    const grid = { fast: parseList('gFast'), slow: parseList('gSlow'), stopPts: parseList('gStop'), targetPts: parseList('gTarget') };
+    if (Object.values(grid).some(v => !v.length)) { $('optStatus').textContent = 'Rellena las cuatro listas con números separados por comas.'; return; }
+    const job = E.optimize(bars, Object.assign({}, params), grid, { chunk: 8 });
+    if (!job.combos.length) { $('optStatus').textContent = 'Ninguna combinación válida (la EMA rápida debe ser menor que la lenta).'; return; }
+    if (job.combos.length > 3000) { $('optStatus').textContent = `${job.combos.length} combinaciones son demasiadas; reduce las listas (máx. 3000).`; return; }
+    optJob = job; $('optRun').textContent = 'Cancelar';
+    const tick = () => {
+      if (job.cancel) return;
+      const finished = job.step();
+      $('optStatus').textContent = `${Math.round(job.progress * 100)} % · ${job.rows.length} de ${job.combos.length}`;
+      if (!finished) { setTimeout(tick, 0); return; }
+      optJob = null; $('optRun').textContent = 'Optimizar';
+      $('optStatus').textContent = `${job.combos.length} combinaciones · corte en ${fmtDT(job.split)}`;
+      renderOpt(job.rank().slice(0, 15));
+      run();
+    };
+    tick();
+  });
+  function renderOpt(rows) {
+    $('optWrap').hidden = false;
+    const pf = s => s.pf === Infinity ? '∞' : s.pf.toFixed(2);
+    $('optBody').innerHTML = rows.map((r, i) => `<tr>
+      <td>${r.fast} / ${r.slow}</td><td>${r.stopPts || '—'}</td><td>${r.targetPts || '—'}</td><td>${r.is.n} · ${r.oos.n}</td>
+      <td class="${cls(r.is.net)}">${money(r.is.net)}</td><td>${pf(r.is)}</td>
+      <td class="${cls(r.oos.net)}">${money(r.oos.net)}</td><td>${pf(r.oos)}</td>
+      <td><button class="btn sm" data-k="${i}">Usar</button></td></tr>`).join('');
+    $('optBody').querySelectorAll('button[data-k]').forEach(b => b.addEventListener('click', () => {
+      const r = rows[+b.dataset.k];
+      Object.assign(params, { fast: r.fast, slow: r.slow, stopPts: r.stopPts, targetPts: r.targetPts });
+      fillForm(); readForm(); run();
+      $('kpis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
   }
 
   // ---------- inicio ----------

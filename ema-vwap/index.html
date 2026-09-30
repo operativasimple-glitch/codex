@@ -110,6 +110,11 @@ tbody tr:hover,tbody tr.sel{background:var(--fill)}
 .rules{font-size:13px;color:var(--label2);line-height:1.5;margin:0;padding-left:18px}
 .rules b{color:var(--label)}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.opt-grid label{font-size:12.5px;color:var(--label2);display:flex;flex-direction:column;gap:4px}
+.opt-grid input{padding:7px 8px;border-radius:10px;border:1px solid var(--hairline);background:var(--card-soft);color:var(--label);font:inherit;font-size:14px;min-width:0}
+pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);border:1px solid var(--hairline);border-radius:12px;padding:12px;font:12px/1.5 var(--mono);color:var(--label);white-space:pre}
+.btn.sm{padding:5px 10px;font-size:12.5px}
 .drop{display:block;border:1.5px dashed var(--label3);border-radius:12px;padding:12px;text-align:center;font-size:13px;color:var(--label2);cursor:pointer;margin-bottom:10px}
 .drop.over{border-color:var(--accent);background:var(--fill)}
 </style>
@@ -182,13 +187,18 @@ tbody tr:hover,tbody tr.sel{background:var(--fill)}
       <div class="row"><label for="exitOnCross">Salir en cruce contrario</label><input type="checkbox" id="exitOnCross"></div>
       <div class="row"><label for="reverse">Girar posición en cruce válido</label><input type="checkbox" id="reverse"></div>
       <div class="row"><label for="exitOnVwap">Salir si el cierre cruza el VWAP</label><input type="checkbox" id="exitOnVwap"></div>
+      <div class="row"><label for="beTrigger">Breakeven tras X pts a favor (0 = off)</label><input type="number" id="beTrigger" min="0" step="0.25"></div>
       <div>
         <div class="row"><label for="tradeStart">Operar desde (NY)</label><input type="time" id="tradeStart" style="width:112px"></div>
         <div class="row"><label for="tradeEnd">Hasta (NY)</label><input type="time" id="tradeEnd" style="width:112px"></div>
       </div>
       <div class="row"><label for="flatAtEnd">Cerrar todo al final del horario</label><input type="checkbox" id="flatAtEnd"></div>
+      <div class="row"><label for="maxTradesDay">Máx. entradas por día (0 = sin límite)</label><input type="number" id="maxTradesDay" min="0" step="1"></div>
+      <div class="row"><label for="dailyLossLimit">Pérdida diaria máx. $ (0 = off)</label><input type="number" id="dailyLossLimit" min="0" step="10"></div>
+      <div class="row"><label for="intrabar">Stop y objetivo en la misma vela</label>
+        <select id="intrabar"><option value="tv">Como TradingView</option><option value="worst">Pesimista (stop)</option></select></div>
       <div class="btns" style="margin-top:6px"><button class="btn" id="reset">Valores por defecto</button></div>
-      <div class="hint">Stop u objetivo en 0 = desactivado. Si en una misma vela se tocan stop y objetivo se cuenta el stop.</div>
+      <div class="hint">Stop u objetivo en 0 = desactivado. «Como TradingView»: si la vela abre más cerca del máximo se asume que va primero al máximo y luego al mínimo; si no, al revés. Al acabar el horario, la posición se cierra en la apertura de la vela de la hora «Hasta».</div>
     </aside>
 
     <!-- Resultados -->
@@ -222,13 +232,39 @@ tbody tr:hover,tbody tr.sel{background:var(--fill)}
         </div>
       </div>
 
+      <div class="card" style="margin-bottom:14px">
+        <h2>Optimizar</h2>
+        <p class="hint" style="margin:0 0 10px">Prueba combinaciones de EMAs, stop y objetivo con el resto de ajustes actuales. Se eligen con el <b>70 % inicial</b> de los datos y se comprueban en el <b>30 % final</b>, que no se usó para elegir: si ahí se hunden, la combinación está sobreajustada.</p>
+        <div class="opt-grid">
+          <label>EMA rápida <input type="text" id="gFast" value="5, 8, 9, 12, 20"></label>
+          <label>EMA lenta <input type="text" id="gSlow" value="21, 34, 50"></label>
+          <label>Stop (pts) <input type="text" id="gStop" value="10, 15, 20, 30"></label>
+          <label>Objetivo (pts) <input type="text" id="gTarget" value="20, 30, 40, 60"></label>
+        </div>
+        <div class="btns"><button class="btn primary" id="optRun">Optimizar</button><span class="hint" id="optStatus" style="align-self:center"></span></div>
+        <div class="tbl-scroll" id="optWrap" hidden>
+          <table>
+            <thead><tr><th>EMAs</th><th>Stop</th><th>Obj.</th><th>Ops</th><th>Neto 70 %</th><th>PF</th><th>Neto 30 % final</th><th>PF</th><th></th></tr></thead>
+            <tbody id="optBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <h2>TradingView · Pine Script v6</h2>
+        <p class="hint" style="margin:0 0 10px">Estrategia con las mismas reglas y los ajustes actuales. En TradingView abre <b>NQ1!</b> o <b>MNQ1!</b>, Editor Pine → pega → <i>Añadir al gráfico</i>, y mira el <i>Probador de estrategias</i>. Con las mismas velas da las mismas operaciones que esta página (verificado con un intérprete de Pine).</p>
+        <div class="btns"><button class="btn primary" id="pineCopy">Copiar script</button><button class="btn" id="tradesCopy">Copiar operaciones (CSV)</button><span class="hint" id="copyStatus" style="align-self:center"></span></div>
+        <pre class="code" id="pineCode"></pre>
+      </div>
+
       <div class="card">
         <h2>Reglas</h2>
         <ul class="rules">
           <li><b>Largo</b>: la EMA rápida cruza por encima de la lenta y el cierre está <b>sobre</b> el VWAP de la sesión.</li>
           <li><b>Corto</b>: la EMA rápida cruza por debajo de la lenta y el cierre está <b>bajo</b> el VWAP.</li>
           <li>La señal se confirma al cierre de la vela; la orden se ejecuta en la apertura de la vela siguiente (sin mirar al futuro).</li>
-          <li>Salida por stop, objetivo, cruce contrario, cruce del VWAP (opcional) o al terminar el horario operativo.</li>
+          <li>Salida por stop, objetivo, breakeven, cruce contrario, cruce del VWAP (opcional) o al terminar el horario operativo.</li>
+          <li>Ejecución igual que el emulador de TradingView: deslizamiento en ticks en todas las ejecuciones y comisión por contrato.</li>
           <li>Los cruces descartados por el filtro aparecen en el gráfico como puntos huecos.</li>
           <li>Resultado de un backtest simple: no incluye colas de órdenes ni rechazos; no es asesoramiento financiero.</li>
         </ul>
@@ -238,6 +274,7 @@ tbody tr:hover,tbody tr.sel{background:var(--fill)}
 </div>
 
 <script src="engine.js"></script>
+<script src="pine.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

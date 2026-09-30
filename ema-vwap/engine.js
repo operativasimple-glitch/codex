@@ -17,13 +17,17 @@
     direction: 'both',      // both | long | short
     vwapSession: 'rth',     // rth (reinicia 09:30 ET) | globex (reinicia 18:00 ET)
     tradeStart: '09:30',    // horario operativo (hora de Nueva York)
-    tradeEnd: '15:55',
+    tradeEnd: '15:55',     // la posición se cierra en la apertura de esta vela
     flatAtEnd: true,        // cerrar posición al final del horario
     stopPts: 20,            // 0 = sin stop
     targetPts: 40,          // 0 = sin objetivo
     exitOnCross: true,      // salir con el cruce contrario de EMAs
     exitOnVwap: false,      // salir si el cierre cruza el VWAP en contra
     reverse: true,          // en cruce contrario válido, girar posición
+    beTrigger: 0,           // pts a favor para mover el stop a la entrada (0 = off)
+    maxTradesDay: 0,        // máx. entradas por día (0 = sin límite)
+    dailyLossLimit: 0,      // $ de pérdida diaria que bloquea nuevas entradas (0 = off)
+    intrabar: 'tv',         // tv: como TradingView | worst: si toca stop y objetivo, cuenta el stop
     slipTicks: 1,           // deslizamiento en entradas y salidas a mercado
     commission: null        // $ por contrato ida y vuelta (null = por defecto del contrato)
   };
@@ -158,14 +162,16 @@
   }
 
   // ---------- indicadores ----------
+  // Igual que ta.ema de TradingView: sin valor hasta la vela n, arranca con la media simple
   function ema(values, n) {
-    const out = new Array(values.length);
+    const out = new Array(values.length).fill(null);
+    if (values.length < n) return out;
     const k = 2 / (n + 1);
-    let prev = values[0];
-    for (let i = 0; i < values.length; i++) {
-      prev = i === 0 ? values[0] : values[i] * k + prev * (1 - k);
-      out[i] = prev;
-    }
+    let prev = 0;
+    for (let i = 0; i < n; i++) prev += values[i];
+    prev /= n;
+    out[n - 1] = prev;
+    for (let i = n; i < values.length; i++) out[i] = prev = values[i] * k + prev * (1 - k);
     return out;
   }
 
@@ -175,11 +181,12 @@
   function annotate(bars, mode) {
     let key = null, pv = 0, vol = 0;
     for (const b of bars) {
-      b.et = tzParts(b.t);
+      if (!b.et) b.et = tzParts(b.t);
       let sKey, active;
       if (mode === 'globex') {
         // La sesión de CME empieza a las 18:00 ET: se atribuye al día siguiente
-        sKey = tzParts(b.t + 6 * 3600e3).date;
+        if (!b.gkey) b.gkey = tzParts(b.t + 6 * 3600e3).date;
+        sKey = b.gkey;
         active = true;
       } else {
         sKey = b.et.date;
@@ -196,6 +203,12 @@
   }
 
   // ---------- backtest ----------
+  // Reproduce el emulador de órdenes de TradingView:
+  //  - las órdenes decididas al cierre se ejecutan en la apertura siguiente (+ deslizamiento)
+  //  - stop y objetivo se evalúan dentro de la vela; con intrabar 'tv' el recorrido es
+  //    apertura→máximo→mínimo→cierre si la apertura está más cerca del máximo, si no apertura→mínimo→máximo→cierre
+  //  - el deslizamiento (en ticks) se aplica a todas las ejecuciones, también al objetivo
+  //  - al acabar el horario se cierra en la apertura de la primera vela fuera de horario
   function backtest(bars, params) {
     const p = Object.assign({}, DEFAULTS, params || {});
     const spec = CONTRACTS[p.contract] || CONTRACTS.MNQ;
@@ -203,6 +216,8 @@
     const slip = (+p.slipTicks || 0) * spec.tick;
     const qty = Math.max(1, Math.floor(+p.qty || 1));
     const fast = Math.max(1, Math.floor(+p.fast)), slow = Math.max(2, Math.floor(+p.slow));
+    const stopPts = +p.stopPts || 0, targetPts = +p.targetPts || 0, beTrigger = +p.beTrigger || 0;
+    const maxTrades = Math.floor(+p.maxTradesDay || 0), maxLoss = +p.dailyLossLimit || 0;
 
     annotate(bars, p.vwapSession);
     const closes = bars.map(b => b.c);
@@ -218,8 +233,9 @@
 
     const trades = [];
     const signals = [];
-    let pos = null;          // { side, entry, idx, stop, target }
+    let pos = null;          // { side, entry, idx, stop, target, best, be }
     let pending = null;      // { exit?:reason, enter?:side } a ejecutar en la apertura de la vela siguiente
+    let net = 0, dayKey = null, dayStart = 0, dayTrades = 0;
 
     const close = (i, price, reason) => {
       const pts = (price - pos.entry) * pos.side;
@@ -228,17 +244,32 @@
       trades.push({
         side: pos.side, entryIdx: pos.idx, exitIdx: i, entryTime: bars[pos.idx].t, exitTime: bars[i].t,
         entry: pos.entry, exit: price, pts, gross, fee, pnl: gross - fee, reason, bars: i - pos.idx + 1,
-        stop: pos.stop, target: pos.target
+        stop: pos.initStop, target: pos.target
       });
+      net += gross - fee;
       pos = null;
     };
     const open = (i, side) => {
       const entry = bars[i].o + side * slip;
-      pos = {
-        side, entry, idx: i,
-        stop: +p.stopPts > 0 ? entry - side * +p.stopPts : null,
-        target: +p.targetPts > 0 ? entry + side * +p.targetPts : null
-      };
+      const stop = stopPts > 0 ? entry - side * stopPts : null;
+      pos = { side, entry, idx: i, stop, initStop: stop, target: targetPts > 0 ? entry + side * targetPts : null, best: null, be: false };
+    };
+    // Stop / objetivo dentro de la vela
+    const checkExits = b => {
+      const s = pos.side;
+      const stopHit = lvl => lvl != null && (s > 0 ? b.l <= lvl : b.h >= lvl);
+      const tgtHit = lvl => lvl != null && (s > 0 ? b.h >= lvl : b.l <= lvl);
+      const stopName = pos.be ? 'Breakeven' : 'Stop';
+      // Hueco en la apertura
+      if (pos.stop != null && (s > 0 ? b.o <= pos.stop : b.o >= pos.stop)) return [b.o - s * slip, stopName];
+      if (pos.target != null && (s > 0 ? b.o >= pos.target : b.o <= pos.target)) return [b.o - s * slip, 'Objetivo'];
+      const hFirst = p.intrabar === 'worst' ? s < 0 : (b.h - b.o) <= (b.o - b.l);
+      for (const leg of hFirst ? ['h', 'l'] : ['l', 'h']) {
+        const favorable = (leg === 'h') === (s > 0);
+        if (favorable ? tgtHit(pos.target) : stopHit(pos.stop))
+          return favorable ? [pos.target - s * slip, 'Objetivo'] : [pos.stop - s * slip, stopName];
+      }
+      return null;
     };
 
     for (let i = 0; i < bars.length; i++) {
@@ -251,25 +282,27 @@
         pending = null;
       }
 
-      // 2) Stop / objetivo dentro de la vela (si tocan ambos, se asume el stop: conservador)
+      // 2) Stop / objetivo dentro de la vela
       if (pos) {
-        const s = pos.side;
-        const hitStop = pos.stop != null && (s > 0 ? b.l <= pos.stop : b.h >= pos.stop);
-        const hitTgt = pos.target != null && (s > 0 ? b.h >= pos.target : b.l <= pos.target);
-        if (hitStop) {
-          const gapThrough = s > 0 ? b.o < pos.stop : b.o > pos.stop;
-          close(i, (gapThrough ? b.o : pos.stop) - s * slip, 'Stop');
-        } else if (hitTgt) {
-          const gapThrough = s > 0 ? b.o > pos.target : b.o < pos.target;
-          close(i, gapThrough ? b.o : pos.target, 'Objetivo');
-        }
+        const hit = checkExits(b);
+        if (hit) close(i, hit[0], hit[1]);
       }
 
-      // 3) Señales al cierre de la vela
+      // 3) Breakeven: se activa al cierre y protege desde la vela siguiente
+      if (pos) {
+        pos.best = pos.best == null ? (pos.side > 0 ? b.h : b.l) : pos.side > 0 ? Math.max(pos.best, b.h) : Math.min(pos.best, b.l);
+        if (beTrigger > 0 && !pos.be && (pos.best - pos.entry) * pos.side >= beTrigger) { pos.be = true; pos.stop = pos.entry; }
+      }
+
+      // Límites diarios (día de Nueva York; el P&L incluye lo cerrado en esta vela)
+      if (b.et.date !== dayKey) { dayKey = b.et.date; dayStart = net; dayTrades = 0; }
+
+      // 4) Señales al cierre de la vela
       if (i < slow) continue;
       const next = bars[i + 1];
-      const up = ef[i - 1] <= es[i - 1] && ef[i] > es[i];
-      const dn = ef[i - 1] >= es[i - 1] && ef[i] < es[i];
+      const ready = ef[i - 1] != null && es[i - 1] != null;
+      const up = ready && ef[i - 1] <= es[i - 1] && ef[i] > es[i];
+      const dn = ready && ef[i - 1] >= es[i - 1] && ef[i] < es[i];
       let side = 0;
       if (up) side = 1; else if (dn) side = -1;
       let valid = side !== 0;
@@ -281,6 +314,8 @@
       if (valid && (p.direction === 'long' && side < 0 || p.direction === 'short' && side > 0)) { valid = false; why = 'dirección desactivada'; }
       const sameSession = next && next.session === b.session && next.t - b.t <= barMs * 3;
       if (valid && !(next && sameSession && inWindow(next))) { valid = false; why = 'fuera de horario'; }
+      if (valid && maxTrades > 0 && dayTrades >= maxTrades) { valid = false; why = 'máx. operaciones del día'; }
+      if (valid && maxLoss > 0 && net - dayStart <= -maxLoss) { valid = false; why = 'límite de pérdida diaria'; }
       if (side) signals.push({ idx: i, side, valid, why });
 
       if (pos) {
@@ -289,18 +324,44 @@
         else if (p.exitOnVwap && b.vwap != null && (pos.side > 0 ? b.c < b.vwap : b.c > b.vwap)) exitReason = 'Cruce VWAP';
         if (!next) { close(i, b.c, 'Fin de datos'); continue; }
         const endOfDay = p.flatAtEnd && (!inWindow(next) || !sameSession);
-        if (endOfDay) { close(i, b.c - pos.side * slip, 'Cierre de horario'); continue; }
+        if (endOfDay) { pending = { exit: 'Cierre de horario' }; continue; }
         if (exitReason) {
           pending = { exit: exitReason };
-          if (p.reverse && valid && side === -pos.side) pending.enter = side;
+          if (p.reverse && valid && side === -pos.side) { pending.enter = side; dayTrades++; }
         }
       } else if (valid) {
         pending = { enter: side };
+        dayTrades++;
       }
     }
     if (pos) close(bars.length - 1, bars[bars.length - 1].c, 'Fin de datos');
 
     return { trades, signals, emaFast: ef, emaSlow: es, stats: stats(trades), spec, params: p, commission };
+  }
+
+  // Busca la mejor combinación en la parte inicial de los datos y la comprueba en el resto (fuera de muestra)
+  function optimize(bars, base, grid, opts) {
+    opts = opts || {};
+    const split = bars[Math.floor(bars.length * (opts.inSample || 0.7))].t;
+    const combos = [];
+    for (const fast of grid.fast) for (const slow of grid.slow) {
+      if (fast >= slow) continue;
+      for (const stopPts of grid.stopPts) for (const targetPts of grid.targetPts) combos.push({ fast, slow, stopPts, targetPts });
+    }
+    const rows = [];
+    let k = 0;
+    const step = () => {
+      const until = Math.min(combos.length, k + (opts.chunk || combos.length));
+      for (; k < until; k++) {
+        const c = combos[k];
+        const r = backtest(bars, Object.assign({}, base, c));
+        const ins = r.trades.filter(t => t.entryTime < split), oos = r.trades.filter(t => t.entryTime >= split);
+        rows.push(Object.assign({ is: stats(ins), oos: stats(oos), all: r.stats }, c));
+      }
+      return k >= combos.length;
+    };
+    const rank = () => rows.slice().sort((a, b) => b.is.net - a.is.net);
+    return { combos, rows, step, rank, split, get done() { return k >= combos.length; }, get progress() { return combos.length ? k / combos.length : 1; } };
   }
 
   function stats(trades) {
@@ -364,7 +425,7 @@
     return bars;
   }
 
-  const api = { CONTRACTS, DEFAULTS, parseCSV, parseTime, ema, annotate, backtest, stats, demoBars, tzParts, zonedToEpoch };
+  const api = { CONTRACTS, DEFAULTS, parseCSV, parseTime, ema, annotate, backtest, optimize, stats, demoBars, tzParts, zonedToEpoch };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.EmaVwap = api;
 })(typeof self !== 'undefined' ? self : this);
