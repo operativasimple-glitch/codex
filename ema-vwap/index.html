@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cruce EMA + VWAP</title>
+<meta name="description" content="Backtest del cruce de EMAs filtrado por VWAP en NQ y MNQ.">
+<meta name="theme-color" content="#FDF6F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#150E19" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<style>
+:root{
+  --bg:#FDF6F3; --card:#FFFFFF; --card-soft:#FDF3F1;
+  --label:#3B2331; --label2:#907385; --label3:#C6ADB9;
+  --hairline:rgba(150,100,125,.15); --fill:rgba(220,140,170,.12); --fill2:rgba(220,140,170,.22);
+  --shadow:0 4px 18px rgba(120,60,90,.07);
+  --accent:#D24C79; --plum:#7A4269;
+  --up:#1F9D6B; --down:#E0475B;
+  --ema-fast:#E0A24C; --ema-slow:#6E9BD6; --vwap:#A45CC9;
+  --grid:rgba(150,100,125,.10);
+  --serif:ui-serif,"New York","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#150E19; --card:#241A2B; --card-soft:#2E2136;
+    --label:#F7ECF2; --label2:#B79FAE; --label3:#7E6675;
+    --hairline:rgba(255,200,222,.12); --fill:rgba(255,160,195,.10); --fill2:rgba(255,160,195,.18);
+    --shadow:0 4px 18px rgba(0,0,0,.4);
+    --accent:#FF7FA6; --plum:#C09BDB;
+    --up:#3DC98E; --down:#FF6B7E;
+    --ema-fast:#EFBA6C; --ema-slow:#8DB4E6; --vwap:#C98BEA;
+    --grid:rgba(255,200,222,.07);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#150E19; --card:#241A2B; --card-soft:#2E2136;
+  --label:#F7ECF2; --label2:#B79FAE; --label3:#7E6675;
+  --hairline:rgba(255,200,222,.12); --fill:rgba(255,160,195,.10); --fill2:rgba(255,160,195,.18);
+  --shadow:0 4px 18px rgba(0,0,0,.4);
+  --accent:#FF7FA6; --plum:#C09BDB;
+  --up:#3DC98E; --down:#FF6B7E;
+  --ema-fast:#EFBA6C; --ema-slow:#8DB4E6; --vwap:#C98BEA;
+  --grid:rgba(255,200,222,.07);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;background:var(--bg);color:var(--label);
+  font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 16px}
+h1{margin:0;font-family:var(--serif);font-size:32px;font-weight:600;letter-spacing:-.3px;line-height:1.1}
+.sub{color:var(--label2);font-size:13.5px;margin-top:4px}
+a.back{color:var(--accent);text-decoration:none;font-size:14px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--hairline);padding:14px}
+.grid{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
+.grid>*{min-width:0}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+h2{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--label2);margin:4px 2px 10px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:9px}
+.row label{flex:1;font-size:13.5px;color:var(--label)}
+.row input[type=number],.row input[type=time],.row select{
+  width:108px;padding:7px 8px;border-radius:10px;border:1px solid var(--hairline);background:var(--card-soft);
+  color:var(--label);font:inherit;font-size:14px;
+}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.seg{display:flex;background:var(--fill);border-radius:10px;padding:2px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:transparent;padding:7px 0;border-radius:8px;font:inherit;font-size:13.5px;font-weight:600;color:var(--label2);cursor:pointer}
+.seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.btn{border:0;border-radius:11px;padding:9px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;background:var(--fill2);color:var(--label)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn:active{transform:scale(.97)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.hint{font-size:12.5px;color:var(--label2);line-height:1.45}
+.hint code{font-family:var(--mono);font-size:11.5px;background:var(--fill);padding:1px 4px;border-radius:5px}
+.sep{height:1px;background:var(--hairline);margin:12px 0}
+.status{font-size:13px;color:var(--label2);margin:6px 2px 0;min-height:18px}
+.status.err{color:var(--down)}
+.demo-flag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;background:var(--fill2);color:var(--accent);padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow)}
+.kpi .k{font-size:11.5px;color:var(--label2);font-weight:600;letter-spacing:.3px}
+.kpi .v{font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.pos{color:var(--up)} .neg{color:var(--down)}
+
+.chart-card{padding:10px 10px 6px;margin-bottom:14px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--label2);padding:2px 4px 8px;font-variant-numeric:tabular-nums}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.legend b{color:var(--label);font-weight:600}
+.chart-wrap{position:relative;height:440px;touch-action:none;user-select:none;-webkit-user-select:none}
+@media (max-width:600px){.chart-wrap{height:340px}}
+canvas{display:block;width:100%;height:100%}
+.chart-tools{position:absolute;right:70px;top:6px;display:flex;gap:6px}
+.chart-tools button{width:30px;height:30px;border-radius:9px;border:1px solid var(--hairline);background:var(--card);color:var(--label);font-size:16px;cursor:pointer;opacity:.9}
+.eq-wrap{height:130px;margin-top:4px}
+
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:11.5px;color:var(--label2);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--hairline);position:sticky;top:0;background:var(--card)}
+td{padding:7px 8px;border-bottom:1px solid var(--hairline);white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover,tbody tr.sel{background:var(--fill)}
+.tbl-scroll{max-height:420px;overflow:auto;-webkit-overflow-scrolling:touch}
+.side{font-weight:700;font-size:12px;padding:2px 7px;border-radius:99px}
+.side.l{background:color-mix(in srgb,var(--up) 16%,transparent);color:var(--up)}
+.side.s{background:color-mix(in srgb,var(--down) 16%,transparent);color:var(--down)}
+.rules{font-size:13px;color:var(--label2);line-height:1.5;margin:0;padding-left:18px}
+.rules b{color:var(--label)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.drop{display:block;border:1.5px dashed var(--label3);border-radius:12px;padding:12px;text-align:center;font-size:13px;color:var(--label2);cursor:pointer;margin-bottom:10px}
+.drop.over{border-color:var(--accent);background:var(--fill)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Cruce EMA + VWAP</h1>
+      <div class="sub">Backtest en NQ / MNQ · señales al cierre de vela, entrada en la apertura de la siguiente · horario de Nueva York</div>
+    </div>
+    <a class="back" href="../">← Goals</a>
+  </header>
+
+  <div class="grid">
+    <!-- Panel de parámetros -->
+    <aside class="card" id="panel">
+      <h2>Datos</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".csv,.txt" hidden>
+        <b>Cargar CSV de velas</b><br>arrastra aquí o toca para elegir
+      </label>
+      <div class="btns">
+        <button class="btn" id="demo">Usar datos de ejemplo</button>
+      </div>
+      <div class="row">
+        <label for="csvTz">Hora del CSV (si no trae zona)</label>
+        <select id="csvTz">
+          <option value="America/New_York">Nueva York</option>
+          <option value="America/Chicago">Chicago</option>
+          <option value="UTC">UTC</option>
+          <option value="Europe/Madrid">Madrid</option>
+        </select>
+      </div>
+      <div class="hint">
+        TradingView: gráfico de <b>NQ1!</b> o <b>MNQ1!</b> (1–15 min) → menú <i>Exportar datos del gráfico</i>.
+        También sirve NinjaTrader (<code>20240102 093000;o;h;l;c;v</code>) o cualquier CSV con
+        <code>time,open,high,low,close,volume</code>.
+      </div>
+      <div class="status" id="status"></div>
+
+      <div class="sep"></div>
+      <h2>Contrato</h2>
+      <div class="seg" id="contractSeg">
+        <button data-v="MNQ">MNQ · $2/pt</button>
+        <button data-v="NQ">NQ · $20/pt</button>
+      </div>
+      <div class="row"><label for="qty">Contratos</label><input type="number" id="qty" min="1" step="1"></div>
+      <div class="row"><label for="commission">Comisión ida+vuelta ($/contrato)</label><input type="number" id="commission" min="0" step="0.1"></div>
+      <div class="row"><label for="slipTicks">Deslizamiento (ticks)</label><input type="number" id="slipTicks" min="0" step="1"></div>
+
+      <div class="sep"></div>
+      <h2>Señal</h2>
+      <div class="split">
+        <div class="row"><label for="fast">EMA rápida</label><input type="number" id="fast" min="1" step="1" style="width:64px"></div>
+        <div class="row"><label for="slow">EMA lenta</label><input type="number" id="slow" min="2" step="1" style="width:64px"></div>
+      </div>
+      <div class="row"><label for="vwapFilter">Filtro VWAP (largo sobre, corto bajo)</label><input type="checkbox" id="vwapFilter"></div>
+      <div class="row"><label for="vwapSession">VWAP reinicia</label>
+        <select id="vwapSession"><option value="rth">09:30 (RTH)</option><option value="globex">18:00 (Globex)</option></select></div>
+      <div class="row"><label for="direction">Dirección</label>
+        <select id="direction"><option value="both">Ambas</option><option value="long">Solo largos</option><option value="short">Solo cortos</option></select></div>
+
+      <div class="sep"></div>
+      <h2>Gestión</h2>
+      <div class="split">
+        <div class="row"><label for="stopPts">Stop (pts)</label><input type="number" id="stopPts" min="0" step="0.25" style="width:70px"></div>
+        <div class="row"><label for="targetPts">Objetivo (pts)</label><input type="number" id="targetPts" min="0" step="0.25" style="width:70px"></div>
+      </div>
+      <div class="row"><label for="exitOnCross">Salir en cruce contrario</label><input type="checkbox" id="exitOnCross"></div>
+      <div class="row"><label for="reverse">Girar posición en cruce válido</label><input type="checkbox" id="reverse"></div>
+      <div class="row"><label for="exitOnVwap">Salir si el cierre cruza el VWAP</label><input type="checkbox" id="exitOnVwap"></div>
+      <div>
+        <div class="row"><label for="tradeStart">Operar desde (NY)</label><input type="time" id="tradeStart" style="width:112px"></div>
+        <div class="row"><label for="tradeEnd">Hasta (NY)</label><input type="time" id="tradeEnd" style="width:112px"></div>
+      </div>
+      <div class="row"><label for="flatAtEnd">Cerrar todo al final del horario</label><input type="checkbox" id="flatAtEnd"></div>
+      <div class="btns" style="margin-top:6px"><button class="btn" id="reset">Valores por defecto</button></div>
+      <div class="hint">Stop u objetivo en 0 = desactivado. Si en una misma vela se tocan stop y objetivo se cuenta el stop.</div>
+    </aside>
+
+    <!-- Resultados -->
+    <main>
+      <div class="kpis" id="kpis"></div>
+
+      <div class="card chart-card">
+        <div class="legend" id="legend"></div>
+        <div class="chart-wrap" id="chartWrap">
+          <canvas id="chart"></canvas>
+          <div class="chart-tools">
+            <button id="zoomOut" title="Alejar">−</button>
+            <button id="zoomIn" title="Acercar">+</button>
+            <button id="toEnd" title="Ir al final">⇥</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <h2>Curva de capital</h2>
+        <div class="eq-wrap"><canvas id="equity"></canvas></div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <h2>Operaciones <span id="nTrades"></span></h2>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Entrada (NY)</th><th>Lado</th><th>Precio</th><th>Salida</th><th>Precio</th><th>Motivo</th><th>Pts</th><th>P&amp;L $</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Reglas</h2>
+        <ul class="rules">
+          <li><b>Largo</b>: la EMA rápida cruza por encima de la lenta y el cierre está <b>sobre</b> el VWAP de la sesión.</li>
+          <li><b>Corto</b>: la EMA rápida cruza por debajo de la lenta y el cierre está <b>bajo</b> el VWAP.</li>
+          <li>La señal se confirma al cierre de la vela; la orden se ejecuta en la apertura de la vela siguiente (sin mirar al futuro).</li>
+          <li>Salida por stop, objetivo, cruce contrario, cruce del VWAP (opcional) o al terminar el horario operativo.</li>
+          <li>Los cruces descartados por el filtro aparecen en el gráfico como puntos huecos.</li>
+          <li>Resultado de un backtest simple: no incluye colas de órdenes ni rechazos; no es asesoramiento financiero.</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
