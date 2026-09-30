@@ -71,7 +71,7 @@ test('fuera de horario no entra y al final del horario cierra en la apertura sig
   assert.equal(r.trades[0].reason, 'Cierre de horario');
   assert.equal(r.trades[0].exitIdx, 5);
   assert.equal(r.trades[0].exit, 105 - 0.25);
-  const late = E.backtest(bars, Object.assign({}, BASE, { tradeEnd: '15:50' }));
+  const late = E.backtest(bars, Object.assign({}, BASE, { session: 'custom', tradeEnd: '15:50' }));
   assert.equal(late.trades.length, 0);
 });
 
@@ -159,4 +159,22 @@ test('solo cuenta entradas desde la fecha indicada', () => {
   const t0 = E.zonedToEpoch(mid.y, mid.mo, mid.d, 0, 0, 0, 'America/New_York');
   assert.ok(part.trades.length > 0 && part.trades.length < all.trades.length);
   assert.ok(part.trades.every(t => t.entryTime >= t0));
+});
+
+test('sesiones: Asia cruza la medianoche y el domingo por la tarde cuenta como lunes', () => {
+  const bars = E.demoBars(10, 5, true);
+  const asia = E.backtest(bars.map(b => Object.assign({}, b)), { session: 'asia' });
+  assert.ok(asia.trades.length > 0);
+  for (const t of asia.trades) {
+    const m = E.tzParts(t.entryTime).min;
+    assert.ok(m >= 18 * 60 || m < 3 * 60, 'entrada fuera de Asia: ' + m);
+  }
+  const custom = E.backtest(bars.map(b => Object.assign({}, b)), { session: 'custom', tradeStart: '18:00', tradeEnd: '03:00' });
+  assert.equal(custom.stats.net, asia.stats.net);
+  // Sin datos del sábado ni del domingo por la mañana: ninguna entrada en fin de semana de CME
+  const all = E.backtest(bars.map(b => Object.assign({}, b)), { session: 'all' });
+  for (const t of all.trades) {
+    const g = E.tzParts(t.entryTime + 6 * 3600e3);
+    assert.ok(g.wd >= 1 && g.wd <= 5);
+  }
 });

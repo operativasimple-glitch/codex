@@ -3,6 +3,7 @@
 (function (root) {
   'use strict';
 
+  const SESS_NAMES = { ny: 'Nueva York 09:30–15:55', london: 'Londres 03:00–09:30', asia: 'Asia 18:00–03:00', all: '24 h 18:00–16:55', custom: 'Personalizada' };
   const hhmmNum = s => { const [h, m] = String(s).split(':').map(Number); return h * 100 + (m || 0); };
   const num = v => { const n = +v || 0; return Number.isInteger(n) ? n.toFixed(1) : String(n); };
   const bool = v => (v ? 'true' : 'false');
@@ -34,7 +35,7 @@ indicator("EMA×VWAP · Plan NQ", shorttitle = "EMA×VWAP NQ", overlay = true, m
 fastLen     = input.int(${Math.floor(+p.fast)}, "EMA rápida", minval = 1, group = "Señal")
 slowLen     = input.int(${Math.floor(+p.slow)}, "EMA lenta", minval = 2, group = "Señal")
 useVwap     = input.bool(${bool(p.vwapFilter)}, "Filtro VWAP (largo sobre, corto bajo)", group = "Señal")
-vwapMode    = input.string("${p.vwapSession === 'globex' ? 'Globex 18:00' : 'RTH 09:30'}", "VWAP reinicia", options = ["RTH 09:30", "Globex 18:00"], group = "Señal")
+vwapMode    = input.string("${{ rth: 'RTH 09:30', globex: 'Globex 18:00' }[p.vwapSession] || 'Auto'}", "VWAP reinicia", options = ["Auto", "RTH 09:30", "Globex 18:00"], group = "Señal", tooltip = "Auto: 09:30 en la sesión de Nueva York; 18:00 (Globex) en Londres, Asia y 24 h")
 maxVwapDist = input.float(${num(p.maxVwapDist)}, "No entrar si el cierre está a más de X pts del VWAP (0 = off)", minval = 0, step = 0.25, group = "Señal")
 direction   = input.string("${dir}", "Dirección", options = ["Ambas", "Solo largos", "Solo cortos"], group = "Señal")
 
@@ -52,8 +53,9 @@ beR         = input.float(${num(p.beR)}, "Breakeven al ir X R a favor (0 = off)"
 exitOnCross = input.bool(${bool(p.exitOnCross)}, "Cerrar en cruce contrario", group = "Salida")
 reverseOn   = input.bool(${bool(p.reverse)}, "Girar posición en cruce válido", group = "Salida")
 exitOnVwap  = input.bool(${bool(p.exitOnVwap)}, "Cerrar si el cierre cruza el VWAP", group = "Salida")
-tStart      = input.int(${hhmmNum(p.tradeStart)}, "Operar desde (HHMM, Nueva York)", minval = 0, maxval = 2359, group = "Salida")
-tEnd        = input.int(${hhmmNum(p.tradeEnd)}, "Cerrar todo a las (HHMM, Nueva York)", minval = 0, maxval = 2359, group = "Salida")
+sessPreset  = input.string("${SESS_NAMES[p.session] || 'Nueva York 09:30–15:55'}", "Sesión (hora de Nueva York)", options = ["Nueva York 09:30–15:55", "Londres 03:00–09:30", "Asia 18:00–03:00", "24 h 18:00–16:55", "Personalizada"], group = "Salida")
+tStart      = input.int(${hhmmNum(p.tradeStart)}, "Personalizada: desde (HHMM)", minval = 0, maxval = 2359, inline = "custom", group = "Salida")
+tEnd        = input.int(${hhmmNum(p.tradeEnd)}, "hasta (HHMM)", minval = 0, maxval = 2359, inline = "custom", group = "Salida", tooltip = "Si «desde» es mayor que «hasta», la sesión cruza la medianoche (p. ej. 2000 → 0200)")
 flatAtEnd   = input.bool(${bool(p.flatAtEnd)}, "Cerrar al final del horario", group = "Salida")
 
 // ───── Costes y tabla ─────
@@ -80,15 +82,18 @@ showWindow  = input.bool(false, "Sombrear horario operativo", group = "Estilo")
 dayKey(t) => year(t, "America/New_York") * 10000 + month(t, "America/New_York") * 100 + dayofmonth(t, "America/New_York")
 minOf(t) => hour(t, "America/New_York") * 60 + minute(t, "America/New_York")
 isWeekday(t) => dayofweek(t, "America/New_York") >= dayofweek.monday and dayofweek(t, "America/New_York") <= dayofweek.friday
-startMin = math.floor(tStart / 100) * 60 + tStart % 100
-endMin = math.floor(tEnd / 100) * 60 + tEnd % 100
-inWindow(t) => isWeekday(t) and minOf(t) >= startMin and minOf(t) < endMin
+toMin(v) => math.floor(v / 100) * 60 + v % 100
+isNY = sessPreset == "Nueva York 09:30–15:55"
+startMin = isNY ? 570 : sessPreset == "Londres 03:00–09:30" ? 180 : sessPreset == "Asia 18:00–03:00" ? 1080 : sessPreset == "24 h 18:00–16:55" ? 1080 : toMin(tStart)
+endMin = isNY ? 955 : sessPreset == "Londres 03:00–09:30" ? 570 : sessPreset == "Asia 18:00–03:00" ? 180 : sessPreset == "24 h 18:00–16:55" ? 1015 : toMin(tEnd)
+// Lunes–viernes según el día de sesión de CME (el domingo a las 18:00 ya cuenta como lunes)
+inWindow(t) => isWeekday(t + 6 * 3600000) and (startMin < endMin ? minOf(t) >= startMin and minOf(t) < endMin : minOf(t) >= startMin or minOf(t) < endMin)
 
 // ───── Indicadores ─────
 emaFast = ta.ema(close, fastLen)
 emaSlow = ta.ema(close, slowLen)
 
-isRth = vwapMode == "RTH 09:30"
+isRth = vwapMode == "RTH 09:30" or vwapMode == "Auto" and isNY
 sessKey = isRth ? dayKey(time) : dayKey(time + 6 * 3600000)
 vwapActive = isRth ? (isWeekday(time) and minOf(time) >= 570 and minOf(time) < 960) : true
 var float pv = 0.0

@@ -175,7 +175,7 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
       </div>
       <div class="row"><label for="vwapFilter">Filtro VWAP (largo sobre, corto bajo)</label><input type="checkbox" id="vwapFilter"></div>
       <div class="row"><label for="vwapSession">VWAP reinicia</label>
-        <select id="vwapSession"><option value="rth">09:30 (RTH)</option><option value="globex">18:00 (Globex)</option></select></div>
+        <select id="vwapSession"><option value="auto">Auto</option><option value="rth">09:30 (RTH)</option><option value="globex">18:00 (Globex)</option></select></div>
       <div class="row"><label for="direction">Dirección</label>
         <select id="direction"><option value="both">Ambas</option><option value="long">Solo largos</option><option value="short">Solo cortos</option></select></div>
       <div class="row"><label for="maxVwapDist">No entrar si el cierre está a más de X pts del VWAP (0 = off)</label><input type="number" id="maxVwapDist" min="0" step="0.25"></div>
@@ -201,8 +201,10 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
       <div class="row"><label for="exitOnCross">Salir en cruce contrario</label><input type="checkbox" id="exitOnCross"></div>
       <div class="row"><label for="reverse">Girar posición en cruce válido</label><input type="checkbox" id="reverse"></div>
       <div class="row"><label for="exitOnVwap">Salir si el cierre cruza el VWAP</label><input type="checkbox" id="exitOnVwap"></div>
-      <div>
-        <div class="row"><label for="tradeStart">Operar desde (NY)</label><input type="time" id="tradeStart" style="width:112px"></div>
+      <div class="row"><label for="session">Sesión (hora de Nueva York)</label>
+        <select id="session"><option value="ny">Nueva York 09:30–15:55</option><option value="london">Londres 03:00–09:30</option><option value="asia">Asia 18:00–03:00</option><option value="all">24 h 18:00–16:55</option><option value="custom">Personalizada</option></select></div>
+      <div id="customRows">
+        <div class="row"><label for="tradeStart">Desde (NY)</label><input type="time" id="tradeStart" style="width:112px"></div>
         <div class="row"><label for="tradeEnd">Hasta (NY)</label><input type="time" id="tradeEnd" style="width:112px"></div>
       </div>
       <div class="row"><label for="flatAtEnd">Cerrar todo al final del horario</label><input type="checkbox" id="flatAtEnd"></div>

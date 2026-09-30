@@ -2,7 +2,7 @@
   'use strict';
   const E = window.EmaVwap;
   const $ = id => document.getElementById(id);
-  const STORE = 'emaVwap.params.v2', STORE_CSV = 'emaVwap.csv.v1';
+  const STORE = 'emaVwap.params.v3', STORE_CSV = 'emaVwap.csv.v1';
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -31,7 +31,7 @@
   const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts', 'maxTradesDay', 'dailyLossLimit',
     'swingBars', 'stopBuffer', 'stopMin', 'stopMax', 'targetR', 'beR', 'maxVwapDist'];
   const boolFields = ['vwapFilter', 'exitOnCross', 'reverse', 'exitOnVwap', 'flatAtEnd'];
-  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode', 'fromDate'];
+  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode', 'fromDate', 'session'];
 
   function fillForm() {
     numFields.forEach(k => { $(k).value = k === 'commission' && params.commission == null ? E.CONTRACTS[params.contract].commission : params[k]; });
@@ -44,6 +44,7 @@
     const swing = $('stopMode').value === 'swing';
     $('swingRows').hidden = !swing;
     $('rowStopPts').hidden = swing;
+    $('customRows').hidden = $('session').value !== 'custom';
   }
   function readForm() {
     numFields.forEach(k => { const v = $(k).value; params[k] = v === '' ? (k === 'commission' ? null : E.DEFAULTS[k]) : +v; });
@@ -57,7 +58,7 @@
   document.querySelectorAll('#panel input:not([type=file]), #panel select').forEach(el =>
     el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', () => {
       readForm();
-      if (el.id === 'stopMode') toggleStopRows();
+      if (el.id === 'stopMode' || el.id === 'session') toggleStopRows();
       if (el.id === 'csvTz' && csvText) loadText(csvText, sourceName);
       else scheduleRun();
     }));
@@ -79,16 +80,18 @@
       bars = E.parseCSV(text, params.csvTz);
       csvText = text; sourceName = name; isDemo = false;
       const saved = text.length < 3.5e6 && store.set(STORE_CSV, JSON.stringify({ name, text }));
-      setStatus(`${name}: ${bars.length.toLocaleString('es-ES')} velas · ${fmtDT(bars[0].t)} → ${fmtDT(bars[bars.length - 1].t)}${saved ? '' : ' (demasiado grande para recordarlo)'}`);
+      const noVol = bars.every(b => !b.v);
+      setStatus(`${name}: ${bars.length.toLocaleString('es-ES')} velas · ${fmtDT(bars[0].t)} → ${fmtDT(bars[bars.length - 1].t)}${saved ? '' : ' (demasiado grande para recordarlo)'}` +
+        (noVol ? ' · SIN VOLUMEN: el VWAP no coincidirá con TradingView. Añade el indicador «Volumen» al gráfico antes de exportar.' : ''), noVol);
       run(true);
     } catch (e) {
       setStatus(e.message, true);
     }
   }
   function loadDemo() {
-    bars = E.demoBars(20, 7); isDemo = true; csvText = null; sourceName = 'Ejemplo';
+    bars = E.demoBars(20, 7, true); isDemo = true; csvText = null; sourceName = 'Ejemplo';
     store.del(STORE_CSV);
-    setStatus(`Datos simulados (no son reales): ${bars.length} velas de 5 min, 20 días.`);
+    setStatus(`Datos simulados (no son reales): ${bars.length} velas de 5 min, 20 sesiones de 24 h.`);
     run(true);
   }
   function readFile(f) {

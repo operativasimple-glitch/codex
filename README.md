@@ -28,7 +28,9 @@ A page for backtesting the EMA crossover filtered by session VWAP on **NQ / MNQ*
 - Signals are confirmed at bar close and filled at the next bar's open.
 - **Stop**: either a fixed number of points, or behind the low/high of the last N bars plus a buffer (with min/max caps).
 - **Target and breakeven**: in multiples of the risk (R); the defaults are 2R and 1R.
-- **Exits**: stop, target, breakeven stop, opposite cross (optionally reversing), VWAP cross, or at the open of the first bar after the trading window.
+- **Sessions** (New York time): New York 09:30–15:55 (default), London 03:00–09:30, Asia 18:00–03:00, 24 h 18:00–16:55, or custom. Custom sessions can cross midnight, and Sunday evening counts as Monday (CME session day). VWAP "Auto" resets at 09:30 for New York and at 18:00 for the other sessions.
+- **Exits**: stop, target, breakeven stop, opposite cross (optionally reversing), VWAP cross, or at the open of the first bar after the session.
+- **Compare timeframes on the same period**: "count only from" date filter.
 - **Fills**: stop/target inside a bar follow TradingView's path rule (open→high→low→close if the open is closer to the high, otherwise open→low→high→close). Slippage in ticks applies to every fill, and commission is charged per contract.
 - **Short or wide stop?**: the same signals are re-run with each stop from a list. It reports trades, win rate, profit factor, net, drawdown and $/trade, plus the result on the last 30% of the data.
 - **Optimizer**: grids of EMA lengths, stops and R targets. It picks on the first 70% of the data and reports the untouched last 30%.
@@ -37,7 +39,7 @@ A page for backtesting the EMA crossover filtered by session VWAP on **NQ / MNQ*
   - marks the move to breakeven and each exit with its reason and P&L;
   - fires `alert()` messages for entry, breakeven and exit;
   - draws the stop-size comparison table on your own chart data.
-- **Data**: export the chart from TradingView (`NQ1!`, *Export chart data*) or NinjaTrader and load the CSV. Includes simulated demo data, which is clearly labeled as not real.
+- **Data**: export the chart from TradingView (`NQ1!`, *Export chart data*, with the Volume indicator on the chart so VWAP matches) or NinjaTrader and load the CSV. Includes simulated demo data, which is clearly labeled as not real.
 
 ### Tests
 

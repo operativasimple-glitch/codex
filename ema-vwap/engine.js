@@ -8,6 +8,14 @@
     MNQ: { name: 'MNQ (Micro E-mini Nasdaq-100)', pointValue: 2, tick: 0.25, commission: 1.5 }
   };
 
+  // Sesiones en hora de Nueva York [desde, cierre]. Si desde > cierre, cruza la medianoche.
+  const SESSIONS = {
+    ny: ['09:30', '15:55'],
+    london: ['03:00', '09:30'],
+    asia: ['18:00', '03:00'],
+    all: ['18:00', '16:55']
+  };
+
   const DEFAULTS = {
     contract: 'NQ',
     qty: 1,
@@ -15,8 +23,9 @@
     slow: 21,
     vwapFilter: true,       // largos solo con cierre > VWAP, cortos con cierre < VWAP
     direction: 'both',      // both | long | short
-    vwapSession: 'rth',     // rth (reinicia 09:30 ET) | globex (reinicia 18:00 ET)
-    tradeStart: '09:30',    // horario operativo (hora de Nueva York)
+    session: 'ny',          // ny | london | asia | all (24 h Globex) | custom (tradeStart–tradeEnd)
+    vwapSession: 'auto',    // auto (RTH en Nueva York, Globex en las demás) | rth (09:30) | globex (18:00)
+    tradeStart: '09:30',    // horario personalizado (hora de Nueva York); puede cruzar la medianoche
     tradeEnd: '15:55',     // la posición se cierra en la apertura de esta vela
     flatAtEnd: true,        // cerrar posición al final del horario
     stopPts: 15,            // 0 = sin stop
@@ -191,11 +200,11 @@
     let key = null, pv = 0, vol = 0;
     for (const b of bars) {
       if (!b.et) b.et = tzParts(b.t);
+      // Día de la sesión de CME: empieza a las 18:00 ET y se atribuye al día siguiente
+      if (!b.g) b.g = tzParts(b.t + 6 * 3600e3);
       let sKey, active;
       if (mode === 'globex') {
-        // La sesión de CME empieza a las 18:00 ET: se atribuye al día siguiente
-        if (!b.gkey) b.gkey = tzParts(b.t + 6 * 3600e3).date;
-        sKey = b.gkey;
+        sKey = b.g.date;
         active = true;
       } else {
         sKey = b.et.date;
@@ -233,11 +242,15 @@
     const fromTime = fd ? zonedToEpoch(+fd[1], +fd[2], +fd[3], 0, 0, 0, 'America/New_York') : 0;
     const maxTrades = Math.floor(+p.maxTradesDay || 0), maxLoss = +p.dailyLossLimit || 0;
 
-    annotate(bars, p.vwapSession);
+    const sess = SESSIONS[p.session] || [p.tradeStart, p.tradeEnd];
+    const vwapMode = p.vwapSession === 'auto' || !p.vwapSession ? (p.session === 'ny' ? 'rth' : 'globex') : p.vwapSession;
+    annotate(bars, vwapMode);
     const closes = bars.map(b => b.c);
     const ef = ema(closes, fast), es = ema(closes, slow);
-    const start = hhmm(p.tradeStart), end = hhmm(p.tradeEnd);
-    const inWindow = b => b.et.wd >= 1 && b.et.wd <= 5 && b.et.min >= start && b.et.min < end;
+    const start = hhmm(sess[0]), end = hhmm(sess[1]);
+    // Lunes–viernes según el día de sesión de CME (el domingo a las 18:00 ya cuenta como lunes)
+    const inWindow = b => b.g.wd >= 1 && b.g.wd <= 5 &&
+      (start < end ? b.et.min >= start && b.et.min < end : b.et.min >= start || b.et.min < end);
 
     // Duración típica de vela (para detectar huecos)
     const gaps = [];
@@ -339,7 +352,7 @@
         else if (side > 0 ? b.c <= b.vwap : b.c >= b.vwap) { valid = false; why = side > 0 ? 'cierre bajo VWAP' : 'cierre sobre VWAP'; }
       }
       if (valid && (p.direction === 'long' && side < 0 || p.direction === 'short' && side > 0)) { valid = false; why = 'dirección desactivada'; }
-      const sameSession = next && next.session === b.session && next.t - b.t <= barMs * 3;
+      const sameSession = next && next.g.date === b.g.date && next.t - b.t <= barMs * 3;
       if (valid && !(next && sameSession && inWindow(next))) { valid = false; why = 'fuera de horario'; }
       if (valid && maxTrades > 0 && dayTrades >= maxTrades) { valid = false; why = 'máx. operaciones del día'; }
       if (valid && maxLoss > 0 && net - dayStart <= -maxLoss) { valid = false; why = 'límite de pérdida diaria'; }
@@ -417,7 +430,7 @@
   }
 
   // ---------- datos de ejemplo (simulados, NO reales) ----------
-  function demoBars(days, seed) {
+  function demoBars(days, seed, full) {
     let x = seed || 42;
     const rnd = () => { x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; };
     const gauss = () => { let u = 0; while (!u) u = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd()); };
@@ -433,8 +446,9 @@
       if (wd >= 1 && wd <= 5) dates.unshift([d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]);
     }
     for (const [y, mo, d] of dates) {
-      // Solo sesión regular + algo de pre-market: 08:00 – 16:00 ET, velas de 5 minutos
-      for (let m = 8 * 60; m < 16 * 60; m += 5) {
+      // Por defecto 08:00 – 16:00 ET; con full, la sesión Globex completa (18:00 del día anterior – 16:55)
+      const midnight = zonedToEpoch(y, mo, d, 0, 0, 0, 'America/New_York');
+      for (let m = full ? -360 : 8 * 60; m < (full ? 17 * 60 : 16 * 60); m += 5) {
         if (rnd() < 0.04) drift = (rnd() - 0.5) * 3.2;
         const rth = m >= 570;
         const open = m === 570 ? 1.9 : 1;
@@ -445,7 +459,7 @@
         const l = Math.min(o, c) - Math.abs(gauss()) * vol * 0.6;
         const r = v => Math.round(v * 4) / 4;
         const volume = Math.round((rth ? 9000 : 1800) * (m < 600 || m > 930 ? 1.8 : 1) * (0.6 + rnd()));
-        bars.push({ t: zonedToEpoch(y, mo, d, Math.floor(m / 60), m % 60, 0, 'America/New_York'),
+        bars.push({ t: full ? midnight + m * 60000 : zonedToEpoch(y, mo, d, Math.floor(m / 60), m % 60, 0, 'America/New_York'),
           o: r(o), h: r(h), l: r(l), c: r(c), v: volume });
         price = c;
       }
@@ -454,7 +468,7 @@
     return bars;
   }
 
-  const api = { CONTRACTS, DEFAULTS, parseCSV, parseTime, ema, annotate, backtest, optimize, stats, demoBars, tzParts, zonedToEpoch };
+  const api = { CONTRACTS, SESSIONS, DEFAULTS, parseCSV, parseTime, ema, annotate, backtest, optimize, stats, demoBars, tzParts, zonedToEpoch };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.EmaVwap = api;
 })(typeof self !== 'undefined' ? self : this);

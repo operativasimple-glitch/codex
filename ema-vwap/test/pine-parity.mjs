@@ -16,7 +16,10 @@ const SETS = [{},
   { stopMode: 'swing', swingBars: 10, stopBuffer: 4, stopMin: 8, stopMax: 0, targetR: 1.5 },
   { maxVwapDist: 15 }, { exitOnCross: false }, { reverse: false }, { exitOnVwap: true },
   { flatAtEnd: false }, { vwapSession: 'globex' }, { direction: 'long' }, { vwapFilter: false },
-  { fast: 5, slow: 50 }, { slipTicks: 0, commission: 0 }, { qty: 2 }, { tradeStart: '10:00', tradeEnd: '12:00' }];
+  { fast: 5, slow: 50 }, { slipTicks: 0, commission: 0 }, { qty: 2 }, { session: 'custom', tradeStart: '10:00', tradeEnd: '12:00' },
+  // Datos de 24 h (Globex) para las sesiones fuera de Nueva York
+  { _full: true }, { _full: true, session: 'london' }, { _full: true, session: 'asia' }, { _full: true, session: 'all' },
+  { _full: true, session: 'custom', tradeStart: '20:00', tradeEnd: '02:00' }, { _full: true, session: 'all', vwapSession: 'rth', vwapFilter: false }];
 const SEEDS = (process.argv[2] || '7,11').split(',').map(Number);
 
 async function runPine(bars, params) {
@@ -36,7 +39,8 @@ const close = (a, b) => Math.abs(a - b) < 0.005;
 let failed = 0, total = 0;
 for (const seed of SEEDS) for (const set of SETS) {
   const params = Object.assign({}, E.DEFAULTS, BASE, set);
-  const bars = E.demoBars(15, seed);
+  delete params._full;
+  const bars = E.demoBars(set._full ? 8 : 15, seed, !!set._full);
   const pine = await runPine(bars, params);
   const problems = [];
   // Plan
