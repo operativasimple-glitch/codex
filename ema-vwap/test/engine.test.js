@@ -109,7 +109,8 @@ test('CSV: TradingView (unix), NinjaTrader y fecha/hora separadas dan las mismas
   const bars = E.demoBars(2, 3);
   const pad = n => String(n).padStart(2, '0');
   const tv = 'time,open,high,low,close,Volume\n' + bars.map(b => [b.t / 1000, b.o, b.h, b.l, b.c, b.v].join(',')).join('\n');
-  const nt = bars.map(b => { const p = E.tzParts(b.t); return `${p.y}${pad(p.mo)}${pad(p.d)} ${pad(p.h)}${pad(p.mi)}00;${b.o};${b.h};${b.l};${b.c};${b.v}`; }).join('\n');
+  // NinjaTrader exporta la hora de cierre de la vela (apertura + 5 min)
+  const nt = bars.map(b => { const p = E.tzParts(b.t + 300000); return `${p.y}${pad(p.mo)}${pad(p.d)} ${pad(p.h)}${pad(p.mi)}00;${b.o};${b.h};${b.l};${b.c};${b.v}`; }).join('\n');
   const sep = 'Date,Time,Open,High,Low,Close,Vol\n' + bars.map(b => { const p = E.tzParts(b.t); return `${pad(p.mo)}/${pad(p.d)}/${p.y},${pad(p.h)}:${pad(p.mi)},${b.o},${b.h},${b.l},${b.c},${b.v}`; }).join('\n');
   for (const text of [tv, nt, sep]) {
     const got = E.parseCSV(text, 'America/New_York');

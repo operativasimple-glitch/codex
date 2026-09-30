@@ -176,7 +176,29 @@
     bars.sort((a, b) => a.t - b.t);
     const dedup = [bars[0]];
     for (let i = 1; i < bars.length; i++) if (bars[i].t !== dedup[dedup.length - 1].t) dedup.push(bars[i]);
+    // NinjaTrader («20240102 093000;o;h;l;c;v») pone a cada vela la hora de CIERRE: se pasa a hora de apertura
+    if (!hasHeader && /^\d{8} \d{6}$/.test(String(splitLine(first, delim)[0]).trim())) {
+      const gaps = [];
+      for (let i = 1; i < Math.min(dedup.length, 500); i++) gaps.push(dedup[i].t - dedup[i - 1].t);
+      gaps.sort((a, b) => a - b);
+      const barMs = gaps[gaps.length >> 1] || 60000;
+      dedup.forEach(b => { b.t -= barMs; });
+      dedup.ninjaTrader = true;
+    }
     return dedup;
+  }
+
+  // Agrupa velas en velas de «min» minutos (alineadas al reloj)
+  function resample(bars, min) {
+    if (!min || min <= 1) return bars.map(b => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v }));
+    const ms = min * 60000, out = [];
+    let cur = null;
+    for (const b of bars) {
+      const k = Math.floor(b.t / ms) * ms;
+      if (!cur || cur.t !== k) { cur = { t: k, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v }; out.push(cur); }
+      else { cur.h = Math.max(cur.h, b.h); cur.l = Math.min(cur.l, b.l); cur.c = b.c; cur.v += b.v; }
+    }
+    return out;
   }
 
   // ---------- indicadores ----------
@@ -470,7 +492,7 @@
     return bars;
   }
 
-  const api = { CONTRACTS, SESSIONS, DEFAULTS, parseCSV, parseTime, ema, annotate, backtest, optimize, stats, demoBars, tzParts, zonedToEpoch };
+  const api = { CONTRACTS, SESSIONS, DEFAULTS, parseCSV, resample, parseTime, ema, annotate, backtest, optimize, stats, demoBars, tzParts, zonedToEpoch };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.EmaVwap = api;
 })(typeof self !== 'undefined' ? self : this);

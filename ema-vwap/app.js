@@ -10,11 +10,11 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
 
-  let params = Object.assign({}, E.DEFAULTS, { csvTz: 'America/New_York' });
+  let params = Object.assign({}, E.DEFAULTS, { csvTz: 'America/New_York', groupMin: '1' });
   try { Object.assign(params, JSON.parse(store.get(STORE) || '{}')); } catch (e) {}
 
   const parseList = id => $(id).value.split(/[,;\s]+/).filter(Boolean).map(Number).filter(v => isFinite(v) && v >= 0);
-  let bars = [], result = null, isDemo = false, sourceName = '', csvText = null;
+  let rawBars = [], bars = [], result = null, isDemo = false, sourceName = '', csvText = null;
   let selected = -1;
 
   // ---------- formato ----------
@@ -31,7 +31,7 @@
   const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts', 'maxTradesDay', 'dailyLossLimit',
     'swingBars', 'stopBuffer', 'stopMin', 'stopMax', 'targetR', 'beR', 'maxVwapDist'];
   const boolFields = ['vwapFilter', 'exitOnCross', 'reverse', 'exitOnVwap', 'flatAtEnd'];
-  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode', 'fromDate', 'session'];
+  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode', 'fromDate', 'session', 'groupMin'];
 
   function fillForm() {
     numFields.forEach(k => { $(k).value = k === 'commission' && params.commission == null ? E.CONTRACTS[params.contract].commission : params[k]; });
@@ -59,6 +59,11 @@
     el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', () => {
       readForm();
       if (el.id === 'stopMode' || el.id === 'session') toggleStopRows();
+      if (el.id === 'groupMin' && rawBars.length) {
+        bars = E.resample(rawBars, isDemo ? Math.max(5, +params.groupMin || 1) : +params.groupMin || 1);
+        setStatus(`${sourceName}: ${bars.length.toLocaleString('es-ES')} velas de ${isDemo ? Math.max(5, +params.groupMin || 1) : +params.groupMin || 'su'} min`);
+        run(true); return;
+      }
       if (el.id === 'csvTz' && csvText) loadText(csvText, sourceName);
       else scheduleRun();
     }));
@@ -68,7 +73,7 @@
     fillForm(); readForm(); run();
   }));
   $('reset').addEventListener('click', () => {
-    params = Object.assign({}, E.DEFAULTS, { csvTz: params.csvTz, contract: params.contract });
+    params = Object.assign({}, E.DEFAULTS, { csvTz: params.csvTz, contract: params.contract, groupMin: params.groupMin });
     fillForm(); readForm(); run();
   });
 
@@ -77,10 +82,13 @@
 
   function loadText(text, name) {
     try {
-      bars = E.parseCSV(text, params.csvTz);
+      rawBars = E.parseCSV(text, params.csvTz);
+      bars = E.resample(rawBars, +params.groupMin || 1);
+      bars.ninjaTrader = rawBars.ninjaTrader;
       csvText = text; sourceName = name; isDemo = false;
       const saved = text.length < 3.5e6 && store.set(STORE_CSV, JSON.stringify({ name, text }));
       const noVol = bars.every(b => !b.v);
+      if (bars.ninjaTrader) name += ' (NinjaTrader: hora de cierre → apertura)';
       setStatus(`${name}: ${bars.length.toLocaleString('es-ES')} velas · ${fmtDT(bars[0].t)} → ${fmtDT(bars[bars.length - 1].t)}${saved ? '' : ' (demasiado grande para recordarlo)'}` +
         (noVol ? ' · SIN VOLUMEN: el VWAP no coincidirá con TradingView. Añade el indicador «Volumen» al gráfico antes de exportar.' : ''), noVol);
       run(true);
@@ -89,7 +97,7 @@
     }
   }
   function loadDemo() {
-    bars = E.demoBars(20, 7, true); isDemo = true; csvText = null; sourceName = 'Ejemplo';
+    rawBars = E.demoBars(20, 7, true); bars = E.resample(rawBars, Math.max(5, +params.groupMin || 1)); isDemo = true; csvText = null; sourceName = 'Ejemplo';
     store.del(STORE_CSV);
     setStatus(`Datos simulados (no son reales): ${bars.length} velas de 5 min, 20 sesiones de 24 h.`);
     run(true);
