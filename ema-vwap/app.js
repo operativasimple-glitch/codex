@@ -2,7 +2,7 @@
   'use strict';
   const E = window.EmaVwap;
   const $ = id => document.getElementById(id);
-  const STORE = 'emaVwap.params.v1', STORE_CSV = 'emaVwap.csv.v1';
+  const STORE = 'emaVwap.params.v2', STORE_CSV = 'emaVwap.csv.v1';
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -13,6 +13,7 @@
   let params = Object.assign({}, E.DEFAULTS, { csvTz: 'America/New_York' });
   try { Object.assign(params, JSON.parse(store.get(STORE) || '{}')); } catch (e) {}
 
+  const parseList = id => $(id).value.split(/[,;\s]+/).filter(Boolean).map(Number).filter(v => isFinite(v) && v >= 0);
   let bars = [], result = null, isDemo = false, sourceName = '', csvText = null;
   let selected = -1;
 
@@ -27,15 +28,22 @@
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   // ---------- parámetros ----------
-  const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts', 'beTrigger', 'maxTradesDay', 'dailyLossLimit'];
+  const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts', 'maxTradesDay', 'dailyLossLimit',
+    'swingBars', 'stopBuffer', 'stopMin', 'stopMax', 'targetR', 'beR', 'maxVwapDist'];
   const boolFields = ['vwapFilter', 'exitOnCross', 'reverse', 'exitOnVwap', 'flatAtEnd'];
-  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar'];
+  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode'];
 
   function fillForm() {
     numFields.forEach(k => { $(k).value = k === 'commission' && params.commission == null ? E.CONTRACTS[params.contract].commission : params[k]; });
     boolFields.forEach(k => { $(k).checked = !!params[k]; });
     selFields.forEach(k => { $(k).value = params[k]; });
     document.querySelectorAll('#contractSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === params.contract));
+    toggleStopRows();
+  }
+  function toggleStopRows() {
+    const swing = $('stopMode').value === 'swing';
+    $('swingRows').hidden = !swing;
+    $('rowStopPts').hidden = swing;
   }
   function readForm() {
     numFields.forEach(k => { const v = $(k).value; params[k] = v === '' ? (k === 'commission' ? null : E.DEFAULTS[k]) : +v; });
@@ -49,6 +57,7 @@
   document.querySelectorAll('#panel input:not([type=file]), #panel select').forEach(el =>
     el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', () => {
       readForm();
+      if (el.id === 'stopMode') toggleStopRows();
       if (el.id === 'csvTz' && csvText) loadText(csvText, sourceName);
       else scheduleRun();
     }));
@@ -101,7 +110,7 @@
     if (!bars.length) return;
     result = E.backtest(bars, params);
     selected = -1;
-    renderKpis(); renderTable(); renderPine();
+    renderKpis(); renderTable(); renderPine(); renderCmp();
     if (resetView) toEnd();
     drawChart(); drawEquity();
   }
@@ -251,7 +260,7 @@
       ctx.fillRect(X(sel.entryIdx) - bw / 2, 0, (sel.exitIdx - sel.entryIdx + 1) * bw, ph);
       const hl = (v, c) => { if (v == null) return; ctx.strokeStyle = c; ctx.setLineDash([5, 4]); ctx.beginPath();
         ctx.moveTo(X(sel.entryIdx) - bw / 2, Y(v)); ctx.lineTo(X(sel.exitIdx) + bw / 2, Y(v)); ctx.stroke(); ctx.setLineDash([]); };
-      hl(sel.stop, col.down); hl(sel.target, col.up);
+      hl(sel.stop, col.down); hl(sel.target, col.up); hl(sel.beAt, col.fast);
     }
 
     // Velas
@@ -436,7 +445,29 @@
 
 
   // ---------- Pine Script y copiar ----------
-  function renderPine() { $('pineCode').textContent = window.EmaVwapPine.pineScript(params, E.CONTRACTS); }
+  function renderPine() {
+    $('pineCode').textContent = window.EmaVwapPine.pineIndicator(Object.assign({}, params, { stopList: $('cmpStops').value }), E.CONTRACTS);
+  }
+
+  // ---------- ¿stop corto o largo? ----------
+  function renderCmp() {
+    const stops = parseList('cmpStops').filter(v => v > 0).slice(0, 12);
+    const split = bars[Math.floor(bars.length * 0.7)].t;
+    const rows = stops.map(s => {
+      const r = E.backtest(bars, Object.assign({}, params, { stopMode: 'points', stopPts: s }));
+      const tr = r.trades.filter(t => t.reason !== 'Fin de datos');
+      return { s, st: E.stats(tr), oos: E.stats(tr.filter(t => t.entryTime >= split)) };
+    });
+    const best = Math.max(...rows.map(r => r.st.net));
+    const pf = s => s.pf === Infinity ? '∞' : s.n ? s.pf.toFixed(2) : '—';
+    $('cmpBody').innerHTML = rows.map(r => `<tr${r.st.net === best ? ' class="sel"' : ''}>
+      <td><b>${r.s} pts</b></td><td>${r.st.n}</td><td>${(r.st.winRate * 100).toFixed(0)}%</td><td>${pf(r.st)}</td>
+      <td class="${cls(r.st.net)}">${money(r.st.net)}</td><td class="neg">${money(-r.st.maxDD)}</td>
+      <td class="${cls(r.st.expectancy)}">${money(r.st.expectancy)}</td><td class="${cls(r.oos.net)}">${money(r.oos.net)}</td></tr>`).join('');
+    // Recalcula el plan con los parámetros reales (backtest reescribe anotaciones de las velas)
+    result = E.backtest(bars, params);
+  }
+  $('cmpStops').addEventListener('input', () => { clearTimeout(runTimer); runTimer = setTimeout(() => { renderCmp(); renderPine(); drawChart(); }, 250); });
   function copyText(text, okMsg) {
     const done = () => { $('copyStatus').textContent = okMsg; setTimeout(() => { $('copyStatus').textContent = ''; }, 2500); };
     const fallback = () => {
@@ -455,12 +486,11 @@
   });
 
   // ---------- optimizador ----------
-  const parseList = id => $(id).value.split(/[,;\s]+/).map(Number).filter(v => isFinite(v) && v >= 0);
-  let optJob = null;
+    let optJob = null;
   $('optRun').addEventListener('click', () => {
     if (!bars.length) return;
     if (optJob) { optJob.cancel = true; optJob = null; $('optRun').textContent = 'Optimizar'; $('optStatus').textContent = 'Cancelado.'; return; }
-    const grid = { fast: parseList('gFast'), slow: parseList('gSlow'), stopPts: parseList('gStop'), targetPts: parseList('gTarget') };
+    const grid = { fast: parseList('gFast'), slow: parseList('gSlow'), stopPts: parseList('gStop'), targetR: parseList('gTarget') };
     if (Object.values(grid).some(v => !v.length)) { $('optStatus').textContent = 'Rellena las cuatro listas con números separados por comas.'; return; }
     const job = E.optimize(bars, Object.assign({}, params), grid, { chunk: 8 });
     if (!job.combos.length) { $('optStatus').textContent = 'Ninguna combinación válida (la EMA rápida debe ser menor que la lenta).'; return; }
@@ -482,13 +512,13 @@
     $('optWrap').hidden = false;
     const pf = s => s.pf === Infinity ? '∞' : s.pf.toFixed(2);
     $('optBody').innerHTML = rows.map((r, i) => `<tr>
-      <td>${r.fast} / ${r.slow}</td><td>${r.stopPts || '—'}</td><td>${r.targetPts || '—'}</td><td>${r.is.n} · ${r.oos.n}</td>
+      <td>${r.fast} / ${r.slow}</td><td>${r.stopPts || '—'}</td><td>${r.targetR || '—'}</td><td>${r.is.n} · ${r.oos.n}</td>
       <td class="${cls(r.is.net)}">${money(r.is.net)}</td><td>${pf(r.is)}</td>
       <td class="${cls(r.oos.net)}">${money(r.oos.net)}</td><td>${pf(r.oos)}</td>
       <td><button class="btn sm" data-k="${i}">Usar</button></td></tr>`).join('');
     $('optBody').querySelectorAll('button[data-k]').forEach(b => b.addEventListener('click', () => {
       const r = rows[+b.dataset.k];
-      Object.assign(params, { fast: r.fast, slow: r.slow, stopPts: r.stopPts, targetPts: r.targetPts });
+      Object.assign(params, { fast: r.fast, slow: r.slow, stopPts: r.stopPts, targetR: r.targetR, stopMode: 'points' });
       fillForm(); readForm(); run();
       $('kpis').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }));

@@ -9,7 +9,7 @@
   };
 
   const DEFAULTS = {
-    contract: 'MNQ',
+    contract: 'NQ',
     qty: 1,
     fast: 9,
     slow: 21,
@@ -19,12 +19,20 @@
     tradeStart: '09:30',    // horario operativo (hora de Nueva York)
     tradeEnd: '15:55',     // la posición se cierra en la apertura de esta vela
     flatAtEnd: true,        // cerrar posición al final del horario
-    stopPts: 20,            // 0 = sin stop
-    targetPts: 40,          // 0 = sin objetivo
+    stopPts: 15,            // 0 = sin stop
+    targetPts: 0,           // objetivo fijo en pts si targetR = 0 (0 = sin objetivo)
     exitOnCross: true,      // salir con el cruce contrario de EMAs
     exitOnVwap: false,      // salir si el cierre cruza el VWAP en contra
     reverse: true,          // en cruce contrario válido, girar posición
     beTrigger: 0,           // pts a favor para mover el stop a la entrada (0 = off)
+    stopMode: 'points',     // points: stopPts fijos | swing: tras el mínimo/máximo de las últimas swingBars velas
+    swingBars: 5,
+    stopBuffer: 2,          // ticks por detrás del mínimo/máximo
+    stopMin: 5,             // límites del stop por estructura (pts); stopMax 0 = sin tope
+    stopMax: 40,
+    targetR: 2,             // objetivo en múltiplos del riesgo (0 = usar targetPts)
+    beR: 1,                 // breakeven en múltiplos del riesgo (0 = usar beTrigger)
+    maxVwapDist: 0,         // no entrar si el cierre está a más de X pts del VWAP (0 = off)
     maxTradesDay: 0,        // máx. entradas por día (0 = sin límite)
     dailyLossLimit: 0,      // $ de pérdida diaria que bloquea nuevas entradas (0 = off)
     intrabar: 'tv',         // tv: como TradingView | worst: si toca stop y objetivo, cuenta el stop
@@ -217,6 +225,9 @@
     const qty = Math.max(1, Math.floor(+p.qty || 1));
     const fast = Math.max(1, Math.floor(+p.fast)), slow = Math.max(2, Math.floor(+p.slow));
     const stopPts = +p.stopPts || 0, targetPts = +p.targetPts || 0, beTrigger = +p.beTrigger || 0;
+    const swing = p.stopMode === 'swing', swingBars = Math.max(1, Math.floor(+p.swingBars || 1));
+    const stopBuf = (+p.stopBuffer || 0) * spec.tick, stopMin = +p.stopMin || 0, stopMax = +p.stopMax || 0;
+    const targetR = +p.targetR || 0, beR = +p.beR || 0, maxVwapDist = +p.maxVwapDist || 0;
     const maxTrades = Math.floor(+p.maxTradesDay || 0), maxLoss = +p.dailyLossLimit || 0;
 
     annotate(bars, p.vwapSession);
@@ -244,15 +255,28 @@
       trades.push({
         side: pos.side, entryIdx: pos.idx, exitIdx: i, entryTime: bars[pos.idx].t, exitTime: bars[i].t,
         entry: pos.entry, exit: price, pts, gross, fee, pnl: gross - fee, reason, bars: i - pos.idx + 1,
-        stop: pos.initStop, target: pos.target
+        stop: pos.initStop, target: pos.target, risk: pos.risk, beAt: pos.beT > 0 ? pos.entry + pos.side * pos.beT : null
       });
       net += gross - fee;
       pos = null;
     };
-    const open = (i, side) => {
+    // Precio de stop por estructura calculado al cierre de la vela de señal
+    const swingStop = (i, side) => {
+      let x = side > 0 ? Infinity : -Infinity;
+      for (let k = Math.max(0, i - swingBars + 1); k <= i; k++) x = side > 0 ? Math.min(x, bars[k].l) : Math.max(x, bars[k].h);
+      return x - side * stopBuf;
+    };
+    const open = (i, side, stopPx) => {
       const entry = bars[i].o + side * slip;
-      const stop = stopPts > 0 ? entry - side * stopPts : null;
-      pos = { side, entry, idx: i, stop, initStop: stop, target: targetPts > 0 ? entry + side * targetPts : null, best: null, be: false };
+      let risk = stopPts;
+      if (swing) {
+        risk = Math.max(stopMin, (entry - stopPx) * side);
+        if (stopMax > 0) risk = Math.min(stopMax, risk);
+      }
+      const stop = risk > 0 ? entry - side * risk : null;
+      const target = targetR > 0 && risk > 0 ? entry + side * risk * targetR : targetPts > 0 ? entry + side * targetPts : null;
+      const beT = beR > 0 && risk > 0 ? risk * beR : beTrigger;
+      pos = { side, entry, idx: i, stop, initStop: stop, target, beT, risk, best: null, be: false };
     };
     // Stop / objetivo dentro de la vela
     const checkExits = b => {
@@ -278,7 +302,7 @@
       // 1) Órdenes pendientes en la apertura
       if (pending) {
         if (pending.exit && pos) close(i, b.o - pos.side * slip, pending.exit);
-        if (pending.enter && !pos) open(i, pending.enter);
+        if (pending.enter && !pos) open(i, pending.enter, pending.stopPx);
         pending = null;
       }
 
@@ -291,7 +315,7 @@
       // 3) Breakeven: se activa al cierre y protege desde la vela siguiente
       if (pos) {
         pos.best = pos.best == null ? (pos.side > 0 ? b.h : b.l) : pos.side > 0 ? Math.max(pos.best, b.h) : Math.min(pos.best, b.l);
-        if (beTrigger > 0 && !pos.be && (pos.best - pos.entry) * pos.side >= beTrigger) { pos.be = true; pos.stop = pos.entry; }
+        if (pos.beT > 0 && !pos.be && (pos.best - pos.entry) * pos.side >= pos.beT) { pos.be = true; pos.stop = pos.entry; }
       }
 
       // Límites diarios (día de Nueva York; el P&L incluye lo cerrado en esta vela)
@@ -316,6 +340,7 @@
       if (valid && !(next && sameSession && inWindow(next))) { valid = false; why = 'fuera de horario'; }
       if (valid && maxTrades > 0 && dayTrades >= maxTrades) { valid = false; why = 'máx. operaciones del día'; }
       if (valid && maxLoss > 0 && net - dayStart <= -maxLoss) { valid = false; why = 'límite de pérdida diaria'; }
+      if (valid && maxVwapDist > 0 && b.vwap != null && Math.abs(b.c - b.vwap) > maxVwapDist) { valid = false; why = 'lejos del VWAP'; }
       if (side) signals.push({ idx: i, side, valid, why });
 
       if (pos) {
@@ -327,10 +352,10 @@
         if (endOfDay) { pending = { exit: 'Cierre de horario' }; continue; }
         if (exitReason) {
           pending = { exit: exitReason };
-          if (p.reverse && valid && side === -pos.side) { pending.enter = side; dayTrades++; }
+          if (p.reverse && valid && side === -pos.side) { pending.enter = side; pending.stopPx = swing ? swingStop(i, side) : null; dayTrades++; }
         }
       } else if (valid) {
-        pending = { enter: side };
+        pending = { enter: side, stopPx: swing ? swingStop(i, side) : null };
         dayTrades++;
       }
     }
@@ -346,7 +371,7 @@
     const combos = [];
     for (const fast of grid.fast) for (const slow of grid.slow) {
       if (fast >= slow) continue;
-      for (const stopPts of grid.stopPts) for (const targetPts of grid.targetPts) combos.push({ fast, slow, stopPts, targetPts });
+      for (const stopPts of grid.stopPts) for (const targetR of grid.targetR) combos.push({ fast, slow, stopPts, targetR, stopMode: 'points' });
     }
     const rows = [];
     let k = 0;

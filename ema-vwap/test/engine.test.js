@@ -9,7 +9,7 @@ function mk(rows, startMs) {
   return rows.map(([o, h, l, c], i) => ({ t: (startMs || T0) + i * 300000, o, h, l, c, v: 1000 }));
 }
 // EMA 1 = cierre y EMA 2: un cierre que salta sobre los anteriores produce un cruce alcista
-const BASE = { fast: 1, slow: 2, contract: 'MNQ', qty: 1, slipTicks: 1, commission: 1.5, stopPts: 10, targetPts: 20,
+const BASE = { fast: 1, slow: 2, contract: 'MNQ', qty: 1, slipTicks: 1, commission: 1.5, stopPts: 10, targetPts: 20, targetR: 0, beR: 0,
   tradeStart: '09:30', tradeEnd: '15:55', exitOnCross: false, reverse: false };
 const flat = n => Array.from({ length: n }, () => [100, 100.5, 99.5, 100]);
 
@@ -95,13 +95,13 @@ test('cruce contrario: sale y gira en la apertura siguiente', () => {
 
 test('máximo de entradas por día y límite de pérdida diaria', () => {
   const bars = E.demoBars(10, 5);
-  const free = E.backtest(bars, {});
-  const capped = E.backtest(bars, { maxTradesDay: 1 });
+  const free = E.backtest(bars, { targetR: 0, beR: 0, targetPts: 40, stopPts: 20 });
+  const capped = E.backtest(bars, { targetR: 0, beR: 0, targetPts: 40, stopPts: 20, maxTradesDay: 1 });
   const perDay = {};
   capped.trades.forEach(t => { const d = E.tzParts(t.entryTime).date; perDay[d] = (perDay[d] || 0) + 1; });
   assert.ok(Object.values(perDay).every(n => n <= 1));
   assert.ok(capped.trades.length < free.trades.length);
-  const lim = E.backtest(bars, { dailyLossLimit: 40 });
+  const lim = E.backtest(bars, { targetR: 0, beR: 0, targetPts: 40, stopPts: 20, contract: 'MNQ', dailyLossLimit: 40 });
   assert.ok(lim.signals.some(s => s.why === 'límite de pérdida diaria'));
 });
 
@@ -120,10 +120,31 @@ test('CSV: TradingView (unix), NinjaTrader y fecha/hora separadas dan las mismas
 
 test('optimizador: separa dentro y fuera de muestra', () => {
   const bars = E.demoBars(10, 9);
-  const job = E.optimize(bars, {}, { fast: [5, 9], slow: [21], stopPts: [10, 20], targetPts: [40] });
+  const job = E.optimize(bars, {}, { fast: [5, 9], slow: [21], stopPts: [10, 20], targetR: [2] });
   job.step();
   assert.equal(job.rows.length, 4);
   for (const r of job.rows) assert.equal(r.is.n + r.oos.n, r.all.n);
   const ranked = job.rank();
   assert.ok(ranked[0].is.net >= ranked[ranked.length - 1].is.net);
+});
+
+test('stop por estructura, objetivo y breakeven en R', () => {
+  // Señal en la vela 3: mínimo de las 3 últimas velas 99.5 − 2 ticks = 99; entrada 105.25 → riesgo 6.25 pts
+  const bars = mk([...flat(3), [100, 105.5, 100, 105], [105, 106, 104.5, 105.5], [105.5, 106, 105, 105.5]]);
+  const p = Object.assign({}, BASE, { stopMode: 'swing', swingBars: 3, stopBuffer: 2, stopMin: 2, stopMax: 0, targetR: 2, beR: 1, vwapFilter: false });
+  const t = E.backtest(bars, p).trades[0];
+  assert.equal(t.entry, 105.25);
+  assert.equal(t.risk, 105.25 - (99.5 - 0.5));
+  assert.equal(t.stop, 99);
+  assert.equal(t.target, 105.25 + t.risk * 2);
+  assert.equal(t.beAt, 105.25 + t.risk);
+  const capped = E.backtest(bars, Object.assign({}, p, { stopMax: 3 })).trades[0];
+  assert.equal(capped.risk, 3);
+});
+
+test('no entra si el cierre está lejos del VWAP', () => {
+  const bars = mk([...flat(3), [100, 110.5, 100, 110], [110, 111, 109, 110], [110, 111, 109, 110]]);
+  const r = E.backtest(bars, Object.assign({}, BASE, { maxVwapDist: 3 }));
+  assert.equal(r.trades.length, 0);
+  assert.ok(r.signals.some(s => s.why === 'lejos del VWAP'));
 });

@@ -159,8 +159,8 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
       <div class="sep"></div>
       <h2>Contrato</h2>
       <div class="seg" id="contractSeg">
-        <button data-v="MNQ">MNQ · $2/pt</button>
         <button data-v="NQ">NQ · $20/pt</button>
+        <button data-v="MNQ">MNQ · $2/pt</button>
       </div>
       <div class="row"><label for="qty">Contratos</label><input type="number" id="qty" min="1" step="1"></div>
       <div class="row"><label for="commission">Comisión ida+vuelta ($/contrato)</label><input type="number" id="commission" min="0" step="0.1"></div>
@@ -177,17 +177,29 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
         <select id="vwapSession"><option value="rth">09:30 (RTH)</option><option value="globex">18:00 (Globex)</option></select></div>
       <div class="row"><label for="direction">Dirección</label>
         <select id="direction"><option value="both">Ambas</option><option value="long">Solo largos</option><option value="short">Solo cortos</option></select></div>
+      <div class="row"><label for="maxVwapDist">No entrar si el cierre está a más de X pts del VWAP (0 = off)</label><input type="number" id="maxVwapDist" min="0" step="0.25"></div>
 
       <div class="sep"></div>
-      <h2>Gestión</h2>
-      <div class="split">
-        <div class="row"><label for="stopPts">Stop (pts)</label><input type="number" id="stopPts" min="0" step="0.25" style="width:70px"></div>
-        <div class="row"><label for="targetPts">Objetivo (pts)</label><input type="number" id="targetPts" min="0" step="0.25" style="width:70px"></div>
+      <h2>Stop, breakeven y objetivo</h2>
+      <div class="row"><label for="stopMode">Dónde va el stop</label>
+        <select id="stopMode"><option value="points">Puntos fijos</option><option value="swing">Estructura (mín/máx)</option></select></div>
+      <div class="row" id="rowStopPts"><label for="stopPts">Stop (pts)</label><input type="number" id="stopPts" min="0" step="0.25"></div>
+      <div id="swingRows">
+        <div class="row"><label for="swingBars">Detrás del mín/máx de N velas</label><input type="number" id="swingBars" min="1" step="1"></div>
+        <div class="row"><label for="stopBuffer">Margen (ticks)</label><input type="number" id="stopBuffer" min="0" step="1"></div>
+        <div class="split">
+          <div class="row"><label for="stopMin">Mín. pts</label><input type="number" id="stopMin" min="0" step="0.25" style="width:70px"></div>
+          <div class="row"><label for="stopMax">Máx. pts</label><input type="number" id="stopMax" min="0" step="0.25" style="width:70px"></div>
+        </div>
       </div>
+      <div class="row"><label for="beR">Breakeven al ir X R a favor (0 = off)</label><input type="number" id="beR" min="0" step="0.25"></div>
+      <div class="row"><label for="targetR">Objetivo en R (0 = usar pts fijos)</label><input type="number" id="targetR" min="0" step="0.25"></div>
+      <div class="row"><label for="targetPts">Objetivo fijo (pts, si R = 0)</label><input type="number" id="targetPts" min="0" step="0.25"></div>
+      <div class="hint" style="margin-bottom:10px">R = lo que arriesgas (distancia al stop). Con stop 15 y objetivo 2R, el objetivo está a 30 pts; breakeven 1R mueve el stop a la entrada al ir 15 pts a favor.</div>
+      <h2>Cierre</h2>
       <div class="row"><label for="exitOnCross">Salir en cruce contrario</label><input type="checkbox" id="exitOnCross"></div>
       <div class="row"><label for="reverse">Girar posición en cruce válido</label><input type="checkbox" id="reverse"></div>
       <div class="row"><label for="exitOnVwap">Salir si el cierre cruza el VWAP</label><input type="checkbox" id="exitOnVwap"></div>
-      <div class="row"><label for="beTrigger">Breakeven tras X pts a favor (0 = off)</label><input type="number" id="beTrigger" min="0" step="0.25"></div>
       <div>
         <div class="row"><label for="tradeStart">Operar desde (NY)</label><input type="time" id="tradeStart" style="width:112px"></div>
         <div class="row"><label for="tradeEnd">Hasta (NY)</label><input type="time" id="tradeEnd" style="width:112px"></div>
@@ -198,7 +210,7 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
       <div class="row"><label for="intrabar">Stop y objetivo en la misma vela</label>
         <select id="intrabar"><option value="tv">Como TradingView</option><option value="worst">Pesimista (stop)</option></select></div>
       <div class="btns" style="margin-top:6px"><button class="btn" id="reset">Valores por defecto</button></div>
-      <div class="hint">Stop u objetivo en 0 = desactivado. «Como TradingView»: si la vela abre más cerca del máximo se asume que va primero al máximo y luego al mínimo; si no, al revés. Al acabar el horario, la posición se cierra en la apertura de la vela de la hora «Hasta».</div>
+      <div class="hint">«Como TradingView»: si la vela abre más cerca del máximo se asume que va primero al máximo y luego al mínimo; si no, al revés. Al acabar el horario, la posición se cierra en la apertura de la vela de la hora «Hasta».</div>
     </aside>
 
     <!-- Resultados -->
@@ -233,27 +245,39 @@ pre.code{margin:0;max-height:320px;overflow:auto;background:var(--card-soft);bor
       </div>
 
       <div class="card" style="margin-bottom:14px">
+        <h2>¿Stop corto o largo?</h2>
+        <p class="hint" style="margin:0 0 10px">Mismas señales y el resto de tus ajustes, cambiando solo el stop (objetivo y breakeven se mueven en R con él). La última columna es el 30 % final de los datos: si un stop solo gana en el total pero pierde ahí, no es fiable.</p>
+        <div class="opt-grid" style="grid-template-columns:1fr auto"><label>Stops a comparar (pts) <input type="text" id="cmpStops" value="5, 8, 10, 15, 20, 30, 40"></label></div>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>Stop</th><th>Ops</th><th>% acierto</th><th>PF</th><th>Neto</th><th>Máx. DD</th><th>$/op</th><th>Neto 30 % final</th></tr></thead>
+            <tbody id="cmpBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
         <h2>Optimizar</h2>
         <p class="hint" style="margin:0 0 10px">Prueba combinaciones de EMAs, stop y objetivo con el resto de ajustes actuales. Se eligen con el <b>70 % inicial</b> de los datos y se comprueban en el <b>30 % final</b>, que no se usó para elegir: si ahí se hunden, la combinación está sobreajustada.</p>
         <div class="opt-grid">
           <label>EMA rápida <input type="text" id="gFast" value="5, 8, 9, 12, 20"></label>
           <label>EMA lenta <input type="text" id="gSlow" value="21, 34, 50"></label>
-          <label>Stop (pts) <input type="text" id="gStop" value="10, 15, 20, 30"></label>
-          <label>Objetivo (pts) <input type="text" id="gTarget" value="20, 30, 40, 60"></label>
+          <label>Stop (pts) <input type="text" id="gStop" value="5, 10, 15, 20, 30"></label>
+          <label>Objetivo (R) <input type="text" id="gTarget" value="1, 1.5, 2, 3"></label>
         </div>
         <div class="btns"><button class="btn primary" id="optRun">Optimizar</button><span class="hint" id="optStatus" style="align-self:center"></span></div>
         <div class="tbl-scroll" id="optWrap" hidden>
           <table>
-            <thead><tr><th>EMAs</th><th>Stop</th><th>Obj.</th><th>Ops</th><th>Neto 70 %</th><th>PF</th><th>Neto 30 % final</th><th>PF</th><th></th></tr></thead>
+            <thead><tr><th>EMAs</th><th>Stop</th><th>Obj. (R)</th><th>Ops</th><th>Neto 70 %</th><th>PF</th><th>Neto 30 % final</th><th>PF</th><th></th></tr></thead>
             <tbody id="optBody"></tbody>
           </table>
         </div>
       </div>
 
       <div class="card" style="margin-bottom:14px">
-        <h2>TradingView · Pine Script v6</h2>
-        <p class="hint" style="margin:0 0 10px">Estrategia con las mismas reglas y los ajustes actuales. En TradingView abre <b>NQ1!</b> o <b>MNQ1!</b>, Editor Pine → pega → <i>Añadir al gráfico</i>, y mira el <i>Probador de estrategias</i>. Con las mismas velas da las mismas operaciones que esta página (verificado con un intérprete de Pine).</p>
-        <div class="btns"><button class="btn primary" id="pineCopy">Copiar script</button><button class="btn" id="tradesCopy">Copiar operaciones (CSV)</button><span class="hint" id="copyStatus" style="align-self:center"></span></div>
+        <h2>TradingView · indicador Pine Script v6</h2>
+        <p class="hint" style="margin:0 0 10px">Indicador con tus ajustes actuales. Marca cada entrada con su stop, el precio de breakeven y el objetivo; avisa cuándo mover a breakeven y cuándo cerrar; y dibuja la tabla «¿stop corto o largo?» con tus datos de TradingView. Cómo usarlo: abre <b>NQ1!</b> en 5 min → Editor Pine → <i>Nuevo</i> → borra todo → pega → <i>Guardar</i> → <i>Añadir al gráfico</i>. Alertas: crear alerta → condición «EMA×VWAP NQ» → «Cualquier llamada a alert()».</p>
+        <div class="btns"><button class="btn primary" id="pineCopy">Copiar indicador</button><button class="btn" id="tradesCopy">Copiar operaciones (CSV)</button><span class="hint" id="copyStatus" style="align-self:center"></span></div>
         <pre class="code" id="pineCode"></pre>
       </div>
 

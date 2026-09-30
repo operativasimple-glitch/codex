@@ -1,19 +1,4 @@
-/* Genera el indicador de TradingView (Pine Script v6) con los parámetros de la web.
-   Mismas reglas que engine.js; test/pine-parity.mjs compara ambos. */
-(function (root) {
-  'use strict';
-
-  const hhmmNum = s => { const [h, m] = String(s).split(':').map(Number); return h * 100 + (m || 0); };
-  const num = v => { const n = +v || 0; return Number.isInteger(n) ? n.toFixed(1) : String(n); };
-  const bool = v => (v ? 'true' : 'false');
-
-  function pineIndicator(params, specs) {
-    const p = params;
-    const spec = (specs || {})[p.contract] || { commission: p.contract === 'NQ' ? 4.5 : 1.5 };
-    const rt = p.commission == null || p.commission === '' ? spec.commission : +p.commission;
-    const dir = { both: 'Ambas', long: 'Solo largos', short: 'Solo cortos' }[p.direction] || 'Ambas';
-    const stopList = p.stopList || '5, 8, 10, 15, 20, 30, 40';
-    return `//@version=6
+//@version=6
 // EMA × VWAP · Plan de operación para NQ / MNQ
 // Entrada: la EMA rápida cruza la lenta y el cierre está del mismo lado del VWAP de la sesión.
 // La señal se confirma al cierre de la vela; se entra a mercado en la apertura de la siguiente.
@@ -22,37 +7,37 @@
 indicator("EMA×VWAP · Plan NQ", shorttitle = "EMA×VWAP NQ", overlay = true, max_labels_count = 500, max_lines_count = 500)
 
 // ───── Señal ─────
-fastLen     = input.int(${Math.floor(+p.fast)}, "EMA rápida", minval = 1, group = "Señal")
-slowLen     = input.int(${Math.floor(+p.slow)}, "EMA lenta", minval = 2, group = "Señal")
-useVwap     = input.bool(${bool(p.vwapFilter)}, "Filtro VWAP (largo sobre, corto bajo)", group = "Señal")
-vwapMode    = input.string("${p.vwapSession === 'globex' ? 'Globex 18:00' : 'RTH 09:30'}", "VWAP reinicia", options = ["RTH 09:30", "Globex 18:00"], group = "Señal")
-maxVwapDist = input.float(${num(p.maxVwapDist)}, "No entrar si el cierre está a más de X pts del VWAP (0 = off)", minval = 0, step = 0.25, group = "Señal")
-direction   = input.string("${dir}", "Dirección", options = ["Ambas", "Solo largos", "Solo cortos"], group = "Señal")
+fastLen     = input.int(9, "EMA rápida", minval = 1, group = "Señal")
+slowLen     = input.int(21, "EMA lenta", minval = 2, group = "Señal")
+useVwap     = input.bool(true, "Filtro VWAP (largo sobre, corto bajo)", group = "Señal")
+vwapMode    = input.string("RTH 09:30", "VWAP reinicia", options = ["RTH 09:30", "Globex 18:00"], group = "Señal")
+maxVwapDist = input.float(0.0, "No entrar si el cierre está a más de X pts del VWAP (0 = off)", minval = 0, step = 0.25, group = "Señal")
+direction   = input.string("Ambas", "Dirección", options = ["Ambas", "Solo largos", "Solo cortos"], group = "Señal")
 
 // ───── Riesgo ─────
-stopMode    = input.string("${p.stopMode === 'swing' ? 'Estructura' : 'Puntos fijos'}", "Stop", options = ["Puntos fijos", "Estructura"], group = "Riesgo", tooltip = "Estructura: el stop va detrás del mínimo (largos) o del máximo (cortos) de las últimas N velas")
-stopPts     = input.float(${num(p.stopPts)}, "Stop en puntos (modo fijo)", minval = 0, step = 0.25, group = "Riesgo")
-swingBars   = input.int(${Math.max(1, Math.floor(+p.swingBars || 5))}, "N velas (modo estructura)", minval = 1, group = "Riesgo")
-stopBuffer  = input.int(${Math.floor(+p.stopBuffer || 0)}, "Ticks detrás del mínimo/máximo", minval = 0, group = "Riesgo")
-stopMin     = input.float(${num(p.stopMin)}, "Stop mínimo (pts, modo estructura)", minval = 0, step = 0.25, group = "Riesgo")
-stopMax     = input.float(${num(p.stopMax)}, "Stop máximo (pts, 0 = sin tope)", minval = 0, step = 0.25, group = "Riesgo")
-targetR     = input.float(${num(p.targetR)}, "Objetivo en R (veces el riesgo, 0 = sin objetivo)", minval = 0, step = 0.25, group = "Riesgo")
-beR         = input.float(${num(p.beR)}, "Breakeven al ir X R a favor (0 = off)", minval = 0, step = 0.25, group = "Riesgo")
+stopMode    = input.string("Puntos fijos", "Stop", options = ["Puntos fijos", "Estructura"], group = "Riesgo", tooltip = "Estructura: el stop va detrás del mínimo (largos) o del máximo (cortos) de las últimas N velas")
+stopPts     = input.float(15.0, "Stop en puntos (modo fijo)", minval = 0, step = 0.25, group = "Riesgo")
+swingBars   = input.int(5, "N velas (modo estructura)", minval = 1, group = "Riesgo")
+stopBuffer  = input.int(2, "Ticks detrás del mínimo/máximo", minval = 0, group = "Riesgo")
+stopMin     = input.float(5.0, "Stop mínimo (pts, modo estructura)", minval = 0, step = 0.25, group = "Riesgo")
+stopMax     = input.float(40.0, "Stop máximo (pts, 0 = sin tope)", minval = 0, step = 0.25, group = "Riesgo")
+targetR     = input.float(2.0, "Objetivo en R (veces el riesgo, 0 = sin objetivo)", minval = 0, step = 0.25, group = "Riesgo")
+beR         = input.float(1.0, "Breakeven al ir X R a favor (0 = off)", minval = 0, step = 0.25, group = "Riesgo")
 
 // ───── Salida ─────
-exitOnCross = input.bool(${bool(p.exitOnCross)}, "Cerrar en cruce contrario", group = "Salida")
-reverseOn   = input.bool(${bool(p.reverse)}, "Girar posición en cruce válido", group = "Salida")
-exitOnVwap  = input.bool(${bool(p.exitOnVwap)}, "Cerrar si el cierre cruza el VWAP", group = "Salida")
-tStart      = input.int(${hhmmNum(p.tradeStart)}, "Operar desde (HHMM, Nueva York)", minval = 0, maxval = 2359, group = "Salida")
-tEnd        = input.int(${hhmmNum(p.tradeEnd)}, "Cerrar todo a las (HHMM, Nueva York)", minval = 0, maxval = 2359, group = "Salida")
-flatAtEnd   = input.bool(${bool(p.flatAtEnd)}, "Cerrar al final del horario", group = "Salida")
+exitOnCross = input.bool(true, "Cerrar en cruce contrario", group = "Salida")
+reverseOn   = input.bool(true, "Girar posición en cruce válido", group = "Salida")
+exitOnVwap  = input.bool(false, "Cerrar si el cierre cruza el VWAP", group = "Salida")
+tStart      = input.int(930, "Operar desde (HHMM, Nueva York)", minval = 0, maxval = 2359, group = "Salida")
+tEnd        = input.int(1555, "Cerrar todo a las (HHMM, Nueva York)", minval = 0, maxval = 2359, group = "Salida")
+flatAtEnd   = input.bool(true, "Cerrar al final del horario", group = "Salida")
 
 // ───── Costes y tabla ─────
-qty         = input.int(${Math.max(1, Math.floor(+p.qty || 1))}, "Contratos", minval = 1, group = "Costes y tabla")
-commRT      = input.float(${num(rt)}, "Comisión ida y vuelta por contrato ($)", minval = 0, step = 0.1, group = "Costes y tabla")
-slipTicks   = input.int(${Math.floor(+p.slipTicks || 0)}, "Deslizamiento por ejecución (ticks)", minval = 0, group = "Costes y tabla")
+qty         = input.int(1, "Contratos", minval = 1, group = "Costes y tabla")
+commRT      = input.float(4.5, "Comisión ida y vuelta por contrato ($)", minval = 0, step = 0.1, group = "Costes y tabla")
+slipTicks   = input.int(1, "Deslizamiento por ejecución (ticks)", minval = 0, group = "Costes y tabla")
 showTable   = input.bool(true, "Mostrar tabla de stops", group = "Costes y tabla")
-stopList    = input.string("${stopList}", "Stops a comparar (pts, separados por comas)", group = "Costes y tabla")
+stopList    = input.string("5, 8, 10, 15, 20, 30, 40", "Stops a comparar (pts, separados por comas)", group = "Costes y tabla")
 
 // ───── Tiempo (Nueva York) ─────
 dayKey(t) => year(t, "America/New_York") * 10000 + month(t, "America/New_York") * 100 + dayofmonth(t, "America/New_York")
@@ -271,17 +256,17 @@ if plan.evExit
     if not na(lnTarget)
         lnTarget.set_x2(bar_index)
     string ptsTxt = (plan.exitPts >= 0 ? "+" : "") + str.tostring(plan.exitPts, "#.##") + " pts · " + fmtUsd(plan.exitPnl)
-    label.new(bar_index, plan.exitPrice, "CERRAR · " + plan.exitReason + "\\n" + ptsTxt, color = plan.exitPnl > 0 ? #1F9D6B : #E0475B, textcolor = color.white, style = label.style_label_left, size = size.small)
+    label.new(bar_index, plan.exitPrice, "CERRAR · " + plan.exitReason + "\n" + ptsTxt, color = plan.exitPnl > 0 ? #1F9D6B : #E0475B, textcolor = color.white, style = label.style_label_left, size = size.small)
 
 if plan.evEntry
     int d = plan.side
     string txt = (d > 0 ? "LARGO " : "CORTO ") + str.tostring(qty) + " @ " + fmtPx(plan.entry)
     if not na(plan.stop)
-        txt += "\\nStop " + fmtPx(plan.stop) + "  (" + str.tostring(plan.risk, "#.##") + " pts · " + fmtUsd(-plan.risk * syminfo.pointvalue * qty) + ")"
+        txt += "\nStop " + fmtPx(plan.stop) + "  (" + str.tostring(plan.risk, "#.##") + " pts · " + fmtUsd(-plan.risk * syminfo.pointvalue * qty) + ")"
     if plan.beT > 0
-        txt += "\\nBreakeven al tocar " + fmtPx(plan.entry + d * plan.beT)
+        txt += "\nBreakeven al tocar " + fmtPx(plan.entry + d * plan.beT)
     if not na(plan.target)
-        txt += "\\nObjetivo " + fmtPx(plan.target) + "  (+" + str.tostring(plan.risk * targetR, "#.##") + " pts)"
+        txt += "\nObjetivo " + fmtPx(plan.target) + "  (+" + str.tostring(plan.risk * targetR, "#.##") + " pts)"
     label.new(bar_index, d > 0 ? low : high, txt, color = d > 0 ? #1F9D6B : #E0475B, textcolor = color.white, style = d > 0 ? label.style_label_up : label.style_label_down, size = size.small)
     lnEntry := line.new(bar_index, plan.entry, bar_index, plan.entry, color = color.gray)
     lnStop := na(plan.stop) ? na : line.new(bar_index, plan.stop, bar_index, plan.stop, color = #E0475B, width = 2)
@@ -350,10 +335,3 @@ plot(sims.size() > 6 ? sims.get(6).net : na, "net6", display = display.none)
 plot(sims.size() > 7 ? sims.get(7).net : na, "net7", display = display.none)
 plot(plan.evEntry ? plan.entry : na, "entryPx", display = display.none)
 plot(plan.evExit ? plan.exitPrice : na, "exitPx", display = display.none)
-`;
-  }
-
-  const api = { pineIndicator };
-  if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  else root.EmaVwapPine = api;
-})(typeof self !== 'undefined' ? self : this);

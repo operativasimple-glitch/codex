@@ -1,47 +1,74 @@
-// Ejecuta la estrategia Pine (pine.js) con PineTS sobre las mismas velas que el motor web
-// y compara operación por operación. Uso:
-//   cd ema-vwap/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs
+// Ejecuta el indicador Pine (pine.js) con PineTS sobre las mismas velas que el motor web y compara:
+//  - cada entrada y salida del plan (precio y vela)
+//  - el resultado neto de cada stop de la tabla
+// Uso: cd ema-vwap/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs 7,11
 import { PineTS } from 'pinets';
 import { createRequire } from 'module';
 const req = createRequire(import.meta.url);
 const E = req('../engine.js');
 const P = req('../pine.js');
 
+const STOPS = [5, 8, 10, 15, 20, 30, 40];
+const BASE = { contract: 'NQ', targetPts: 0, beTrigger: 0, targetR: 2, beR: 1, stopPts: 15 };
 const SETS = [{},
-  { vwapSession: 'globex' }, { direction: 'long' }, { direction: 'short' }, { vwapFilter: false },
-  { stopPts: 0 }, { targetPts: 0 }, { stopPts: 0, targetPts: 0 },
-  { beTrigger: 10 }, { beTrigger: 15, stopPts: 0 }, { beTrigger: 8, targetPts: 0 },
-  { maxTradesDay: 2 }, { dailyLossLimit: 60 }, { maxTradesDay: 3, dailyLossLimit: 100, beTrigger: 12 },
-  { exitOnVwap: true }, { reverse: false }, { exitOnCross: false }, { exitOnCross: false, exitOnVwap: true },
-  { flatAtEnd: false }, { contract: 'NQ', qty: 2 }, { slipTicks: 0 }, { slipTicks: 3, contract: 'NQ' },
-  { fast: 5, slow: 13 }, { fast: 20, slow: 50, stopPts: 30, targetPts: 60 },
-  { tradeStart: '10:00', tradeEnd: '12:00' }, { commission: 4 }];
+  { targetR: 0 }, { beR: 0 }, { targetR: 1.5, beR: 0.5 }, { targetR: 3, beR: 0 },
+  { stopMode: 'swing', swingBars: 5, stopBuffer: 2, stopMin: 5, stopMax: 40 },
+  { stopMode: 'swing', swingBars: 10, stopBuffer: 4, stopMin: 8, stopMax: 0, targetR: 1.5 },
+  { maxVwapDist: 15 }, { exitOnCross: false }, { reverse: false }, { exitOnVwap: true },
+  { flatAtEnd: false }, { vwapSession: 'globex' }, { direction: 'long' }, { vwapFilter: false },
+  { fast: 5, slow: 50 }, { slipTicks: 0, commission: 0 }, { qty: 2 }, { tradeStart: '10:00', tradeEnd: '12:00' }];
 const SEEDS = (process.argv[2] || '7,11').split(',').map(Number);
 
 async function runPine(bars, params) {
-  const spec = E.CONTRACTS[params.contract || 'MNQ'];
+  const spec = E.CONTRACTS[params.contract];
   const provider = {
     configure() {},
     async getMarketData() { return bars.map(b => ({ open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v, openTime: b.t, closeTime: b.t + 300000 })); },
-    async getSymbolInfo() { return { ticker: 'MNQ1!', tickerid: 'MNQ1!', timezone: 'America/New_York', mintick: spec.tick, pointvalue: spec.pointValue, currency: 'USD', type: 'futures', session: '24x7' }; }
+    async getSymbolInfo() { return { ticker: 'NQ1!', tickerid: 'NQ1!', timezone: 'America/New_York', mintick: spec.tick, pointvalue: spec.pointValue, currency: 'USD', type: 'futures', session: '24x7' }; }
   };
-  const res = await new PineTS(provider, 'MNQ1!', '5').run(P.pineScript(Object.assign({}, E.DEFAULTS, params), E.CONTRACTS));
-  return res.strategy.closedtrades;
+  const res = await new PineTS(provider, 'NQ1!', '5').run(P.pineIndicator(params, E.CONTRACTS));
+  const last = k => { const d = res.plots[k].data; return d[d.length - 1].value; };
+  const series = k => res.plots[k].data.map(d => d.value);
+  return { last, series };
 }
 
+const close = (a, b) => Math.abs(a - b) < 0.005;
 let failed = 0, total = 0;
-for (const seed of SEEDS) for (const params of SETS) {
+for (const seed of SEEDS) for (const set of SETS) {
+  const params = Object.assign({}, E.DEFAULTS, BASE, set);
   const bars = E.demoBars(15, seed);
-  const js = E.backtest(bars.map(b => Object.assign({}, b)), params).trades.filter(t => t.reason !== 'Fin de datos');
   const pine = await runPine(bars, params);
-  const same = js.length === pine.length && js.every((a, i) => {
-    const b = pine[i];
-    return a.entryIdx === b.entry_bar_index && a.exitIdx === b.exit_bar_index && Math.sign(b.size) === a.side &&
-      Math.abs(a.entry - b.entry_price) < 1e-6 && Math.abs(a.exit - b.exit_price) < 1e-6 && Math.abs(a.pnl - b.profit) < 0.01;
+  const problems = [];
+  // Plan
+  const plan = E.backtest(bars.map(b => Object.assign({}, b)), params).trades.filter(t => t.reason !== 'Fin de datos');
+  const ent = pine.series('entryPx'), ext = pine.series('exitPx');
+  const pEntries = ent.map((v, i) => [i, v]).filter(x => Number.isFinite(x[1]));
+  const pExits = ext.map((v, i) => [i, v]).filter(x => Number.isFinite(x[1]));
+  // Entradas: una por vela. Salidas: puede haber dos en la misma vela (cierre en la apertura y
+  // stop de la nueva posición); Pine muestra la última, así que se compara la última de cada vela.
+  plan.forEach((t, k) => {
+    const e = pEntries[k];
+    if (!e || e[0] !== t.entryIdx || !close(e[1], t.entry)) problems.push(`entrada ${k}`);
+  });
+  const lastExit = new Map();
+  plan.forEach(t => lastExit.set(t.exitIdx, t.exit));
+  const jsExits = [...lastExit.entries()];
+  jsExits.forEach(([idx, px], k) => {
+    const x = pExits[k];
+    if (!x || x[0] !== idx || !close(x[1], px)) problems.push(`salida vela ${idx}`);
+  });
+  if (pExits.length !== jsExits.length) problems.push(`velas con salida ${jsExits.length} vs ${pExits.length}`);
+  const netPlan = plan.reduce((s, t) => s + t.pnl, 0);
+  if (!close(pine.last('net0'), netPlan)) problems.push(`neto plan ${netPlan} vs ${pine.last('net0')}`);
+  // Tabla de stops
+  STOPS.forEach((s, k) => {
+    const v = Object.assign({}, params, { stopMode: 'points', stopPts: s });
+    const net = E.backtest(bars.map(b => Object.assign({}, b)), v).trades.filter(t => t.reason !== 'Fin de datos').reduce((a, t) => a + t.pnl, 0);
+    if (!close(pine.last('net' + (k + 1)), net)) problems.push(`stop ${s}: ${net.toFixed(2)} vs ${pine.last('net' + (k + 1))}`);
   });
   total++;
-  if (!same) failed++;
-  console.log(`${same ? 'ok ' : 'MAL'} semilla ${seed} ${JSON.stringify(params)} · ${js.length} operaciones · neto ${js.reduce((s, t) => s + t.pnl, 0).toFixed(2)}`);
+  if (problems.length) failed++;
+  console.log(`${problems.length ? 'MAL' : 'ok '} semilla ${seed} ${JSON.stringify(set)} · ${plan.length} ops · neto ${netPlan.toFixed(0)}${problems.length ? ' · ' + problems.slice(0, 4).join(' | ') : ''}`);
 }
 console.log(`\n${total - failed}/${total} configuraciones idénticas`);
 process.exit(failed ? 1 : 0);
