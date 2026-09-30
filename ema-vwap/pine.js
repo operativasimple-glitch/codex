@@ -19,7 +19,7 @@
 // La señal se confirma al cierre de la vela; se entra a mercado en la apertura de la siguiente.
 // En el gráfico: entrada, stop, nivel de breakeven, objetivo y motivo del cierre de cada operación.
 // Tabla: resultado de las mismas señales con distintos stops (con comisión y deslizamiento).
-indicator("EMA×VWAP · Plan NQ", shorttitle = "EMA×VWAP NQ", overlay = true, max_labels_count = 500, max_lines_count = 500)
+indicator("EMA×VWAP · Plan NQ", shorttitle = "EMA×VWAP NQ", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500)
 
 // ───── Señal ─────
 fastLen     = input.int(${Math.floor(+p.fast)}, "EMA rápida", minval = 1, group = "Señal")
@@ -53,6 +53,17 @@ commRT      = input.float(${num(rt)}, "Comisión ida y vuelta por contrato ($)",
 slipTicks   = input.int(${Math.floor(+p.slipTicks || 0)}, "Deslizamiento por ejecución (ticks)", minval = 0, group = "Costes y tabla")
 showTable   = input.bool(true, "Mostrar tabla de stops", group = "Costes y tabla")
 stopList    = input.string("${stopList}", "Stops a comparar (pts, separados por comas)", group = "Costes y tabla")
+tablePos    = input.string("Arriba derecha", "Posición de la tabla", options = ["Arriba derecha", "Abajo derecha", "Abajo izquierda", "Arriba izquierda"], group = "Costes y tabla")
+
+// ───── Estilo ─────
+cLong       = input.color(#26A69A, "Largo / TP", group = "Estilo")
+cShort      = input.color(#EF5350, "Corto / SL", group = "Estilo")
+cBE         = input.color(#FFB74D, "Breakeven", group = "Estilo")
+cFast       = input.color(#4FC3F7, "EMA rápida", group = "Estilo")
+cSlow       = input.color(#B39DDB, "EMA lenta", group = "Estilo")
+cVwap       = input.color(#F5F5F5, "VWAP", group = "Estilo")
+showDiscard = input.bool(false, "Mostrar cruces descartados", group = "Estilo")
+showWindow  = input.bool(false, "Sombrear horario operativo", group = "Estilo")
 
 // ───── Tiempo (Nueva York) ─────
 dayKey(t) => year(t, "America/New_York") * 10000 + month(t, "America/New_York") * 100 + dayofmonth(t, "America/New_York")
@@ -246,63 +257,126 @@ for s in sims
     s.step(sig, valid, warm, nextInWindow, vwapVal, swingLow, swingHigh)
 
 // ───── Gráfico ─────
-plot(emaFast, "EMA rápida", color = #E0A24C, linewidth = 2)
-plot(emaSlow, "EMA lenta", color = #6E9BD6, linewidth = 2)
-plot(vwapVal, "VWAP", color = #A45CC9, linewidth = 2, style = plot.style_linebr)
-bgcolor(inWindow(time) ? color.new(#A45CC9, 94) : na, title = "Horario operativo")
-plotshape(valid and sig > 0, "Señal largo", shape.triangleup, location.belowbar, color.new(#1F9D6B, 0), size = size.small)
-plotshape(valid and sig < 0, "Señal corto", shape.triangledown, location.abovebar, color.new(#E0475B, 0), size = size.small)
-plotshape(sig != 0 and not valid, "Cruce descartado", shape.circle, location.abovebar, color.new(color.gray, 40), size = size.tiny)
+plot(emaFast, "EMA rápida", color = cFast, linewidth = 1)
+plot(emaSlow, "EMA lenta", color = cSlow, linewidth = 2)
+plot(vwapVal, "VWAP", color = cVwap, linewidth = 2, style = plot.style_linebr)
+bgcolor(showWindow and inWindow(time) ? color.new(cVwap, 96) : na, title = "Horario operativo")
+plotshape(valid and sig > 0, "Señal largo", shape.triangleup, location.belowbar, cLong, size = size.tiny)
+plotshape(valid and sig < 0, "Señal corto", shape.triangledown, location.abovebar, cShort, size = size.tiny)
+plotshape(showDiscard and sig != 0 and not valid, "Cruce descartado", shape.xcross, location.abovebar, color.new(color.gray, 50), size = size.tiny)
 
 fmtPx(x) => str.tostring(x, format.mintick)
 fmtUsd(x) => (x < 0 ? "-$" : "$") + str.tostring(math.abs(x), "#,##0")
+fmtPts(x) => (x >= 0 ? "+" : "") + str.tostring(x, "#.##")
 
-var line lnEntry = na
-var line lnStop = na
+// Dibujos de la operación abierta: zona de riesgo (roja), zona de beneficio (verde),
+// línea de breakeven y etiquetas SL / BE / TP que avanzan con el precio
+var box bxRisk = na
+var box bxReward = na
 var line lnBE = na
-var line lnTarget = na
+var line lnStopBE = na
+var label tagSL = na
+var label tagBE = na
+var label tagTP = na
 Sim plan = sims.get(0)
 
 if plan.evExit
-    if not na(lnEntry)
-        lnEntry.set_x2(bar_index)
-    if not na(lnStop)
-        lnStop.set_x2(bar_index)
+    if not na(bxRisk)
+        bxRisk.set_right(bar_index)
+    if not na(bxReward)
+        bxReward.set_right(bar_index)
     if not na(lnBE)
         lnBE.set_x2(bar_index)
-    if not na(lnTarget)
-        lnTarget.set_x2(bar_index)
-    string ptsTxt = (plan.exitPts >= 0 ? "+" : "") + str.tostring(plan.exitPts, "#.##") + " pts · " + fmtUsd(plan.exitPnl)
-    label.new(bar_index, plan.exitPrice, "CERRAR · " + plan.exitReason + "\\n" + ptsTxt, color = plan.exitPnl > 0 ? #1F9D6B : #E0475B, textcolor = color.white, style = label.style_label_left, size = size.small)
+    if not na(lnStopBE)
+        lnStopBE.set_x2(bar_index)
+    label.delete(tagSL)
+    label.delete(tagBE)
+    label.delete(tagTP)
+    tagSL := na
+    tagBE := na
+    tagTP := na
+    bxRisk := na
+    bxReward := na
+    lnBE := na
+    lnStopBE := na
+    string r = plan.exitReason
+    string head = r == "Objetivo" ? "TP ✓" : r == "Stop" ? "SL ✕" : r == "Breakeven" ? "BE" : r == "Fin de horario" ? "Hora" : "Cruce"
+    color ec = plan.exitPnl > 0 ? cLong : r == "Breakeven" ? cBE : cShort
+    label.new(bar_index, plan.exitPrice, head + " " + fmtPts(plan.exitPts), color = ec, textcolor = r == "Breakeven" ? color.black : color.white, style = label.style_label_left, size = size.tiny, tooltip = "Cierre: " + r + "\\nSalida " + fmtPx(plan.exitPrice) + "\\n" + fmtPts(plan.exitPts) + " pts · " + fmtUsd(plan.exitPnl))
 
 if plan.evEntry
     int d = plan.side
-    string txt = (d > 0 ? "LARGO " : "CORTO ") + str.tostring(qty) + " @ " + fmtPx(plan.entry)
+    float beLvl = plan.entry + d * plan.beT
+    string tip = (d > 0 ? "LARGO " : "CORTO ") + str.tostring(qty) + " NQ @ " + fmtPx(plan.entry)
     if not na(plan.stop)
-        txt += "\\nStop " + fmtPx(plan.stop) + "  (" + str.tostring(plan.risk, "#.##") + " pts · " + fmtUsd(-plan.risk * syminfo.pointvalue * qty) + ")"
+        tip += "\\nSL " + fmtPx(plan.stop) + "  (-" + str.tostring(plan.risk, "#.##") + " pts, " + fmtUsd(-plan.risk * syminfo.pointvalue * qty) + ")"
     if plan.beT > 0
-        txt += "\\nBreakeven al tocar " + fmtPx(plan.entry + d * plan.beT)
+        tip += "\\nBE: al tocar " + fmtPx(beLvl) + " mover el stop a " + fmtPx(plan.entry)
     if not na(plan.target)
-        txt += "\\nObjetivo " + fmtPx(plan.target) + "  (+" + str.tostring(plan.risk * targetR, "#.##") + " pts)"
-    label.new(bar_index, d > 0 ? low : high, txt, color = d > 0 ? #1F9D6B : #E0475B, textcolor = color.white, style = d > 0 ? label.style_label_up : label.style_label_down, size = size.small)
-    lnEntry := line.new(bar_index, plan.entry, bar_index, plan.entry, color = color.gray)
-    lnStop := na(plan.stop) ? na : line.new(bar_index, plan.stop, bar_index, plan.stop, color = #E0475B, width = 2)
-    lnBE := plan.beT > 0 ? line.new(bar_index, plan.entry + d * plan.beT, bar_index, plan.entry + d * plan.beT, color = #E0A24C, style = line.style_dotted) : na
-    lnTarget := na(plan.target) ? na : line.new(bar_index, plan.target, bar_index, plan.target, color = #1F9D6B, width = 2)
-
-if plan.side != 0
-    if not na(lnEntry)
-        lnEntry.set_x2(bar_index)
-    if not na(lnStop)
-        lnStop.set_x2(bar_index)
-    if not na(lnBE)
-        lnBE.set_x2(bar_index)
-    if not na(lnTarget)
-        lnTarget.set_x2(bar_index)
+        tip += "\\nTP " + fmtPx(plan.target) + "  (+" + str.tostring(plan.risk * targetR, "#.##") + " pts)"
+    label.new(bar_index, d > 0 ? low : high, (d > 0 ? "▲ " : "▼ ") + fmtPx(plan.entry), color = d > 0 ? cLong : cShort, textcolor = color.white, style = d > 0 ? label.style_label_up : label.style_label_down, size = size.small, tooltip = tip)
+    if not na(plan.stop)
+        bxRisk := box.new(bar_index, math.max(plan.entry, plan.stop), bar_index + 1, math.min(plan.entry, plan.stop), border_color = color.new(cShort, 40), bgcolor = color.new(cShort, 82))
+        tagSL := label.new(bar_index + 1, plan.stop, "SL " + fmtPx(plan.stop) + "  -" + str.tostring(plan.risk, "#.##"), color = cShort, textcolor = color.white, style = label.style_label_left, size = size.tiny)
+    if not na(plan.target)
+        bxReward := box.new(bar_index, math.max(plan.entry, plan.target), bar_index + 1, math.min(plan.entry, plan.target), border_color = color.new(cLong, 40), bgcolor = color.new(cLong, 82))
+        tagTP := label.new(bar_index + 1, plan.target, "TP " + fmtPx(plan.target) + "  +" + str.tostring(plan.risk * targetR, "#.##"), color = cLong, textcolor = color.white, style = label.style_label_left, size = size.tiny)
+    if plan.beT > 0
+        lnBE := line.new(bar_index, beLvl, bar_index + 1, beLvl, color = cBE, style = line.style_dashed, width = 1)
+        tagBE := label.new(bar_index + 1, beLvl, "BE al tocar " + fmtPx(beLvl), color = cBE, textcolor = color.black, style = label.style_label_left, size = size.tiny)
+    // Entró y salió en la misma vela: se cierran los dibujos aquí mismo
+    if plan.side == 0
+        if not na(bxRisk)
+            bxRisk.set_right(bar_index + 1)
+        if not na(bxReward)
+            bxReward.set_right(bar_index + 1)
+        if not na(lnBE)
+            lnBE.set_x2(bar_index + 1)
+        if not na(lnStopBE)
+            lnStopBE.set_x2(bar_index + 1)
+        label.delete(tagSL)
+        label.delete(tagBE)
+        label.delete(tagTP)
+        tagSL := na
+        tagBE := na
+        tagTP := na
+        bxRisk := na
+        bxReward := na
+        lnBE := na
 
 if plan.evBE and plan.side != 0
-    label.new(bar_index, plan.entry, "BE: stop a " + fmtPx(plan.entry), color = #E0A24C, textcolor = color.black, style = label.style_label_left, size = size.tiny)
-    lnStop := line.new(bar_index, plan.entry, bar_index, plan.entry, color = #E0A24C, width = 2)
+    if not na(bxRisk)
+        bxRisk.set_right(bar_index)
+    bxRisk := na
+    if not na(lnBE)
+        lnBE.set_x2(bar_index)
+    lnBE := na
+    label.delete(tagBE)
+    tagBE := na
+    label.new(bar_index, plan.side > 0 ? high : low, "BE", color = cBE, textcolor = color.black, style = plan.side > 0 ? label.style_label_down : label.style_label_up, size = size.tiny, tooltip = "Stop movido a la entrada " + fmtPx(plan.entry))
+    lnStopBE := line.new(bar_index, plan.entry, bar_index + 1, plan.entry, color = cBE, width = 2)
+    if not na(tagSL)
+        tagSL.set_y(plan.entry)
+        tagSL.set_text("SL en BE " + fmtPx(plan.entry))
+        tagSL.set_color(cBE)
+        tagSL.set_textcolor(color.black)
+
+if plan.side != 0
+    int x = bar_index + 1
+    if not na(bxRisk)
+        bxRisk.set_right(x)
+    if not na(bxReward)
+        bxReward.set_right(x)
+    if not na(lnBE)
+        lnBE.set_x2(x)
+    if not na(lnStopBE)
+        lnStopBE.set_x2(x)
+    if not na(tagSL)
+        tagSL.set_x(x)
+    if not na(tagBE)
+        tagBE.set_x(x)
+    if not na(tagTP)
+        tagTP.set_x(x)
 
 // ───── Alertas: crear alerta con la condición «Cualquier llamada a la función alert()» ─────
 if plan.pendEnter != 0
@@ -314,31 +388,40 @@ if plan.pendExit
     alert("NQ: cerrar en la apertura · " + plan.pendReason, alert.freq_once_per_bar_close)
 
 // ───── Tabla: ¿stop corto o largo? ─────
-var table tb = table.new(position.top_right, 7, 12, bgcolor = color.new(color.black, 20), border_width = 1)
+var int firstTime = time
+tbPos = tablePos == "Abajo derecha" ? position.bottom_right : tablePos == "Abajo izquierda" ? position.bottom_left : tablePos == "Arriba izquierda" ? position.top_left : position.top_right
+var table tb = table.new(tbPos, 7, 13, bgcolor = color.new(#131722, 8), frame_color = color.new(#434651, 0), frame_width = 1, border_color = color.new(#2A2E39, 0), border_width = 1)
+if showTable and barstate.islastconfirmedhistory
+    tb.merge_cells(0, 0, 6, 0)
 if showTable and barstate.islast
-    tb.cell(0, 0, "Stop", text_color = color.white, text_size = size.small)
-    tb.cell(1, 0, "Ops", text_color = color.white, text_size = size.small)
-    tb.cell(2, 0, "% acierto", text_color = color.white, text_size = size.small)
-    tb.cell(3, 0, "PF", text_color = color.white, text_size = size.small)
-    tb.cell(4, 0, "Neto", text_color = color.white, text_size = size.small)
-    tb.cell(5, 0, "Máx. DD", text_color = color.white, text_size = size.small)
-    tb.cell(6, 0, "$/op", text_color = color.white, text_size = size.small)
+    color hc = color.new(#B2B5BE, 0)
+    string tfTxt = timeframe.isminutes ? timeframe.period + " min" : timeframe.period
+    tb.cell(0, 0, "¿Qué stop rinde más?  ·  " + tfTxt + "  ·  desde " + str.format_time(firstTime, "dd/MM/yy", "America/New_York") + "  ·  " + str.tostring(qty) + " contrato(s)", text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    tb.cell(0, 1, "Stop", text_color = hc, text_size = size.tiny)
+    tb.cell(1, 1, "Ops", text_color = hc, text_size = size.tiny)
+    tb.cell(2, 1, "Acierto", text_color = hc, text_size = size.tiny)
+    tb.cell(3, 1, "PF", text_color = hc, text_size = size.tiny)
+    tb.cell(4, 1, "Neto", text_color = hc, text_size = size.tiny)
+    tb.cell(5, 1, "Máx. DD", text_color = hc, text_size = size.tiny)
+    tb.cell(6, 1, "$/op", text_color = hc, text_size = size.tiny)
     float bestNet = na
     int rows = math.min(sims.size(), 11)
-    for i = 0 to rows - 1
-        if i > 0
+    if rows > 1
+        for i = 1 to rows - 1
             bestNet := na(bestNet) ? sims.get(i).net : math.max(bestNet, sims.get(i).net)
     for i = 0 to rows - 1
         Sim s = sims.get(i)
-        string name = i == 0 ? (stopMode == "Estructura" ? "Tu plan (estructura)" : "Tu plan · " + str.tostring(s.stopPts) + " pts") : str.tostring(s.stopPts) + " pts"
-        color c = i > 0 and s.net == bestNet ? #3DC98E : color.white
-        tb.cell(0, i + 1, name, text_color = c, text_size = size.small)
-        tb.cell(1, i + 1, str.tostring(s.n), text_color = c, text_size = size.small)
-        tb.cell(2, i + 1, s.n > 0 ? str.tostring(100.0 * s.wins / s.n, "#") + "%" : "—", text_color = c, text_size = size.small)
-        tb.cell(3, i + 1, s.gl > 0 ? str.tostring(s.gw / s.gl, "#.##") : "—", text_color = c, text_size = size.small)
-        tb.cell(4, i + 1, fmtUsd(s.net), text_color = s.net >= 0 ? #3DC98E : #FF6B7E, text_size = size.small)
-        tb.cell(5, i + 1, fmtUsd(-s.dd), text_color = c, text_size = size.small)
-        tb.cell(6, i + 1, s.n > 0 ? fmtUsd(s.net / s.n) : "—", text_color = c, text_size = size.small)
+        bool isBest = i > 0 and s.net == bestNet
+        string name = i == 0 ? (stopMode == "Estructura" ? "Tu plan (estructura)" : "Tu plan · " + str.tostring(s.stopPts) + " pts") : str.tostring(s.stopPts) + " pts" + (isBest ? "  ★" : "")
+        color c = isBest ? cLong : i == 0 ? cBE : color.white
+        color bg = isBest ? color.new(cLong, 85) : na
+        tb.cell(0, i + 2, name, text_color = c, bgcolor = bg, text_size = size.small, text_halign = text.align_left)
+        tb.cell(1, i + 2, str.tostring(s.n), text_color = c, bgcolor = bg, text_size = size.small)
+        tb.cell(2, i + 2, s.n > 0 ? str.tostring(100.0 * s.wins / s.n, "#") + "%" : "—", text_color = c, bgcolor = bg, text_size = size.small)
+        tb.cell(3, i + 2, s.gl > 0 ? str.tostring(s.gw / s.gl, "#.##") : "—", text_color = c, bgcolor = bg, text_size = size.small)
+        tb.cell(4, i + 2, fmtUsd(s.net), text_color = s.net >= 0 ? cLong : cShort, bgcolor = bg, text_size = size.small)
+        tb.cell(5, i + 2, fmtUsd(-s.dd), text_color = c, bgcolor = bg, text_size = size.small)
+        tb.cell(6, i + 2, s.n > 0 ? fmtUsd(s.net / s.n) : "—", text_color = c, bgcolor = bg, text_size = size.small)
 
 // Valores internos para comprobar el cálculo (ocultos)
 plot(plan.net, "net0", display = display.none)
