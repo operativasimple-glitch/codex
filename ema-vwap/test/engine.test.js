@@ -148,3 +148,15 @@ test('no entra si el cierre está lejos del VWAP', () => {
   assert.equal(r.trades.length, 0);
   assert.ok(r.signals.some(s => s.why === 'lejos del VWAP'));
 });
+
+test('solo cuenta entradas desde la fecha indicada', () => {
+  const bars = E.demoBars(10, 5);
+  const all = E.backtest(bars, {});
+  const mid = E.tzParts(bars[Math.floor(bars.length / 2)].t);
+  const pad = n => String(n).padStart(2, '0');
+  const from = `${mid.y}-${pad(mid.mo)}-${pad(mid.d)}`;
+  const part = E.backtest(bars, { fromDate: from });
+  const t0 = E.zonedToEpoch(mid.y, mid.mo, mid.d, 0, 0, 0, 'America/New_York');
+  assert.ok(part.trades.length > 0 && part.trades.length < all.trades.length);
+  assert.ok(part.trades.every(t => t.entryTime >= t0));
+});

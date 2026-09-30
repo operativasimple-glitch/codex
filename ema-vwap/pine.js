@@ -9,6 +9,15 @@
 
   function pineIndicator(params, specs) {
     const p = params;
+    let fd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.fromDate || '');
+    if (!fd) { const d = new Date(Date.now() - 10 * 864e5); fd = [0, d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]; }
+    // «20 Sep 2026 00:00 -0400»: medianoche de Nueva York con su desfase de ese día
+    const noonUtc = new Date(Date.UTC(+fd[1], +fd[2] - 1, +fd[3], 12));
+    const off = (new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' })
+      .formatToParts(noonUtc).find(x => x.type === 'timeZoneName') || { value: 'GMT-5' }).value;
+    const om = /GMT([+-])(\d+)(?::(\d+))?/.exec(off) || [0, '-', '5', '0'];
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fromStamp = `${+fd[3]} ${MON[+fd[2] - 1]} ${fd[1]} 00:00 ${om[1]}${String(om[2]).padStart(2, '0')}${String(om[3] || 0).padStart(2, '0')}`;
     const spec = (specs || {})[p.contract] || { commission: p.contract === 'NQ' ? 4.5 : 1.5 };
     const rt = p.commission == null || p.commission === '' ? spec.commission : +p.commission;
     const dir = { both: 'Ambas', long: 'Solo largos', short: 'Solo cortos' }[p.direction] || 'Ambas';
@@ -53,6 +62,8 @@ commRT      = input.float(${num(rt)}, "Comisión ida y vuelta por contrato ($)",
 slipTicks   = input.int(${Math.floor(+p.slipTicks || 0)}, "Deslizamiento por ejecución (ticks)", minval = 0, group = "Costes y tabla")
 showTable   = input.bool(true, "Mostrar tabla de stops", group = "Costes y tabla")
 stopList    = input.string("${stopList}", "Stops a comparar (pts, separados por comas)", group = "Costes y tabla")
+useFrom     = input.bool(${bool(!!p.fromDate)}, "Contar solo desde", inline = "from", group = "Costes y tabla", tooltip = "Para comparar temporalidades en el mismo periodo: TradingView carga menos historial en 1 min que en 15 min")
+fromTime    = input.time(timestamp("${fromStamp}"), "", inline = "from", group = "Costes y tabla")
 tablePos    = input.string("Arriba derecha", "Posición de la tabla", options = ["Arriba derecha", "Abajo derecha", "Abajo izquierda", "Arriba izquierda"], group = "Costes y tabla")
 
 // ───── Estilo ─────
@@ -111,6 +122,8 @@ nextInWindow = inWindow(time_close)
 if valid and not nextInWindow
     valid := false
 if valid and maxVwapDist > 0 and not na(vwapVal) and math.abs(close - vwapVal) > maxVwapDist
+    valid := false
+if valid and useFrom and time < fromTime
     valid := false
 
 // ───── Simulador (misma lógica para tu plan y para cada stop de la tabla) ─────
@@ -396,7 +409,7 @@ if showTable and barstate.islastconfirmedhistory
 if showTable and barstate.islast
     color hc = color.new(#B2B5BE, 0)
     string tfTxt = timeframe.isminutes ? timeframe.period + " min" : timeframe.period
-    tb.cell(0, 0, "¿Qué stop rinde más?  ·  " + tfTxt + "  ·  desde " + str.format_time(firstTime, "dd/MM/yy", "America/New_York") + "  ·  " + str.tostring(qty) + " contrato(s)", text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    tb.cell(0, 0, "¿Qué stop rinde más?  ·  " + tfTxt + "  ·  desde " + str.format_time(useFrom ? math.max(fromTime, firstTime) : firstTime, "dd/MM/yy", "America/New_York") + "  ·  " + str.tostring(qty) + " contrato(s)", text_color = color.white, text_size = size.small, text_halign = text.align_left)
     tb.cell(0, 1, "Stop", text_color = hc, text_size = size.tiny)
     tb.cell(1, 1, "Ops", text_color = hc, text_size = size.tiny)
     tb.cell(2, 1, "Acierto", text_color = hc, text_size = size.tiny)

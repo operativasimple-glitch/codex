@@ -31,7 +31,7 @@
   const numFields = ['qty', 'commission', 'slipTicks', 'fast', 'slow', 'stopPts', 'targetPts', 'maxTradesDay', 'dailyLossLimit',
     'swingBars', 'stopBuffer', 'stopMin', 'stopMax', 'targetR', 'beR', 'maxVwapDist'];
   const boolFields = ['vwapFilter', 'exitOnCross', 'reverse', 'exitOnVwap', 'flatAtEnd'];
-  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode'];
+  const selFields = ['vwapSession', 'direction', 'tradeStart', 'tradeEnd', 'csvTz', 'intrabar', 'stopMode', 'fromDate'];
 
   function fillForm() {
     numFields.forEach(k => { $(k).value = k === 'commission' && params.commission == null ? E.CONTRACTS[params.contract].commission : params[k]; });

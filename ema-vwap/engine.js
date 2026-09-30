@@ -33,6 +33,7 @@
     targetR: 2,             // objetivo en múltiplos del riesgo (0 = usar targetPts)
     beR: 1,                 // breakeven en múltiplos del riesgo (0 = usar beTrigger)
     maxVwapDist: 0,         // no entrar si el cierre está a más de X pts del VWAP (0 = off)
+    fromDate: '',           // 'AAAA-MM-DD': solo cuenta entradas desde esa fecha (Nueva York); '' = todo
     maxTradesDay: 0,        // máx. entradas por día (0 = sin límite)
     dailyLossLimit: 0,      // $ de pérdida diaria que bloquea nuevas entradas (0 = off)
     intrabar: 'tv',         // tv: como TradingView | worst: si toca stop y objetivo, cuenta el stop
@@ -228,6 +229,8 @@
     const swing = p.stopMode === 'swing', swingBars = Math.max(1, Math.floor(+p.swingBars || 1));
     const stopBuf = (+p.stopBuffer || 0) * spec.tick, stopMin = +p.stopMin || 0, stopMax = +p.stopMax || 0;
     const targetR = +p.targetR || 0, beR = +p.beR || 0, maxVwapDist = +p.maxVwapDist || 0;
+    const fd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.fromDate || '');
+    const fromTime = fd ? zonedToEpoch(+fd[1], +fd[2], +fd[3], 0, 0, 0, 'America/New_York') : 0;
     const maxTrades = Math.floor(+p.maxTradesDay || 0), maxLoss = +p.dailyLossLimit || 0;
 
     annotate(bars, p.vwapSession);
@@ -341,6 +344,7 @@
       if (valid && maxTrades > 0 && dayTrades >= maxTrades) { valid = false; why = 'máx. operaciones del día'; }
       if (valid && maxLoss > 0 && net - dayStart <= -maxLoss) { valid = false; why = 'límite de pérdida diaria'; }
       if (valid && maxVwapDist > 0 && b.vwap != null && Math.abs(b.c - b.vwap) > maxVwapDist) { valid = false; why = 'lejos del VWAP'; }
+      if (valid && b.t < fromTime) { valid = false; why = 'antes de la fecha'; }
       if (side) signals.push({ idx: i, side, valid, why });
 
       if (pos) {
