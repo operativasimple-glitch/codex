@@ -1,0 +1,75 @@
+# Simulación con dinero virtual del bot de Kalshi (repositorio operativasimple-glitch/NotesAi).
+# Solo lee datos públicos de mercados ya liquidados: no usa ninguna clave ni envía órdenes,
+# y no toca el bot desplegado (que se despliega desde el otro repositorio).
+name: "Kalshi: simulación con 100 $"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-bankroll.yml
+      - kalshi_sim/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kalshi-bankroll
+  cancel-in-progress: true
+
+env:
+  KALSHI_ENV: prod
+
+jobs:
+  fetch:
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [games, weather]
+    name: Descargar (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: operativasimple-glitch/NotesAi
+          ref: claude/kalshi-bot-kjmcj6
+          path: notesai
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r notesai/kalshi-bot/requirements.txt
+      - name: Mercados liquidados de los últimos 60 días
+        working-directory: notesai/kalshi-bot
+        run: |
+          printf '[http]\nreads_per_second = 10\n' > config.toml
+          python "$GITHUB_WORKSPACE/kalshi_sim/bankroll.py" fetch --group ${{ matrix.group }} --days 60 \
+            --out "$GITHUB_WORKSPACE/${{ matrix.group }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: data-${{ matrix.group }}
+          path: ${{ matrix.group }}.json
+          retention-days: 3
+
+  simulate:
+    name: Simular
+    needs: fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: data-*
+          merge-multiple: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Simulación
+        run: python kalshi_sim/bankroll.py simulate games.json weather.json | tee out.txt
+      - name: Resumen
+        if: always()
+        run: |
+          { echo '## Simulación con dinero virtual'; echo '```'; cat out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true
