@@ -45,7 +45,12 @@ jobs:
               event = line.strip()
               if not event or event.startswith("#"):
                   continue
-              for m in client.get_markets(status=None, event_ticker=event, max_pages=1):
+              markets = client.get_markets(status=None, event_ticker=event, max_pages=1)
+              for m in markets:
                   liquidado = m.raw.get("settlement_ts") or "—"
-                  print(f"{m.ticker:<34} {m.status:<10} resultado={m.result or '—':<4} liquidado={liquidado}")
+                  precio = f"{m.yes_bid}/{m.yes_ask}" if m.is_active else ""
+                  print(f"{m.ticker:<34} {m.status:<10} resultado={m.result or '—':<4} liquidado={liquidado} "
+                        f"{m.subtitle} {precio}")
+              if markets:
+                  print("  reglas:", (markets[0].raw.get("rules_primary") or "")[:400])
           PY
