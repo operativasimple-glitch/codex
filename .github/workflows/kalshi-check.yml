@@ -1,0 +1,51 @@
+# Muestra si los mercados de unos eventos de Kalshi ya se liquidaron y cómo.
+# Solo lee datos públicos: no usa ninguna clave ni toca el bot desplegado.
+name: "Kalshi: ¿ya se liquidó?"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-check.yml
+      - kalshi_sim/check.txt
+
+permissions:
+  contents: read
+
+env:
+  KALSHI_ENV: prod
+
+jobs:
+  check:
+    name: Estado de los mercados
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: operativasimple-glitch/NotesAi
+          ref: claude/kalshi-bot-kjmcj6
+          path: notesai
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r notesai/kalshi-bot/requirements.txt
+      - name: Estado
+        working-directory: notesai/kalshi-bot
+        run: |
+          python - "$GITHUB_WORKSPACE/kalshi_sim/check.txt" <<'PY'
+          import sys
+          from datetime import datetime, timezone
+          from kalshi_bot.config import load_settings
+          client = load_settings().client()
+          print("Ahora:", datetime.now(timezone.utc).isoformat(timespec="minutes"))
+          for line in open(sys.argv[1], encoding="utf-8"):
+              event = line.strip()
+              if not event or event.startswith("#"):
+                  continue
+              for m in client.get_markets(status=None, event_ticker=event, max_pages=1):
+                  liquidado = m.raw.get("settlement_ts") or "—"
+                  print(f"{m.ticker:<34} {m.status:<10} resultado={m.result or '—':<4} liquidado={liquidado}")
+          PY

@@ -1,0 +1,3 @@
+# Eventos de Kalshi cuyo estado se quiere comprobar (uno por línea).
+KXHIGHCHI-26OCT07
+KXHIGHNY-26OCT07
