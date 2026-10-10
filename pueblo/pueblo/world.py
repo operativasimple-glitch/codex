@@ -37,6 +37,7 @@ class World:
         self.messages: collections.deque = collections.deque(maxlen=MAX_MESSAGES)
         self.memory: dict = {}  # id -> lo que cada bot recuerda entre vueltas (se guarda)
         self.next_id = 1
+        self.version = 0  # sube cada vez que cambia algo de un bot (la web solo los pide si cambian)
         self._dirty = False
         self._load()
 
@@ -54,6 +55,7 @@ class World:
                 **current,
                 **public,
             }
+            self.version += 1
 
     def update(self, bot_id: str, **fields) -> None:
         with self.lock:
@@ -63,6 +65,16 @@ class World:
                 bot["detail"] = {**bot.get("detail", {}), **detail}
             bot.update(fields)
             bot["updated_at"] = _iso(self.clock())
+            self.version += 1
+
+    def act(self, bot_id: str, room: str, text: str) -> None:
+        """Qué está haciendo un bot ahora mismo y en qué sala de la base."""
+        with self.lock:
+            bot = self.bots.setdefault(bot_id, {"id": bot_id, "detail": {}})
+            now = _iso(self.clock())
+            if (bot.get("activity") or {}).get("text") != text or (bot.get("activity") or {}).get("room") != room:
+                bot["activity"] = {"room": room, "text": text, "at": now}
+                self.version += 1
 
     def bot(self, bot_id: str) -> dict:
         with self.lock:
@@ -119,14 +131,18 @@ class World:
                 m for m in self.messages if m["id"] > after and m["to"] in (bot_id, EVERYONE) and m["from"] != bot_id
             ]
 
-    def snapshot(self, after: int = 0) -> dict:
+    def snapshot(self, after: int = 0, version: Optional[int] = None) -> dict:
+        """Lo que ve la web. Si ya tiene la versión actual de los bots, no se le mandan otra vez."""
         with self.lock:
-            return {
+            snap = {
                 "now": _iso(self.clock()),
-                "bots": [json.loads(json.dumps(b, default=str)) for b in self.bots.values()],
                 "messages": self.since(after),
                 "last_id": self.next_id - 1,
+                "version": self.version,
             }
+            if version != self.version:
+                snap["bots"] = [json.loads(json.dumps(b, default=str)) for b in self.bots.values()]
+            return snap
 
     # --- memoria en disco --------------------------------------------------------------
 

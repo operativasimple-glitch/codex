@@ -9,74 +9,13 @@ from __future__ import annotations
 import re
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
+from ..brackets import bracket, degrees, judge
 from ..names import plural
 from ..sources.nws import CITIES, NWSClient, climate_day, today_in
 from .base import Agent
 
-BETWEEN = re.compile(r"(\d+)\s*°?\s*(?:to|a|-|–)\s*(\d+)\s*°", re.I)
-BELOW = re.compile(r"(\d+)\s*°?\s*(?:or below|or less|o menos)", re.I)
-ABOVE = re.compile(r"(\d+)\s*°?\s*(?:or above|or more|o más)", re.I)
-TICKER_BETWEEN = re.compile(r"-B(\d+)\.5$")
 SERIES = re.compile(r"^KXHIGH([A-Z]+)-")
-
-
-def bracket(subtitle: str, ticker: str = "") -> Optional[tuple]:
-    """("between", lo, hi) | ("below", x) | ("above", x) a partir del tramo del mercado."""
-    text = subtitle or ""
-    m = BETWEEN.search(text)
-    if m:
-        return ("between", int(m.group(1)), int(m.group(2)))
-    m = BELOW.search(text)
-    if m:
-        return ("below", int(m.group(1)))
-    m = ABOVE.search(text)
-    if m:
-        return ("above", int(m.group(1)))
-    m = TICKER_BETWEEN.search(ticker)
-    if m:
-        lo = int(m.group(1))
-        return ("between", lo, lo + 1)
-    return None
-
-
-def judge(kind: tuple, side: str, observed: Optional[int], forecast: Optional[int]) -> str:
-    """Cómo va una apuesta de máxima: "ganada", "perdida", "peligro" o "bien".
-
-    La máxima del día solo puede subir: lo ya medido decide unos casos sin esperar al final.
-    """
-    yes = side == "SÍ"
-    if kind[0] == "between":
-        lo, hi = kind[1], kind[2]
-        if observed is not None and observed > hi:
-            return "perdida" if yes else "ganada"
-        if forecast is not None:
-            inside = lo <= forecast <= hi
-            if yes and not inside:
-                return "peligro"
-            if not yes and inside:
-                return "peligro"
-        return "bien"
-    if kind[0] == "below":  # SÍ gana si la máxima queda en x o menos
-        x = kind[1]
-        if observed is not None and observed > x:
-            return "perdida" if yes else "ganada"
-        if forecast is not None and (forecast > x) == yes:
-            return "peligro"
-        return "bien"
-    x = kind[1]  # above: SÍ gana si llega a x o más
-    if observed is not None and observed >= x:
-        return "ganada" if yes else "perdida"
-    if forecast is not None and (forecast < x) == yes:
-        return "peligro"
-    return "bien"
-
-
-def degrees(kind: tuple) -> str:
-    if kind[0] == "between":
-        return f"{kind[1]}° a {kind[2]}°"
-    return f"{kind[1]}° o {'menos' if kind[0] == 'below' else 'más'}"
 
 
 class Nube(Agent):
@@ -142,6 +81,19 @@ class Nube(Agent):
             else f"Vigilando 7 ciudades · {plural(watched, 'apuesta', 'apuestas')} de Kali"
         )
         self.status(text, mood=mood, cities=rows, errors=errors[:3])
+        known = [r for r in rows if r.get("today") is not None]
+        if mood == "sick":
+            self.doing("observatorio", "el servicio del tiempo no contesta")
+        elif refresh and known:
+            hot = max(known, key=lambda r: r["today"])
+            self.doing("observatorio", f"previsión NWS · {hot['city']} {hot['today']}°")
+        else:
+            measured = [r for r in rows if r.get("max_so_far") is not None]
+            if measured:
+                r = max(measured, key=lambda r: r["max_so_far"])
+                self.doing("observatorio", f"termómetros · {r['city']} ya marca {r['max_so_far']}°")
+            else:
+                self.doing("observatorio", "mira el cielo de 7 ciudades")
 
     def talk(self) -> str:
         rows = (self.world.bot(self.id).get("detail") or {}).get("cities") or []

@@ -10,6 +10,9 @@ from ..world import EVERYONE, World
 
 log = logging.getLogger(__name__)
 
+# Las salas de la base. Cada bot va a la sala de lo que está haciendo de verdad.
+ROOMS = ("mercado", "laboratorio", "observatorio", "consejo", "boveda", "puente", "archivo", "pruebas", "forja")
+
 
 class Agent:
     """Un vecino del pueblo. Cada `interval` segundos hace su trabajo (`tick`).
@@ -23,9 +26,10 @@ class Agent:
     name = ""
     role = ""  # una línea: qué hace
     about = ""  # unas frases para su ficha
-    home = ""  # su edificio en el mapa
+    home = ""  # su sala en la base (donde está cuando no hace nada)
     color = ""  # color del personaje
     interval = 60.0
+    voices: tuple = ()  # otros vecinos que habla este (los miembros del Consejo)
 
     def __init__(self, world: World, clock=time.time):
         self.world = world
@@ -45,6 +49,10 @@ class Agent:
     def status(self, text: str, mood: str = "ok", **detail) -> None:
         self.world.update(self.id, status=text, mood=mood, detail=detail)
 
+    def doing(self, room: str, text: str, bot_id: Optional[str] = None) -> None:
+        """Cuenta qué está haciendo ahora y en qué sala: la web lo lleva hasta allí."""
+        self.world.act(bot_id or self.id, room if room in ROOMS else self.home, text)
+
     def inbox(self) -> list:
         """Mensajes nuevos para este bot (cada uno se lee una vez)."""
         after = int(self.memory.get("read_until", 0))
@@ -62,9 +70,9 @@ class Agent:
     def tick(self, now: float) -> None:  # pragma: no cover - cada bot tiene el suyo
         raise NotImplementedError
 
-    def talk(self) -> str:
-        """Lo que contesta cuando le hablas desde la web."""
-        bot = self.world.bot(self.id)
+    def talk(self, who: Optional[str] = None) -> str:
+        """Lo que contesta cuando le hablas desde la web (`who`: a quién de sus voces)."""
+        bot = self.world.bot(who or self.id)
         return bot.get("status") or "Aquí estoy, trabajando."
 
     # --- la vuelta ---------------------------------------------------------------------

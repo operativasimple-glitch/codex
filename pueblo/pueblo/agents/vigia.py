@@ -20,7 +20,7 @@ class Vigia(Agent):
         "Desde su torre mira las apuestas de Kali: si una se hunde, si hay demasiado dinero en una sola o si "
         "se acerca el freno de pérdidas. También escucha a Nube y te cuenta lo importante."
     )
-    home = "torre"
+    home = "puente"
     color = "#ff6b6b"
     interval = 60.0
 
@@ -102,6 +102,12 @@ class Vigia(Agent):
         times = [t for t in memory.get("alert_times", []) if now - t < 86400] + [now] * alerts
         memory["alert_times"] = times
         self.status(text, mood=mood, risky=risky, alerts_today=len(times))
+        if alerts:
+            self.doing("puente", "¡da un aviso!")
+        elif kali.get("connected"):
+            self.doing("puente", f"vigila {plural(len(positions), 'apuesta', 'apuestas')}")
+        else:
+            self.doing("puente", "espera a ver a Kali")
 
     def talk(self) -> str:
         kali = self.peer("kali").get("detail") or {}

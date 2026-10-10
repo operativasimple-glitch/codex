@@ -104,9 +104,19 @@ class FakeNWS:
 class FakeKalshiPublic:
     def __init__(self, markets=()):
         self.markets = list(markets)
+        self.series = {}  # serie -> mercados abiertos
+        self.by_ticker = {}  # ticker -> mercado (con su resultado cuando se decide)
+        self.asked = []
 
     def markets_closing(self, within_hours, now=None, max_pages=8):
         return list(self.markets)
+
+    def series_markets(self, series, max_pages=2):
+        return list(self.series.get(series, []))
+
+    def markets_by_ticker(self, tickers):
+        self.asked.append(list(tickers))
+        return [self.by_ticker[t] for t in tickers if t in self.by_ticker]
 
 
 def market(ticker, bid, ask, title="", sub="", volume="500"):
@@ -118,4 +128,18 @@ def market(ticker, bid, ask, title="", sub="", volume="500"):
         "yes_ask_dollars": ask,
         "volume_24h_fp": volume,
         "close_time": "2026-10-09T03:00:00Z",
+    }
+
+
+def weather_market(ticker, sub, bid, ask, close="2026-10-10T04:59:00Z", **extra):
+    return {
+        "ticker": ticker,
+        "title": "Highest temperature in NYC today?",
+        "yes_sub_title": sub,
+        "yes_bid_dollars": bid,
+        "yes_ask_dollars": ask,
+        "close_time": close,
+        "status": "active",
+        "volume_24h_fp": "800",
+        **extra,
     }

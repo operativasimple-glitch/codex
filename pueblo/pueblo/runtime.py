@@ -38,11 +38,11 @@ class Town:
             self._last_save = now
 
     def talk(self, bot_id: str) -> dict:
-        agent = self.agents.get(bot_id)
+        agent = self.agents.get(bot_id) or next((a for a in self.agents.values() if bot_id in a.voices), None)
         if agent is None:
             raise KeyError(bot_id)
         try:
-            text = agent.talk()
+            text = agent.talk(bot_id) if bot_id != agent.id else agent.talk()
         except Exception as exc:  # noqa: BLE001
             log.warning("%s no pudo contestar: %s", agent.name, exc)
             text = "Ahora mismo no puedo hablar, estoy liado."

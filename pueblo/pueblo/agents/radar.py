@@ -65,7 +65,7 @@ class Radar(Agent):
         "Cada 20 minutos recorre los mercados de Kalshi que cierran en las próximas 12 horas y cuenta los "
         "favoritos claros (88–97¢, poco spread) que Kali no está mirando. Solo mira datos públicos."
     )
-    home = "faro"
+    home = "laboratorio"
     color = "#6ee7a8"
     interval = 1200.0
     horizon_hours = 12.0
@@ -116,6 +116,7 @@ class Radar(Agent):
         examples = sorted(others, key=lambda f: f["closes"] or "")[:8]
         for f in examples:
             f["label"] = f"{f['name']} · {f['side']} a {cents(Decimal(f['price']))}"
+        self.doing("laboratorio", f"mira {plural(len(markets), 'mercado', 'mercados')} · {len(found)} favoritos")
         self.status(
             f"{plural(len(found), 'favorito', 'favoritos')} a la vista · {len(others)} fuera de la lista de Kali",
             mood="ok",

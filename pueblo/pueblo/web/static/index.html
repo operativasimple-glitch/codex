@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Pueblo de bots</title>
-  <meta name="description" content="Tus bots viven en un pueblo: los ves trabajar y hablar entre ellos.">
+  <meta name="description" content="Tus bots viven en una base: los ves ir a la sala de lo que hacen, hablar entre ellos y apostar de mentira en el Consejo.">
   <meta name="theme-color" content="#10142a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -51,6 +51,7 @@
       <nav class="tabs" role="tablist" aria-label="Secciones">
         <button id="tab-diario" class="tab" role="tab" aria-selected="true" aria-controls="panel-diario" data-tab="diario">Diario</button>
         <button id="tab-tu" class="tab" role="tab" aria-selected="false" aria-controls="panel-tu" data-tab="tu">Para ti <span id="badge-tu" class="badge" hidden></span></button>
+        <button id="tab-consejo" class="tab" role="tab" aria-selected="false" aria-controls="panel-consejo" data-tab="consejo">Consejo</button>
         <button id="tab-vecinos" class="tab" role="tab" aria-selected="false" aria-controls="panel-vecinos" data-tab="vecinos">Vecinos</button>
       </nav>
 
@@ -71,23 +72,35 @@
         <p id="tu-empty" class="empty" hidden>Tu buzón está vacío.</p>
       </section>
 
+      <section id="panel-consejo" class="panel" role="tabpanel" aria-labelledby="tab-consejo" hidden>
+        <p class="lead">Cada personaje da su precio justo para los mercados del clima y las apuestas de Kali. Si se separa del mercado más que la comisión, apuesta 1 contrato de mentira; cuando el mercado se decide, se apunta solo quién acertó.</p>
+        <h3 id="board-title" class="sec-title">¿Quién acertó?</h3>
+        <ol id="board" class="board"></ol>
+        <h3 id="topics-title" class="sec-title">Qué precio le pone cada uno</h3>
+        <ul id="legend" class="legend"></ul>
+        <ul id="topics" class="topics"></ul>
+        <p id="council-empty" class="empty" hidden>El Consejo todavía no se ha reunido. En unos minutos traerá los primeros mercados.</p>
+        <p class="note">Todo es de mentira: el Consejo no compra nada. Sirve para ver qué manera de pensar gana durante semanas antes de pensar en dinero real.</p>
+      </section>
+
       <section id="panel-vecinos" class="panel" role="tabpanel" aria-labelledby="tab-vecinos" hidden>
         <div id="cards" class="cards"></div>
         <h3 class="soon-title">Próximamente</h3>
         <div class="cards soon">
-          <button class="card soon-card" type="button" data-soon="lab">
-            <span class="soon-name">Laboratorio</span>
-            <span class="soon-text">La Investigadora probará estrategias nuevas con datos reales del pasado, sin gastar dinero.</span>
+          <button class="card soon-card" type="button" data-soon="pruebas">
+            <span class="soon-name">Pruebas</span>
+            <span class="soon-text">Cada idea se probará con meses de mercados ya cerrados, sin gastar dinero.</span>
           </button>
-          <button class="card soon-card" type="button" data-soon="arena">
-            <span class="soon-name">Arena</span>
-            <span class="soon-text">Los Probadores operarán con dinero de mentira. Solo los que demuestren que ganan podrán usar dinero real, con tu permiso.</span>
+          <button class="card soon-card" type="button" data-soon="forja">
+            <span class="soon-name">Forja</span>
+            <span class="soon-text">Con lo que aprenda el Consejo se forjarán bots nuevos. Solo los que demuestren que ganan podrán usar dinero real, con tu permiso.</span>
           </button>
         </div>
       </section>
 
       <footer class="foot">
         <button id="logout-btn" class="link" type="button">Salir</button>
+        <button id="view-link" class="link" type="button">Ver el pueblo pixel</button>
         <span>Los bots solo miran el panel de Kalshi: no pueden comprar ni cambiar nada.</span>
       </footer>
     </main>

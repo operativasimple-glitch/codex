@@ -10,6 +10,7 @@ from ..sources.kalshi_public import KalshiPublic
 from ..sources.nws import NWSClient
 from ..sources.panel import PanelClient
 from ..world import World
+from .consejo import ClaudeMember, Investigadora
 from .cronista import Cronista
 from .kali import Kali
 from .nube import Nube
@@ -30,10 +31,17 @@ def tz_minutes(tz: str):
 
 def build_agents(world: World, config: Config) -> list:
     panel = PanelClient(config.panel_url, config.panel_password) if config.panel_configured else None
-    return [
+    agents = [
         Kali(world, panel, tz_minutes(config.tz)),
         Nube(world, NWSClient(config.contact)),
         Vigia(world),
         Radar(world, KalshiPublic(config.kalshi_api)),
         Cronista(world, config.tz),
+        Investigadora(world, KalshiPublic(config.kalshi_api)),
     ]
+    if config.anthropic_api_key and config.ai_max_calls > 0:
+        from ..council.claude import ClaudeForecaster
+
+        forecaster = ClaudeForecaster(config.anthropic_api_key, config.ai_model)
+        agents.append(ClaudeMember(world, forecaster, config.ai_max_calls, config.tz))
+    return agents

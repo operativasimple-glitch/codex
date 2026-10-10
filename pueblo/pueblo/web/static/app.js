@@ -20,29 +20,54 @@
     return node;
   }
 
-  const ORDER = ['kali', 'nube', 'vigia', 'radar', 'cronista'];
+  const ORDER = ['kali', 'nube', 'vigia', 'radar', 'cronista', 'investigadora', 'tormenta', 'claude', 'piloto',
+    'dinero', 'codicia', 'miedo'];
   const DEFAULT_BOTS = [
     { id: 'kali', name: 'Kali', color: '#f2c94c', home: 'mercado' },
     { id: 'nube', name: 'Nube', color: '#7cc6fe', home: 'observatorio' },
-    { id: 'vigia', name: 'Vigía', color: '#ff6b6b', home: 'torre' },
-    { id: 'radar', name: 'Radar', color: '#6ee7a8', home: 'faro' },
-    { id: 'cronista', name: 'Cronista', color: '#c792ea', home: 'biblioteca' },
+    { id: 'vigia', name: 'Vigía', color: '#ff6b6b', home: 'puente' },
+    { id: 'radar', name: 'Radar', color: '#6ee7a8', home: 'laboratorio' },
+    { id: 'cronista', name: 'Cronista', color: '#c792ea', home: 'archivo' },
+    { id: 'investigadora', name: 'Investigadora', color: '#dcd8ee', home: 'consejo' },
+    { id: 'tormenta', name: 'Cazatormentas', color: '#2a78d6', home: 'consejo' },
+    { id: 'piloto', name: 'Piloto', color: '#e87ba4', home: 'consejo' },
+    { id: 'dinero', name: 'Dinero Listo', color: '#1baf7a', home: 'consejo' },
+    { id: 'codicia', name: 'Codicia', color: '#eda100', home: 'consejo' },
+    { id: 'miedo', name: 'Miedo', color: '#4a3aa7', home: 'consejo' },
   ];
   const MOODS = { ok: 'Bien', happy: 'Feliz', sad: 'Triste', sleep: 'Descansando', sick: 'Con problemas', alert: 'En alerta' };
   const KIND_LABEL = { alert: 'Aviso', trade: 'Operación', diary: 'Crónica', chat: 'Charla' };
   const SOON = {
-    lab: {
-      title: 'Laboratorio',
-      who: 'Próximamente: la Investigadora',
-      text: 'Probará estrategias nuevas con datos reales de mercados ya cerrados, sin gastar dinero. ' +
-        'Si una parece ganar de verdad, la manda a la Arena.',
+    pruebas: {
+      title: 'Pruebas',
+      who: 'Próximamente: la cámara de pruebas',
+      text: 'Aquí se probará cada idea con meses de mercados ya cerrados (como la simulación de 100 $), sin gastar ' +
+        'dinero, antes de dejarla jugar en serio.',
     },
-    arena: {
-      title: 'Arena',
-      who: 'Próximamente: los Probadores',
-      text: 'Operarán con dinero de mentira en mercados de verdad durante semanas. Solo los que demuestren que ' +
-        'ganan podrán usar dinero real, siempre con tu permiso y con un presupuesto que tú elijas.',
+    forja: {
+      title: 'Forja',
+      who: 'Próximamente: la forja de estrategias',
+      text: 'Con lo que aprenda el Consejo, aquí se forjarán bots nuevos. Solo los que demuestren durante semanas que ' +
+        'ganan (de mentira) podrán usar dinero real, siempre con tu permiso y con un presupuesto que tú elijas.',
     },
+  };
+  const SOON_ALIAS = { lab: 'pruebas', arena: 'forja' };
+  const ROOM_INFO = {
+    mercado: ['Mercado', 'Aquí trabaja Kali. Cada vez que hace algo de verdad (una orden, una compra, un cobro) viene aquí.'],
+    laboratorio: ['Laboratorio', 'Radar busca oportunidades en todos los mercados de Kalshi y la Investigadora prepara los del Consejo.'],
+    observatorio: ['Observatorio', 'Nube mira la previsión y lo ya medido en las 7 ciudades del clima.'],
+    consejo: ['Consejo', 'Cada personaje da su precio justo para cada mercado y apuesta de mentira. Aquí se lleva el marcador.'],
+    boveda: ['Bóveda', 'Donde se cuentan las ganancias y las pérdidas. Kali viene cuando se decide un mercado o mira el saldo.'],
+    puente: ['Puente', 'Vigía vigila el riesgo. Aquí está tu terminal: lo que los bots te dejan llega aquí.'],
+    archivo: ['Archivo', 'Cronista escribe el diario del pueblo y cuelga las noticias en el tablón.'],
+  };
+  const MEMBER_ABOUT = {
+    tormenta: 'Para cada tramo de temperatura calcula la probabilidad con la máxima prevista por el Servicio Meteorológico de EE. UU. y lo ya medido hoy.',
+    dinero: 'Mira cómo ha cambiado el precio en el último día y cree que seguirá en esa dirección.',
+    piloto: 'Piensa que los favoritos claros ganan un poco más de lo que dice su precio. Es la idea de Kali, apostando de mentira.',
+    miedo: 'Desconfía de lo que parece seguro: acerca cualquier probabilidad al 50 %. Sirve para ver cuánto cuesta tener miedo.',
+    codicia: 'Cree que el que va ganando ganará seguro. Sirve para ver cuánto cuesta la avaricia.',
+    claude: 'Lee cada mercado y da su probabilidad con una frase. Solo está si pones una clave de Anthropic; cada pregunta cuesta un poco.',
   };
 
   // ---------------------------------------------------------------- utilidades
@@ -80,6 +105,10 @@
   function pct(v) {
     const n = num(v);
     return n === null ? '—' : `${Math.round(n * 100)} %`;
+  }
+  function cents(v) {
+    const n = num(v);
+    return n === null ? '—' : `${Math.round(n * 100)}¢`;
   }
   function plural(n, one, many) {
     return `${n} ${n === 1 ? one : many}`;
@@ -245,9 +274,120 @@
     ];
   }
 
+  const DEMO_MEMBERS = [
+    ['tormenta', 'Cazatormentas', '#2a78d6', 'Calcula el clima con la previsión del NWS', 14, 10, 2.84, 4],
+    ['claude', 'Claude', '#eb6834', 'Analiza los mercados con IA (opcional)', 9, 6, 1.12, 3],
+    ['piloto', 'Piloto', '#e87ba4', 'Cree en los favoritos, como Kali', 11, 10, 0.41, 2],
+    ['dinero', 'Dinero Listo', '#1baf7a', 'Sigue al dinero que se mueve', 7, 3, -0.62, 2],
+    ['codicia', 'Codicia', '#eda100', 'Lo quiere todo', 16, 9, -1.35, 5],
+    ['miedo', 'Miedo', '#4a3aa7', 'Todo le parece arriesgado', 18, 5, -2.08, 6],
+  ];
+  const DEMO_TOPICS = [
+    ['KXHIGHNY-26OCT10-B72.5', 'Máxima en Nueva York · 72° a 73°', 0.08, 0.11, true,
+      { tormenta: 0.31, dinero: 0.12, piloto: 0.06, miedo: 0.22, codicia: 0.04, claude: 0.24 }],
+    ['KXHIGHMIA-26OCT10-B88.5', 'Máxima en Miami · 88° a 89°', 0.93, 0.94, true,
+      { tormenta: 0.95, dinero: 0.94, piloto: 0.97, miedo: 0.85, codicia: 0.97, claude: 0.93 }],
+    [PIT, 'Gana Pittsburgh', 0.11, 0.13, true, { dinero: 0.1, piloto: 0.08, miedo: 0.21, codicia: 0.05, claude: 0.14 }],
+    ['KXHIGHAUS-26OCT10-B91.5', 'Máxima en Austin · 91° a 92°', 0.42, 0.46, false,
+      { tormenta: 0.62, dinero: 0.47, piloto: 0.44, miedo: 0.46, codicia: 0.4, claude: 0.55 }],
+    ['KXHIGHDEN-26OCT10-B66.5', 'Máxima en Denver · 66° a 67°', 0.5, 0.54, false,
+      { tormenta: 0.71, dinero: 0.55, piloto: 0.52, miedo: 0.51, codicia: 0.53, claude: 0.64 }],
+    ['KXHIGHCHI-26OCT10-B68.5', 'Máxima en Chicago · 68° a 69°', 0.34, 0.38, false,
+      { tormenta: 0.28, dinero: 0.33, piloto: 0.36, miedo: 0.4, codicia: 0.29, claude: 0.31 }],
+    ['KXHIGHLAX-26OCT10-B79.5', 'Máxima en Los Ángeles · 79° a 80°', 0.25, 0.29, false,
+      { tormenta: 0.19, dinero: 0.25, piloto: 0.27, miedo: 0.34, codicia: 0.18, claude: 0.22 }],
+    ['KXHIGHPHIL-26OCT11-B72.5', 'Máxima en Filadelfia · 72° a 73°', 0.31, 0.35, false,
+      { tormenta: 0.3, dinero: 0.36, piloto: 0.33, miedo: 0.38, codicia: 0.25, claude: 0.31 }],
+  ];
+
+  function median(values) {
+    const v = [...values].sort((a, b) => a - b);
+    const n = v.length;
+    return n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2;
+  }
+  function shortName(name) {
+    return String(name || '').replace('Máxima en ', '');
+  }
+
+  function demoCouncil(bots) {
+    const now = new Date().toISOString();
+    const act = (room, text) => ({ room, text, at: now });
+    const homes = {
+      kali: ['mercado', 'vigila 3 apuestas abiertas'],
+      nube: ['observatorio', 'termómetros · Austin ya marca 90°'],
+      vigia: ['puente', 'vigila 3 apuestas'],
+      radar: ['laboratorio', 'mira 412 mercados · 18 favoritos'],
+      cronista: ['archivo', 'ordena el diario'],
+    };
+    for (const b of bots) {
+      if (homes[b.id]) {
+        b.home = homes[b.id][0];
+        b.activity = act(...homes[b.id]);
+      }
+    }
+    const topics = DEMO_TOPICS.map(([ticker, name, bid, ask, held, fairs]) => ({
+      ticker, name, kind: ticker.startsWith('KXHIGH') ? 'weather' : 'other', bid, ask,
+      mid: Math.round(((bid + ask) / 2) * 1000) / 1000, held, fairs,
+      consensus: Math.round(median(Object.values(fairs)) * 1000) / 1000,
+    }));
+    const board = DEMO_MEMBERS.map(([id, name, color, , trades, wins, pnl, open]) => (
+      { id, name, color, trades, wins, pnl, roi: Math.round((pnl / (trades * 0.6)) * 1000) / 1000, open }
+    ));
+    bots.push({
+      id: 'investigadora', name: 'Investigadora', role: 'Organiza el Consejo y lleva el marcador', home: 'consejo',
+      color: '#dcd8ee', mood: 'ok', updated_at: now,
+      about: 'Trae al Consejo los mercados de clima y las apuestas de Kali, apunta las apuestas de mentira y lleva el marcador.',
+      status: `Consejo · ${topics.length} mercados · 22 apuestas abiertas de mentira`,
+      activity: act('consejo', 'modera 8 mercados · va ganando Cazatormentas'),
+      detail: { topics, board, open: 22, leader: 'tormenta' },
+    });
+    const reasons = {
+      'KXHIGHNY-26OCT10-B72.5': 'Van 71° y la previsión dice 73°: el tramo está muy vivo, más de lo que dice el precio.',
+      'KXHIGHAUS-26OCT10-B91.5': 'La previsión dice 91° y ya van 90° a media tarde.',
+      'KXHIGHDEN-26OCT10-B66.5': 'Prevén 66° y llevan 63° con sol: es lo más probable.',
+    };
+    for (const [id, name, color, role, trades, wins, pnl, open] of DEMO_MEMBERS) {
+      if (id === 'claude') {
+        const opinions = {};
+        for (const t of topics) {
+          if (t.fairs.claude !== undefined) {
+            opinions[t.ticker] = { fair: t.fairs.claude, name: t.name, at: now,
+              reason: reasons[t.ticker] || 'Sin datos nuevos: me quedo cerca del precio del mercado.' };
+          }
+        }
+        bots.push({
+          id, name, color, role, home: 'consejo', about: MEMBER_ABOUT.claude, updated_at: now, mood: 'happy',
+          status: '«Máxima en Austin · 91° a 92°»: 55 % · 7 preguntas hoy',
+          activity: act('consejo', 'cree 55 % · Máxima en Austin · 91° a 92°'),
+          detail: { opinions, calls: 7, limit: 12 },
+        });
+        continue;
+      }
+      const calls = topics
+        .filter((t) => t.fairs[id] !== undefined)
+        .map((t) => ({ ticker: t.ticker, name: t.name, fair: t.fairs[id], mid: t.mid, edge: t.fairs[id] - t.mid }))
+        .sort((x, y) => Math.abs(y.edge) - Math.abs(x.edge));
+      const c = calls[0];
+      bots.push({
+        id, name, color, role, home: 'consejo', about: MEMBER_ABOUT[id], updated_at: now,
+        status: `${wins} de ${trades} acertadas · ${money(pnl, true)} de mentira`,
+        mood: pnl > 0 ? 'happy' : pnl < 0 ? 'sad' : 'ok',
+        activity: act('consejo', c ? `justo ${Math.round(c.fair * 100)}¢ · ${shortName(c.name)} (paga ${Math.round(c.mid * 100)}¢)` : 'escucha'),
+        detail: { member: true, record: { trades, wins, pnl, roi: Math.round((pnl / (trades * 0.6)) * 1000) / 1000 },
+          calls: calls.slice(0, 10), open: [], last: [], opinions: calls.length, open_count: open },
+      });
+    }
+    return bots;
+  }
+
   const DEMO_SCRIPT = [
     (w) => w.say('nube', 'En Chicago la máxima prevista para hoy sube de 66° a 68°.', 'kali'),
     (w) => {
+      w.say('tormenta', 'Apunta: compro el SÍ de «Máxima en Denver · 66° a 67°» a 54¢; para mí vale 71¢. De mentira, claro.',
+        'investigadora');
+    },
+    (w) => {
+      w.act('kali', 'boveda', 'gana +$0,35 · Austin 91°–92°');
       w.earn(0.35);
       w.say('kali', 'Cobrado antes: +$0,35 · Máxima en Austin · 91° a 92°', 'todos', 'trade', { net: '0.35' });
     },
@@ -259,10 +399,21 @@
     },
     (w) => w.say('nube', 'Ojo: Kali tiene el NO a «72° a 73°» de Nueva York; van 71° y la previsión dice 73°. Peligra.', 'vigia', 'alert'),
     (w) => {
+      w.say('tormenta', '«Denver 66°–67°»: yo le doy un 71 % y tú solo un 53 %, Codicia. ¿Qué sabes tú que yo no sé?',
+        'codicia', 'chat');
+      w.say('codicia', '¡El que va ganando gana! Lo quiero todo.', 'tormenta', 'chat');
+    },
+    (w) => {
       w.alerts();
       w.say('vigia', 'Nube avisa: Ojo: Kali tiene el NO a «72° a 73°» de Nueva York; van 71° y la previsión dice 73°. Peligra. Hay $4,60 en juego.', 'tu', 'alert');
     },
-    (w) => w.say('kali', 'He comprado 5 SÍ a 94¢ · Máxima en Denver · 66° a 67°', 'todos', 'trade'),
+    (w) => {
+      w.act('kali', 'mercado', 'compra 5 SÍ a 94¢ · Denver 66°–67°');
+      w.say('kali', 'He comprado 5 SÍ a 94¢ · Máxima en Denver · 66° a 67°', 'todos', 'trade');
+    },
+    (w) => w.say('claude', '«Austin 91°–92°»: le doy un 55 %. La previsión dice 91° y ya van 90° a media tarde.', 'todos'),
+    (w) => w.say('investigadora', 'Kali, el Consejo cree que tu NO de «Máxima en Nueva York · 72° a 73°» vale 83¢ y lo pagaste a 92¢.',
+      'kali', 'alert'),
     (w) => w.say('radar', 'He visto 4 favoritos claros que Kali no mira: tenis ATP (2), NFL (2).', 'kali'),
     (w) => {
       w.chance(PIT, '0.90');
@@ -270,6 +421,10 @@
       w.say('vigia', 'Se recupera «Gana Pittsburgh»: vuelve al 90 %.', 'tu');
     },
     (w) => w.say('nube', 'Tranquila, Kali: el NO a «85° a 86°» de Austin ya está ganado (van 90°).', 'kali'),
+    (w) => {
+      w.say('tormenta', '¡Acerté con «Máxima en Miami · 88° a 89°»! +$0,61 de mentira.', 'todos', 'trade', { net: '0.61', paper: true });
+      w.say('investigadora', 'Se han decidido 3 apuestas del Consejo: 2 aciertos. Va ganando Cazatormentas (+$3,45).', 'todos');
+    },
     (w) => {
       w.earn(0.28);
       w.say('kali', 'Mercado cerrado: +$0,28 · Máxima en Miami · 88° a 89°', 'todos', 'trade', { net: '0.28' });
@@ -306,7 +461,9 @@
       this.every = 2500;
       this.nextId = 1;
       this.messages = [];
-      this.bots = demoBots();
+      this.bots = demoCouncil(demoBots());
+      this.turn = 0;
+      this.rotateAt = Date.now() + 6000;
       this.step = 0;
       const now = Date.now();
       const past = [
@@ -339,6 +496,42 @@
         this.nextAt += rand(7000, 11000);
       }
       if (now >= this.nextAt) this.nextAt = now + 5000;
+      if (now >= this.rotateAt) {
+        this.rotateAt = now + rand(8000, 11000);
+        this.rotate();
+      }
+    }
+    // Para que la demo se mueva: cada uno va a la sala de lo que "está haciendo".
+    rotate() {
+      const k = (this.turn += 1);
+      const kali = this.bot('kali');
+      const kaliActs = [
+        ['laboratorio', 'mira 31 mercados · 28 ya decididos'],
+        ['mercado', 'vigila 3 apuestas abiertas'],
+        ['laboratorio', 'busca favoritos'],
+        ['boveda', `cuenta el saldo: ${money(kali.detail.balance.equity)}`],
+      ];
+      this.act('kali', ...kaliActs[k % kaliActs.length]);
+      const inv = [
+        ['laboratorio', 'trae los mercados al Consejo'],
+        ['consejo', 'modera 8 mercados · va ganando Cazatormentas'],
+        ['boveda', 'mira qué mercados se han decidido'],
+        ['consejo', 'apunta las apuestas de mentira'],
+      ];
+      this.act('investigadora', ...inv[k % inv.length]);
+      if (k % 3 === 0) this.act('radar', 'laboratorio', `mira ${400 + (k % 7) * 3} mercados · ${16 + (k % 4)} favoritos`);
+      if (k % 4 === 1) {
+        this.act('nube', 'observatorio', pick(['previsión NWS · Austin 91°', 'termómetros · Miami ya marca 87°', 'mira el cielo de 7 ciudades']));
+      }
+      if (k % 5 === 2) this.act('cronista', 'boveda', 'cuenta los cierres de hoy');
+      if (k % 5 === 4) this.act('cronista', 'archivo', 'ordena el diario');
+    }
+    act(id, room, text) {
+      const b = this.bot(id);
+      if (b) {
+        b.activity = { room, text, at: new Date().toISOString() };
+        b.updated_at = b.activity.at;
+      }
     }
     async world(after) {
       this.tick();
@@ -1192,6 +1385,18 @@
 
   // Convierte un mensaje en lo que se ve: quién camina hasta dónde y qué dice.
   function perform(m) {
+    if (!town) return;
+    if (view === '3d') town.perform(m, botName);
+    else performPixel(m);
+  }
+
+  function setMail(n) {
+    if (!town) return;
+    if (view === '3d') town.setMail(n);
+    else town.flags.mail = n;
+  }
+
+  function performPixel(m) {
     const a = town.actors.get(m.from);
     if (!a) return;
     const crowded = a.queue.length > 6;
@@ -1279,8 +1484,12 @@
     feedSig: '',
     cardsSig: '',
     fresh: new Set(),
+    room: null,
+    openTopics: new Set(),
+    councilSig: '',
   };
   let town = null;
+  let view = 'pixel'; // 'pixel' (el pueblo) o '3d' (la base)
 
   function unread() {
     return state.messages.filter((m) => m.to === 'tu' && m.id > state.seenTu).length;
@@ -1320,7 +1529,7 @@
       for (const m of show) perform(m);
       if (!first) for (const m of added) state.fresh.add(m.id);
     }
-    if (first) town.flags.mail = unread();
+    if (first) setMail(unread());
     render();
   }
 
@@ -1329,7 +1538,9 @@
     renderFeeds();
     renderCards();
     renderBadge();
+    renderCouncil();
     if (state.selected && $('#sheet').open) fillSheet(state.byId.get(state.selected));
+    else if (state.room && $('#sheet').open) fillRoom(state.room);
   }
 
   function setConn(kind, text) {
@@ -1431,7 +1642,7 @@
       state.seenTu = last;
       store('pueblo.visto', last);
     }
-    town.flags.mail = 0;
+    setMail(0);
     $('#badge-tu').hidden = true;
   }
 
@@ -1441,8 +1652,160 @@
     $('#panel-diario').hidden = name !== 'diario';
     $('#panel-tu').hidden = name !== 'tu';
     $('#panel-vecinos').hidden = name !== 'vecinos';
+    $('#panel-consejo').hidden = name !== 'consejo';
     if (name === 'tu') markRead();
+    if (name === 'consejo') renderCouncil(true);
     renderBadge();
+  }
+
+  // --- el Consejo: marcador y lo que opina cada uno ---
+
+  const SHORT = { tormenta: 'Ca', dinero: 'Di', piloto: 'Pi', miedo: 'Mi', codicia: 'Co', claude: 'Cl' };
+
+  function inkOn(hex) {
+    // Letra oscura sobre colores claros y blanca sobre los oscuros.
+    const v = parseInt(String(hex || '#888888').slice(1), 16);
+    const lin = (c) => {
+      const x = c / 255;
+      return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+    };
+    const L = 0.2126 * lin((v >> 16) & 255) + 0.7152 * lin((v >> 8) & 255) + 0.0722 * lin(v & 255);
+    return L > 0.28 ? '#1c2135' : '#ffffff';
+  }
+
+  function memberDot(id, small) {
+    const b = state.byId.get(id) || { id, name: id, color: '#9aa3b5' };
+    const dot = el('span', `mdot${small ? ' small' : ''}`, SHORT[id] || String(b.name || id).slice(0, 2));
+    dot.style.setProperty('--c', b.color || '#9aa3b5');
+    dot.style.setProperty('--dot-ink', inkOn(b.color));
+    return dot;
+  }
+
+  function kaliSide(ticker) {
+    const pos = (((state.byId.get('kali') || {}).detail || {}).positions || []).find((x) => x.ticker === ticker);
+    return pos ? pos.side : null;
+  }
+
+  // Una tira de 0 a 100¢: la raya es el precio del mercado y cada punto, el precio justo de uno.
+  function strip(t) {
+    const box = el('div', 'strip');
+    box.setAttribute('role', 'img');
+    const fairs = Object.entries(t.fairs || {}).sort((a, b) => a[1] - b[1]);
+    const said = fairs.map(([id, f]) => `${(state.byId.get(id) || {}).name || id} ${cents(f)}`).join(', ');
+    box.setAttribute('aria-label', `Se paga a ${cents(t.mid)}. ${said}.`);
+    const track = el('div', 'track');
+    for (const at of [0, 25, 50, 75, 100]) {
+      const tick = el('span', 'tick');
+      tick.style.left = `${at}%`;
+      track.append(tick);
+    }
+    const market = el('span', 'market');
+    market.style.left = `${clamp(num(t.mid) || 0, 0, 1) * 100}%`;
+    market.title = `Mercado: se paga a ${cents(t.mid)}`;
+    track.append(market);
+    if (num(t.consensus) !== null) {
+      const c = el('span', 'consensus');
+      c.style.left = `${clamp(num(t.consensus), 0, 1) * 100}%`;
+      c.title = `El Consejo (la mediana): ${cents(t.consensus)}`;
+      track.append(c);
+    }
+    // Los puntos que caerían encima de otro bajan a otra fila.
+    const lanes = [];
+    for (const [id, f] of fairs) {
+      const x = clamp(f, 0, 1) * 100;
+      let lane = lanes.findIndex((last) => x - last >= 7);
+      if (lane < 0) {
+        lane = lanes.length;
+        lanes.push(x);
+      } else lanes[lane] = x;
+      const dot = memberDot(id);
+      dot.style.left = `${x}%`;
+      dot.style.top = `${4 + lane * 24}px`;
+      dot.title = `${(state.byId.get(id) || {}).name || id}: ${cents(f)}`;
+      track.append(dot);
+    }
+    track.style.height = `${Math.max(1, lanes.length) * 24 + 10}px`;
+    const scale = el('div', 'scale');
+    for (const label of ['0¢', '50¢', '100¢']) scale.append(el('span', null, label));
+    box.append(track, scale);
+    return box;
+  }
+
+  function topicItem(t) {
+    const li = el('li', 'topic');
+    const det = el('details');
+    det.open = state.openTopics.has(t.ticker);
+    det.addEventListener('toggle', () => {
+      if (det.open) state.openTopics.add(t.ticker);
+      else state.openTopics.delete(t.ticker);
+    });
+    const sum = el('summary');
+    const top = el('div', 'row-top');
+    top.append(el('span', 'row-name', t.name || t.ticker));
+    const side = kaliSide(t.ticker);
+    if (side) top.append(el('span', `side ${side === 'NO' ? 'side-no' : 'side-si'}`, `Kali: ${side}`));
+    const bits = [`se paga a ${cents(t.mid)}`];
+    if (num(t.consensus) !== null) bits.push(`el Consejo dice ${cents(t.consensus)}`);
+    sum.append(top, strip(t), el('div', 'row-sub', bits.join(' · ')));
+    det.append(sum);
+    // Al abrir: lo mismo en texto, de quien más paga a quien menos.
+    const ul = el('ul', 'says');
+    const reasons = ((state.byId.get('claude') || {}).detail || {}).opinions || {};
+    for (const [id, f] of Object.entries(t.fairs || {}).sort((a, b) => b[1] - a[1])) {
+      const li2 = el('li');
+      const diff = Math.round((f - (num(t.mid) || 0)) * 100);
+      li2.append(memberDot(id, true), el('b', null, (state.byId.get(id) || {}).name || id),
+        document.createTextNode(` ${cents(f)} · ${diff === 0 ? 'como el mercado' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)}¢`}`));
+      if (id === 'claude' && reasons[t.ticker] && reasons[t.ticker].reason) li2.append(el('p', 'why', reasons[t.ticker].reason));
+      ul.append(li2);
+    }
+    det.append(ul);
+    li.append(det);
+    return li;
+  }
+
+  function boardItem(r, i) {
+    const li = el('li', 'board-row');
+    const btn = el('button');
+    btn.type = 'button';
+    btn.addEventListener('click', () => openSheet(r.id));
+    const pnl = num(r.pnl) || 0;
+    const name = el('span', 'b-name');
+    name.append(el('b', null, r.name),
+      el('small', null, r.trades ? `${r.wins} de ${r.trades} acertadas · ${r.open || 0} abiertas` : `${r.open || 0} abiertas · ninguna decidida aún`));
+    btn.append(el('span', 'b-rank', String(i + 1)), memberDot(r.id), name,
+      el('span', `b-pnl ${r.trades ? (pnl > 0 ? 'up' : pnl < 0 ? 'down' : '') : ''}`, r.trades ? money(pnl, true) : '—'));
+    li.append(btn);
+    return li;
+  }
+
+  function renderCouncil(force) {
+    if (state.tab !== 'consejo' && !force) return;
+    const inv = state.byId.get('investigadora');
+    const d = (inv && inv.detail) || {};
+    const claude = ((state.byId.get('claude') || {}).detail || {}).opinions;
+    const held = (((state.byId.get('kali') || {}).detail || {}).positions || []).map((x) => [x.ticker, x.side]);
+    const sig = JSON.stringify([d.topics, d.board, claude, held]);
+    if (!force && sig === state.councilSig) return;
+    state.councilSig = sig;
+    const topics = d.topics || [];
+    const board = d.board || [];
+    $('#council-empty').hidden = topics.length > 0 || board.length > 0;
+    $('#board').replaceChildren(...board.map(boardItem));
+    $('#board-title').hidden = !board.length;
+    const ids = [...new Set(topics.flatMap((t) => Object.keys(t.fairs || {})))];
+    $('#legend').replaceChildren(...ids.map((id) => {
+      const li = el('li');
+      li.append(memberDot(id, true), document.createTextNode((state.byId.get(id) || {}).name || id));
+      return li;
+    }));
+    const legend = el('li', 'legend-market');
+    legend.append(el('span', 'mk'), document.createTextNode('precio del mercado'));
+    const cons = el('li', 'legend-market');
+    cons.append(el('span', 'cs'), document.createTextNode('el Consejo'));
+    if (topics.length) $('#legend').append(legend, cons);
+    $('#topics-title').hidden = !topics.length;
+    $('#topics').replaceChildren(...topics.map(topicItem));
   }
 
   // --- la ficha de cada vecino ---
@@ -1453,6 +1816,14 @@
     box.append(el('dt', null, label), dd);
     if (small) dd.append(el('small', null, small));
     return box;
+  }
+
+  // Lo que el Consejo cree que vale cada apuesta (de 0 a 1, en el lado que tiene Kali).
+  function councilValue(p) {
+    const topics = ((state.byId.get('investigadora') || {}).detail || {}).topics || [];
+    const t = topics.find((x) => x.ticker === p.ticker);
+    if (!t || t.consensus === null || t.consensus === undefined) return null;
+    return p.side === 'NO' ? 1 - t.consensus : t.consensus;
   }
 
   function positionsList(positions, worstFirst) {
@@ -1473,6 +1844,13 @@
       if (num(p.payout) !== null) bits.push(`cobra ${money(p.payout)}`);
       if (p.hours_to_close !== undefined) bits.push(closesIn(p.hours_to_close));
       li.append(top, bar, el('div', 'row-sub', bits.filter(Boolean).join(' · ')));
+      const fair = councilValue(p);
+      if (fair !== null) {
+        const paid = num(p.cost) !== null && num(p.contracts) ? num(p.cost) / num(p.contracts) : null;
+        const worse = paid !== null && fair < paid - 0.05;
+        li.append(el('div', `row-sub council-says${worse ? ' worse' : ''}`,
+          `El Consejo cree que vale ${cents(fair)}${paid !== null ? ` (la pagó a ${cents(paid)})` : ''}`));
+      }
       ul.append(li);
     }
     return ul;
@@ -1586,6 +1964,50 @@
       box.append(el('p', 'note', 'Radar solo mira: Kali no compra lo que él encuentra. Sirve para saber si merece la pena que el bot siga más series.'));
       return box;
     },
+    investigadora(b) {
+      const d = b.detail || {};
+      const box = el('div', 'detail');
+      const stats = el('dl', 'stats');
+      const leader = (d.board || []).find((r) => r.id === d.leader);
+      stats.append(stat('Mercados en el Consejo', String((d.topics || []).length)),
+        stat('Apuestas abiertas', String(d.open || 0), 'de mentira'));
+      box.append(stats);
+      if (leader) box.append(el('p', 'row-sub', `Va ganando ${leader.name}: ${money(leader.pnl, true)} de mentira (${leader.wins} de ${leader.trades} acertadas).`));
+      const btn = el('button', 'btn ghost', 'Ver el marcador del Consejo');
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        closeSheet();
+        goTab('consejo');
+      });
+      box.append(btn);
+      return box;
+    },
+    claude(b) {
+      const d = b.detail || {};
+      const box = el('div', 'detail');
+      const row = boardRow(b.id);
+      const stats = el('dl', 'stats');
+      stats.append(stat('Preguntas hoy', `${d.calls || 0} de ${d.limit || '—'}`),
+        stat('Marcador', row && row.trades ? money(row.pnl, true) : '—',
+          row && row.trades ? `${row.wins} de ${row.trades} acertadas` : 'sin apuestas decididas', row ? num(row.pnl) : 0));
+      box.append(stats);
+      const ops = Object.entries(d.opinions || {}).map(([ticker, o]) => ({ ticker, ...o }))
+        .sort((x, y) => String(y.at).localeCompare(String(x.at))).slice(0, 8);
+      if (ops.length) {
+        box.append(el('h3', null, 'Lo último que ha pensado'));
+        const ul = el('ul', 'rows');
+        for (const o of ops) {
+          const li = el('li', 'row');
+          const top = el('div', 'row-top');
+          top.append(el('span', 'row-name', o.name || o.ticker), el('span', 'row-sub', pct(o.fair)));
+          li.append(top, el('div', 'row-sub', o.reason || ''));
+          ul.append(li);
+        }
+        box.append(ul);
+      }
+      box.append(el('p', 'note', 'Cada pregunta a Claude cuesta un poco de tu cuenta de Anthropic (unos céntimos). Hay un límite al día.'));
+      return box;
+    },
     cronista() {
       const box = el('div', 'detail');
       const diary = state.messages.filter((m) => m.from === 'cronista').slice(-5).reverse();
@@ -1598,6 +2020,65 @@
       return box;
     },
   };
+
+  function boardRow(id) {
+    return (((state.byId.get('investigadora') || {}).detail || {}).board || []).find((r) => r.id === id) || null;
+  }
+
+  function memberDetail(b) {
+    const d = b.detail || {};
+    const rec = d.record || {};
+    const box = el('div', 'detail');
+    const stats = el('dl', 'stats');
+    stats.append(
+      stat('Marcador', rec.trades ? money(rec.pnl, true) : '—', rec.trades ? 'de mentira' : 'sin apuestas decididas', num(rec.pnl)),
+      stat('Acertadas', rec.trades ? `${rec.wins} de ${rec.trades}` : '—', rec.trades ? `rinde ${pct(rec.roi)}` : ''),
+    );
+    box.append(stats);
+    const calls = Array.isArray(d.calls) ? d.calls : [];
+    if (calls.length) {
+      box.append(el('h3', null, 'Donde más se separa del mercado'));
+      const ul = el('ul', 'rows');
+      for (const c of calls.slice(0, 5)) {
+        const li = el('li', 'row');
+        const top = el('div', 'row-top');
+        top.append(el('span', 'row-name', c.name || c.ticker), el('span', 'row-sub', `${cents(c.fair)} justo`));
+        const diff = Math.round((num(c.edge) || 0) * 100);
+        li.append(top, el('div', 'row-sub', `se paga a ${cents(c.mid)} · ${diff > 0 ? '+' : diff < 0 ? '−' : ''}${Math.abs(diff)}¢ ${diff >= 0 ? 'por encima' : 'por debajo'}`));
+        ul.append(li);
+      }
+      box.append(ul);
+    }
+    const open = d.open || [];
+    if (open.length) {
+      box.append(el('h3', null, `Apuestas abiertas de mentira (${open.length})`));
+      const ul = el('ul', 'rows');
+      for (const t of open.slice(-6).reverse()) {
+        const li = el('li', 'row');
+        const top = el('div', 'row-top');
+        top.append(el('span', 'row-name', t.name || t.ticker), el('span', `side ${t.side === 'NO' ? 'side-no' : 'side-si'}`, t.side));
+        li.append(top, el('div', 'row-sub', `1 contrato a ${cents(t.price)} · para él vale ${cents(t.side === 'NO' ? 1 - t.fair : t.fair)}`));
+        ul.append(li);
+      }
+      box.append(ul);
+    }
+    const last = d.last || [];
+    if (last.length) {
+      box.append(el('h3', null, 'Ya decididas'));
+      const ul = el('ul', 'rows');
+      for (const t of last.slice(0, 5)) {
+        const li = el('li', 'row');
+        const top = el('div', 'row-top');
+        const n = num(t.pnl);
+        top.append(el('span', 'row-name', t.name || t.ticker), el('span', `row-sub ${n > 0 ? 'up' : n < 0 ? 'down' : ''}`, `${n > 0 ? 'acertó' : 'falló'} · ${money(n, true)}`));
+        li.append(top);
+        ul.append(li);
+      }
+      box.append(ul);
+    }
+    box.append(el('p', 'note', 'Apuesta 1 contrato de mentira cuando su precio justo se separa del mercado más que la comisión. No usa dinero.'));
+    return box;
+  }
 
   function fillSheet(bot) {
     if (!bot) return;
@@ -1621,7 +2102,8 @@
         parts.push(reply);
       }
     }
-    const detail = DETAIL[bot.id] ? DETAIL[bot.id](bot) : null;
+    const make = DETAIL[bot.id] || ((bot.detail || {}).member ? memberDetail : null);
+    const detail = make ? make(bot) : null;
     if (detail) parts.push(detail);
     if (bot.about) parts.push(el('p', 'about', bot.about));
     if (bot.id !== 'cronista') {
@@ -1651,12 +2133,14 @@
       else sheet.removeAttribute('open');
     }
     state.selected = null;
+    state.room = null;
   }
 
   function openSheet(id) {
     const bot = state.byId.get(id);
     if (!bot) return;
     state.selected = id;
+    state.room = null;
     state.reply = null;
     fillSheet(bot);
     $('#sheet').querySelector('.sheet-inner').scrollTop = 0;
@@ -1667,22 +2151,112 @@
     showSheet();
   }
 
+  // El dibujo de una sala en la cabecera de su ficha.
+  function roomPicture(room) {
+    if (view === 'pixel' && town && town.map) {
+      const owner = { pruebas: 'lab', forja: 'arena' }[room] || room;
+      const place = town.map.things.find((th) => th.owner === owner || th.id === room);
+      const img = el('img', 'ava');
+      img.alt = '';
+      if (place) img.src = place.canvas.toDataURL('image/png');
+      return img;
+    }
+    const box = el('span', `ava room-ava room-${room}`);
+    box.setAttribute('aria-hidden', 'true');
+    return box;
+  }
+
   function openSoon(kind) {
-    const info = SOON[kind];
+    const room = SOON_ALIAS[kind] || kind;
+    const info = SOON[room];
     if (!info) return;
     state.selected = null;
+    state.room = null;
     const h2 = el('h2', null, info.title);
     h2.id = 'sheet-title';
     const head = el('div', 'sheet-head');
     const titles = el('div');
     titles.append(h2, el('p', 'role', info.who));
-    const place = town.map.things.find((th) => th.owner === kind);
-    const img = el('img', 'ava');
-    img.alt = '';
-    if (place) img.src = place.canvas.toDataURL('image/png');
-    head.append(img, titles, el('span', 'mood', 'Pronto'));
+    head.append(roomPicture(room), titles, el('span', 'mood', 'Pronto'));
     $('#sheet-body').replaceChildren(head, el('p', 'about', info.text),
       el('p', 'note', 'Ningún bot nuevo usará dinero real sin pasar antes por aquí y sin que tú lo apruebes.'));
+    $('#talk-btn').hidden = true;
+    showSheet();
+  }
+
+  function goTab(name) {
+    showTab(name);
+    $('.tabs').scrollIntoView({ behavior: town && town.reduced ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  // Quién está ahora en una sala y qué hace.
+  function roomPeople(room) {
+    const out = [];
+    for (const b of state.bots) {
+      const actor = town && town.actors && town.actors.get(b.id);
+      const here = actor && actor.room ? actor.room : (b.activity && b.activity.room) || b.home;
+      if (here === room) out.push(b);
+    }
+    return out;
+  }
+
+  function fillRoom(room) {
+    const info = ROOM_INFO[room];
+    if (!info) return;
+    const h2 = el('h2', null, info[0]);
+    h2.id = 'sheet-title';
+    const head = el('div', 'sheet-head');
+    const titles = el('div');
+    titles.append(h2, el('p', 'role', 'Sala de la base'));
+    const people = roomPeople(room);
+    head.append(roomPicture(room), titles, el('span', 'mood', plural(people.length, 'bot', 'bots')));
+    const parts = [head, el('p', 'about', info[1])];
+    if (people.length) {
+      parts.push(el('h3', null, 'Aquí ahora'));
+      const ul = el('ul', 'rows');
+      for (const b of people) {
+        const li = el('li');
+        const btn = el('button', 'row who-row');
+        btn.type = 'button';
+        const img = el('img', 'ava');
+        img.alt = '';
+        img.src = P.avatar(b, b.mood);
+        const txt = el('div');
+        const act = b.activity && b.activity.room === room ? b.activity.text : b.status;
+        txt.append(el('span', 'row-name', b.name), el('div', 'row-sub', act || ''));
+        btn.append(img, txt);
+        btn.addEventListener('click', () => openSheet(b.id));
+        li.append(btn);
+        ul.append(li);
+      }
+      parts.push(ul);
+    } else {
+      parts.push(el('p', 'note', 'Ahora no hay nadie. Vendrán cuando tengan algo que hacer aquí.'));
+    }
+    const scroll = $('#sheet').querySelector('.sheet-inner').scrollTop;
+    $('#sheet-body').replaceChildren(...parts);
+    $('#sheet').querySelector('.sheet-inner').scrollTop = scroll;
+  }
+
+  function openRoom(room) {
+    if (SOON[room]) {
+      openSoon(room);
+      return;
+    }
+    if (room === 'consejo' && state.source) {
+      goTab('consejo');
+      return;
+    }
+    if (room === 'puente' && state.source) {
+      goTab('tu');
+      return;
+    }
+    if (!ROOM_INFO[room]) return;
+    state.selected = null;
+    state.room = room;
+    state.reply = null;
+    fillRoom(room);
+    $('#sheet').querySelector('.sheet-inner').scrollTop = 0;
     $('#talk-btn').hidden = true;
     showSheet();
   }
@@ -1723,10 +2297,13 @@
       openSheet(hit.bot);
       return;
     }
+    if (hit.room) {
+      openRoom(hit.room);
+      return;
+    }
     if (hit.owner === 'tu') {
       if (!state.source) return;
-      showTab('tu');
-      $('.tabs').scrollIntoView({ behavior: town.reduced ? 'auto' : 'smooth', block: 'start' });
+      goTab('tu');
       return;
     }
     if (hit.owner === 'lab' || hit.owner === 'arena') {
@@ -1813,10 +2390,47 @@
     window.location.reload();
   }
 
-  function boot() {
-    town = new Town($('#map'), $('#overlay'));
+  function wantsPixel() {
+    return window.location.hash.includes('pixel') || store('pueblo.vista') === 'pixel';
+  }
+
+  async function makeTown() {
+    if (!wantsPixel()) {
+      try {
+        const mod = await import('./base3d.js');
+        if (mod.supportsWebGL()) {
+          const map = $('.map');
+          map.classList.add('space');
+          map.setAttribute('aria-label', 'La base de los bots');
+          $('#map').hidden = true;
+          const base = new mod.Base(map, $('#overlay'), { onMail: () => setMail(unread()) });
+          view = '3d';
+          return base;
+        }
+      } catch (err) {
+        // Sin WebGL o sin el módulo: se queda el pueblo pixel, que funciona en cualquier móvil.
+        console.warn('Base 3D no disponible', err);
+      }
+    }
+    view = 'pixel';
+    return new Town($('#map'), $('#overlay'));
+  }
+
+  function setupViewLink() {
+    const link = $('#view-link');
+    link.textContent = view === '3d' ? 'Ver el pueblo pixel' : 'Ver la base 3D';
+    link.addEventListener('click', () => {
+      store('pueblo.vista', view === '3d' ? 'pixel' : '3d');
+      if (window.location.hash.includes('pixel')) window.location.hash = window.location.hash.replace('pixel', '');
+      window.location.reload();
+    });
+  }
+
+  async function boot() {
+    town = await makeTown();
     town.onPick = onPick;
     town.sync(DEFAULT_BOTS.map((b) => ({ ...b, mood: 'ok', status: '', detail: {} })));
+    setupViewLink();
     $('#login-form').addEventListener('submit', onLogin);
     $('#demo-btn').addEventListener('click', startDemo);
     $('#logout-btn').addEventListener('click', onLogout);
@@ -1827,6 +2441,7 @@
     });
     $('#sheet').addEventListener('close', () => {
       state.selected = null;
+      state.room = null;
     });
     for (const tab of $$('.tab')) tab.addEventListener('click', () => showTab(tab.dataset.tab));
     for (const chip of $$('.chip')) {
@@ -1847,7 +2462,7 @@
     renderHeader();
 
     const meta = document.querySelector('meta[name="pueblo-mode"]');
-    if ((meta && meta.content === 'demo') || window.location.hash === '#demo') {
+    if ((meta && meta.content === 'demo') || window.location.hash.includes('demo')) {
       startDemo();
       return;
     }

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 KALSHI_API = "https://api.elections.kalshi.com/trade-api/v2"
+AI_MODEL = "claude-opus-5-5"
 
 
 class ConfigError(Exception):
@@ -24,6 +25,9 @@ class Config:
     tz: str  # PUEBLO_TZ: tu zona horaria, para el diario de la mañana y de la noche
     contact: str  # PUEBLO_CONTACT: contacto para el servicio del tiempo (lo pide en cada petición)
     kalshi_api: str
+    anthropic_api_key: str = ""  # ANTHROPIC_API_KEY: opcional; con ella Claude se sienta en el Consejo
+    ai_model: str = AI_MODEL  # PUEBLO_AI_MODEL: el modelo de Claude que usa
+    ai_max_calls: int = 12  # PUEBLO_AI_MAX_CALLS: preguntas a Claude al día, como mucho
 
     @property
     def panel_configured(self) -> bool:
@@ -40,6 +44,10 @@ def load_config(env=None) -> Config:
         port = int(env.get("PORT", "8090"))
     except ValueError as exc:
         raise ConfigError("PORT debe ser un número") from exc
+    try:
+        ai_max_calls = max(0, int(env.get("PUEBLO_AI_MAX_CALLS", "12")))
+    except ValueError as exc:
+        raise ConfigError("PUEBLO_AI_MAX_CALLS debe ser un número (preguntas a Claude al día)") from exc
     return Config(
         password=password,
         panel_url=env.get("PANEL_URL", "").rstrip("/"),
@@ -50,4 +58,7 @@ def load_config(env=None) -> Config:
         tz=env.get("PUEBLO_TZ", "America/Chicago"),
         contact=env.get("PUEBLO_CONTACT", "pueblo-de-bots"),
         kalshi_api=env.get("KALSHI_API", KALSHI_API).rstrip("/"),
+        anthropic_api_key=env.get("ANTHROPIC_API_KEY", "").strip(),
+        ai_model=env.get("PUEBLO_AI_MODEL", "").strip() or AI_MODEL,
+        ai_max_calls=ai_max_calls,
     )

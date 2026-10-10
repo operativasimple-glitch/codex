@@ -9,6 +9,7 @@ Seguridad, igual que en el panel del bot:
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import hmac
 import json
@@ -35,6 +36,8 @@ STATIC_FILES = {
     "/index.html": "index.html",
     "/app.js": "app.js",
     "/sprites.js": "sprites.js",
+    "/base3d.js": "base3d.js",
+    "/vendor/three.module.min.js": "vendor/three.module.min.js",
     "/app.css": "app.css",
     "/manifest.webmanifest": "manifest.webmanifest",
     "/icon-192.png": "icon-192.png",
@@ -47,6 +50,18 @@ CSP = (
     "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; "
     "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 )
+
+
+_GZIP: dict = {}
+
+
+def _gzipped(file: Path, body: bytes) -> bytes:
+    """Los ficheros de la web, comprimidos una sola vez (Three.js pasa de 670 KB a unos 170 KB)."""
+    key = (str(file), len(body), file.stat().st_mtime_ns)
+    hit = _GZIP.get(key)
+    if hit is None:
+        hit = _GZIP[key] = gzip.compress(body, compresslevel=9)
+    return hit
 
 
 class Sessions:
@@ -110,7 +125,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def _json(self, status: int, data, extra: dict = None) -> None:
         body = json.dumps(data, ensure_ascii=False, default=str).encode()
-        self._send(status, body, "application/json; charset=utf-8", {"Cache-Control": "no-store", **(extra or {})})
+        headers = {"Cache-Control": "no-store", "Vary": "Accept-Encoding", **(extra or {})}
+        if len(body) > 1024 and "gzip" in self.headers.get("Accept-Encoding", ""):
+            body = gzip.compress(body, compresslevel=6)
+            headers["Content-Encoding"] = "gzip"
+        self._send(status, body, "application/json; charset=utf-8", headers)
 
     def _error(self, status: int, message: str) -> None:
         self._json(status, {"error": message})
@@ -158,7 +177,11 @@ class Handler(BaseHTTPRequestHandler):
                 after = int(query.get("after", "0") or 0)
             except ValueError:
                 after = 0
-            self._json(200, self.app["world"].snapshot(after))
+            try:
+                version = int(query["v"]) if query.get("v") else None
+            except ValueError:
+                version = None
+            self._json(200, self.app["world"].snapshot(after, version))
             return
         self._error(404, "No existe")
 
@@ -220,12 +243,26 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, b"No encontrado", "text/plain; charset=utf-8")
             return
         ctype = mimetypes.guess_type(str(file))[0] or "application/octet-stream"
+        if name.endswith(".js"):
+            ctype = "text/javascript"  # los módulos (la base 3D) necesitan un tipo de JavaScript
         if name.endswith(".webmanifest"):
             ctype = "application/manifest+json"
-        if ctype.startswith("text/") or ctype in ("application/javascript", "application/manifest+json"):
+        text = ctype.startswith("text/") or ctype in ("application/javascript", "application/manifest+json")
+        if text:
             ctype += "; charset=utf-8"
-        cache = "public, max-age=31536000, immutable" if name.startswith("fonts/") else "no-cache"
-        self._send(200, body, ctype, {"Cache-Control": cache})
+        if name.startswith("fonts/"):
+            cache = "public, max-age=31536000, immutable"
+        elif name.startswith("vendor/"):
+            cache = "public, max-age=604800"  # Three.js no cambia de un día para otro
+        else:
+            cache = "no-cache"
+        headers = {"Cache-Control": cache}
+        if text and len(body) > 1024:
+            headers["Vary"] = "Accept-Encoding"
+            if "gzip" in self.headers.get("Accept-Encoding", ""):
+                body = _gzipped(file, body)
+                headers["Content-Encoding"] = "gzip"
+        self._send(200, body, ctype, headers)
 
 
 def make_server(world, town, password: str, host: str = "127.0.0.1", port: int = 8090) -> ThreadingHTTPServer:

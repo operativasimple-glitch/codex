@@ -16,6 +16,27 @@ FILL = re.compile(
     r"^LLENADO( \(salida\)| \(fuera del bot\))? (COMPRA|VENDE) YES ([\d.]+) @ ([\d.]+) (\S+) \((maker|taker)"
 )
 HALT = re.compile(r"^FRENO DE EMERGENCIA: (.+)$")
+ORDER = re.compile(r"^ORDEN (COMPRA|VENDE) YES ([\d.]+) @ ([\d.]+) .*?\] (\S+)(?: \|.*\| (.*))?$")
+CANCEL = re.compile(r"^CANCELADA (\S+)")
+RISK = re.compile(r"^\[(\S+)\] riesgo: (.+)$")
+FOLLOWING = re.compile(r"^Mercados seguidos \((\d+)\)")
+BALANCE = re.compile(r"^Saldo disponible \$([\d.]+)")
+SCAN_WORDS = {
+    "active": "con apuesta",
+    "decided": "ya decididos",
+    "empty_book": "sin ofertas",
+    "wide_spread": "con spread ancho",
+    "position_cap": "en el límite",
+    "no_favorite": "sin favorito",
+    "other_side": "del otro lado",
+    "event_busy": "con el evento ocupado",
+    "risk": "frenados por riesgo",
+    "cooldown": "en espera",
+    "no_signal": "sin señal",
+    "book_error": "sin poder leer el libro",
+    "error": "con error",
+    "exchange_paused": "con el exchange parado",
+}
 
 
 def dec(value, default: Optional[Decimal] = None) -> Optional[Decimal]:
@@ -39,6 +60,55 @@ def fill_words(message: str) -> Optional[tuple]:
     return ("cobro" if leaving else "compra", count, "SÍ" if yes_side else "NO", side_price, m.group(5))
 
 
+def log_activity(message: str, names: dict) -> Optional[tuple]:
+    """(sala, qué hace) de una línea del registro del bot, o None si no dice nada nuevo."""
+    fill = fill_words(message)
+    if fill:
+        what, count, side, side_price, ticker = fill
+        verb = "cobra" if what == "cobro" else "compra"
+        return "mercado", f"{verb} {quantity(count)} {side} a {cents(side_price)} · {names.get(ticker, ticker)}"
+    m = ORDER.match(message)
+    if m:
+        buys_yes, ticker = m.group(1) == "COMPRA", m.group(4)
+        count, yes_price = Decimal(m.group(2)), Decimal(m.group(3))
+        reason = (m.group(5) or "").lower()
+        side, side_price = ("SÍ", yes_price) if buys_yes else ("NO", 1 - yes_price)
+        if "cobrar" in reason or "cortar" in reason:
+            sold = "NO" if buys_yes else "SÍ"
+            return "mercado", f"vende su {sold} · {names.get(ticker, ticker)}"
+        return "mercado", f"orden: {quantity(count)} {side} a {cents(side_price)} · {names.get(ticker, ticker)}"
+    m = CANCEL.match(message)
+    if m:
+        return "mercado", f"retira una orden · {names.get(m.group(1), m.group(1))}"
+    m = HALT.match(message)
+    if m:
+        return "puente", "¡freno de emergencia!"
+    m = RISK.match(message)
+    if m:
+        return "puente", f"riesgo: {m.group(2)}"
+    if message.startswith("Error de la API de Kalshi"):
+        return "puente", "Kalshi da un error"
+    m = FOLLOWING.match(message)
+    if m:
+        return "laboratorio", f"sigue {plural(int(m.group(1)), 'mercado', 'mercados')}"
+    m = BALANCE.match(message)
+    if m:
+        return "boveda", f"saldo {money(Decimal(m.group(1)))}"
+    return None
+
+
+def scan_words(scan: Optional[dict]) -> Optional[str]:
+    """«mira 35 mercados · 33 ya decididos» a partir del resumen de la última vuelta del bot."""
+    if not scan or not scan.get("total"):
+        return None
+    reasons = sorted((scan.get("reasons") or {}).items(), key=lambda kv: -kv[1])
+    text = f"mira {plural(int(scan['total']), 'mercado', 'mercados')}"
+    if reasons:
+        key, n = reasons[0]
+        text += f" · {n} {SCAN_WORDS.get(key, key)}"
+    return text
+
+
 class Kali(Agent):
     id = "kali"
     name = "Kali"
@@ -56,6 +126,8 @@ class Kali(Agent):
         self.panel = panel
         self.tz_minutes = tz_minutes
         self.names: dict = {}
+        self.action: Optional[tuple] = None  # lo último que ha hecho de verdad en esta vuelta
+        self.turn = 0
 
     # --- la vuelta ---------------------------------------------------------------------
 
@@ -74,6 +146,8 @@ class Kali(Agent):
         bot = status.get("bot") or {}
         state = bot.get("state", "stopped")
         self._state_change(state, bot.get("halted_reason"))
+        self.action = None
+        self.turn += 1
         self._read_logs()
         memory = self.memory
         if now - memory.get("positions_at", 0) >= 55 or "positions" not in memory:
@@ -98,6 +172,7 @@ class Kali(Agent):
             text, mood = "En pausa (descansando)", "sleep"
         if bot.get("consecutive_errors"):
             text, mood = "Kalshi no me contesta bien, reintento", "sick"
+        self._move(state, bot, positions, balance)
         self.status(
             text,
             mood=mood,
@@ -114,6 +189,21 @@ class Kali(Agent):
             yesterday=memory.get("yesterday") or {},
             totals=memory.get("totals") or {},
         )
+
+    def _move(self, state: str, bot: dict, positions: list, balance: dict) -> None:
+        """A qué sala va: a la de lo último que ha hecho; si no hay nada nuevo, hace su ronda."""
+        if state == "halted":
+            self.doing("puente", "frenada por el freno de emergencia")
+        elif state != "running":
+            self.doing("puente", "en pausa")
+        elif self.action:
+            self.doing(*self.action)
+        elif self.turn % 6 == 0 and balance.get("equity") is not None:
+            self.doing("boveda", f"cuenta el saldo: {money(dec(balance.get('equity'), Decimal(0)))}")
+        elif self.turn % 2 == 0 and positions:
+            self.doing("mercado", f"vigila {plural(len(positions), 'apuesta abierta', 'apuestas abiertas')}")
+        else:
+            self.doing("laboratorio", scan_words(bot.get("scan")) or "busca favoritos")
 
     def talk(self) -> str:
         bot = self.world.bot(self.id)
@@ -174,6 +264,10 @@ class Kali(Agent):
         fills = [(line, fill_words(line["message"])) for line in fresh]
         tickers = sorted({f[4] for _, f in fills if f})
         self._learn_names(tickers)
+        for line, _fill in fills:
+            act = log_activity(line["message"], self.names)
+            if act:
+                self.action = act
         for line, fill in fills:
             if fill:
                 what, count, side, price, ticker = fill
@@ -209,6 +303,7 @@ class Kali(Agent):
             name = market_name(row["ticker"], row.get("title", ""), row.get("subtitle", ""))
             how = "Cobrado antes" if row.get("sold_early") else "Mercado cerrado"
             self.say(f"{how}: {money(net, sign=True)} · {name}", kind="trade", ticker=row["ticker"], net=str(net))
+            self.action = ("boveda", f"{'gana' if net >= 0 else 'pierde'} {money(net, sign=True)} · {name}")
 
     def _position(self, p: dict) -> dict:
         name = market_name(p["ticker"], p.get("title", ""), p.get("subtitle", ""))

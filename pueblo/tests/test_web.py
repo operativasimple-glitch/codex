@@ -1,3 +1,4 @@
+import gzip
 import json
 import threading
 import urllib.error
@@ -85,3 +86,17 @@ def test_login_locks_after_five_wrong_passwords(town, monkeypatch):
     for _ in range(5):
         assert call(base, "POST", "/api/login", {"password": "mal"})[0] == 401
     assert call(base, "POST", "/api/login", {"password": PASSWORD})[0] == 429
+
+
+def test_the_3d_base_is_served_compressed(town):
+    base, _ = town
+    for path in ("/base3d.js", "/vendor/three.module.min.js"):
+        req = urllib.request.Request(base + path, headers={"Accept-Encoding": "gzip"})
+        with urllib.request.urlopen(req) as resp:
+            assert resp.status == 200
+            assert resp.headers["Content-Type"].startswith("text/javascript")
+            assert resp.headers["Content-Encoding"] == "gzip"
+            body = gzip.decompress(resp.read())
+        assert b"export" in body
+    with urllib.request.urlopen(base + "/base3d.js") as resp:  # sin gzip también vale
+        assert resp.headers.get("Content-Encoding") is None and b"class Base" in resp.read()

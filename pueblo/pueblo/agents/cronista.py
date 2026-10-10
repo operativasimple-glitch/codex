@@ -24,7 +24,7 @@ class Cronista(Agent):
         "Por la mañana te cuenta cómo fue ayer y qué se espera hoy; por la noche, el resumen del día. "
         "Si pasa algo gordo (un cierre de $2 o más), lo publica como noticia."
     )
-    home = "biblioteca"
+    home = "archivo"
     color = "#c792ea"
     interval = 300.0
 
@@ -48,6 +48,7 @@ class Cronista(Agent):
             memory["evening"] = day
             self.say(self.evening(), to="tu", kind="diary")
         self.status(f"Diario al día · {local:%H:%M}", mood="ok", day=day)
+        self.doing("archivo", f"ordena el diario · {local:%H:%M}")
 
     def morning(self) -> str:
         kali = self.peer("kali").get("detail") or {}
@@ -95,6 +96,13 @@ class Cronista(Agent):
         if totals.get("markets"):
             net = money(dec(totals.get("net"), Decimal(0)), sign=True)
             parts.append(f"En total lleva {net} en {plural(int(totals['markets']), 'mercado', 'mercados')}.")
+        council = self.peer("investigadora").get("detail") or {}
+        leader = next((r for r in council.get("board") or [] if r.get("trades")), None)
+        if leader:
+            parts.append(
+                f"En el Consejo va ganando {leader['name']}: {money(dec(leader.get('pnl'), Decimal(0)), sign=True)}"
+                f" de mentira ({leader.get('wins', 0)} de {leader['trades']} acertadas)."
+            )
         if vigia.get("alerts_today"):
             parts.append(f"Vigía dio {plural(int(vigia['alerts_today']), 'aviso', 'avisos')} en las últimas 24 horas.")
         parts.append("Buenas noches.")
