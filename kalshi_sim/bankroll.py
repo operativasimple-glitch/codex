@@ -124,12 +124,26 @@ def maker_fee(count: Decimal, price: Decimal) -> Decimal:
     return (MAKER_FEE * count * price * (ONE - price)).quantize(CENT, rounding=ROUND_CEILING)
 
 
-def simulate(markets: list, *, cash: Decimal, order_size: int, max_position: int, max_exposure: Decimal) -> dict:
+def simulate(
+    markets: list,
+    *,
+    cash: Decimal,
+    order_size: int,
+    max_position: int,
+    max_exposure: Decimal,
+    games_min_price: Decimal = BAND[0],
+    games_size: int = 0,
+    games_max_open: int = 0,
+) -> dict:
+    """games_*: reglas propias de los partidos (precio mínimo, contratos por partido y
+    partidos abiertos a la vez; 0 = como el resto)."""
     start_cash = cash
     opportunities = []
     for i, m in enumerate(markets):
+        floor = games_min_price if group_of(m["series"]) == "games" else BAND[0]
         for ts, side, paid, count in m["fills"]:
-            opportunities.append((ts, i, side, Decimal(paid), Decimal(count)))
+            if Decimal(paid) >= floor:
+                opportunities.append((ts, i, side, Decimal(paid), Decimal(count)))
     opportunities.sort(key=lambda o: (o[0], o[1]))
 
     held: dict = {}  # índice de mercado -> {side, count, cost, fees}
@@ -138,6 +152,7 @@ def simulate(markets: list, *, cash: Decimal, order_size: int, max_position: int
     locked = Decimal("0")
     closed = []
     missed_for_money: set = set()
+    skipped_for_limit: set = set()  # partidos que no se abrieron por el límite de partidos a la vez
     peak = equity = cash
     max_drawdown = Decimal("0")
     locked_time = 0.0
@@ -174,6 +189,7 @@ def simulate(markets: list, *, cash: Decimal, order_size: int, max_position: int
                     "cost": pos["cost"],
                     "fees": pos["fees"],
                     "net": payout - pos["cost"] - pos["fees"],
+                    "ticker": m["ticker"],
                 }
             )
             mark()
@@ -183,17 +199,24 @@ def simulate(markets: list, *, cash: Decimal, order_size: int, max_position: int
         advance(ts)
         m = markets[i]
         group = group_of(m["series"])
+        size = games_size if group == "games" and games_size else order_size
+        cap = games_size if group == "games" and games_size else max_position
         pos = held.get(i)
         if pos is None:
             used = per_event[m["event"]]
             if m["settle"] <= ts or i in used or len(used) >= PER_EVENT[group]:
                 continue  # ya liquidado, ya cerrado o sin hueco en el evento
-            room = max_position
+            if group == "games" and games_max_open:
+                open_games = sum(1 for j in held if group_of(markets[j]["series"]) == "games")
+                if open_games >= games_max_open:
+                    skipped_for_limit.add(m["event"])
+                    continue
+            room = cap
         else:
             if pos["side"] != side:
                 continue
-            room = max_position - int(pos["count"])
-        want = min(int(count), order_size, room)
+            room = cap - int(pos["count"])
+        want = min(int(count), size, room)
         if want <= 0:
             continue
         n = want
@@ -227,6 +250,7 @@ def simulate(markets: list, *, cash: Decimal, order_size: int, max_position: int
         "max_drawdown": max_drawdown,
         "peak": peak,
         "missed_for_money": len(missed_for_money),
+        "skipped_for_limit": len(skipped_for_limit - {e for e, used in per_event.items() if used}),
         "avg_locked": Decimal(str(round(locked_time / span, 2))),
         "first": first,
         "last": last_t,
@@ -318,12 +342,55 @@ def report(title: str, r: dict) -> str:
     return "\n".join(lines)
 
 
+# Saldo como el de tu bot ahora (unos 30 $) y 5 contratos por mercado. Se comparan las opciones
+# para los partidos; el clima sigue igual en todas.
+NOW = dict(cash=30, order_size=5, max_position=5, max_exposure=1000)
 SCENARIOS = [
-    ("100 $ · partidos y clima · 10 contratos por mercado · hasta 80 $ en juego", 100, 10, 10, 80, None),
-    ("100 $ · solo clima (si Missouri bloquea los partidos) · mismos límites", 100, 10, 10, 80, "weather"),
-    ("100 $ · partidos y clima · 5 contratos por mercado · hasta 80 $ en juego", 100, 5, 5, 80, None),
-    ("25 $ · partidos y clima · 5 contratos por mercado · hasta 20 $ (tu bot ahora)", 25, 5, 5, 20, None),
+    ("Tal cual: partidos y clima, 5 contratos, desde 88¢", {}, None),
+    ("Opción 1: como mucho 2 partidos abiertos a la vez", {"games_max_open": 2}, None),
+    ("Opción 1: como mucho 3 partidos abiertos a la vez", {"games_max_open": 3}, None),
+    ("Opción 1: como mucho 5 partidos abiertos a la vez", {"games_max_open": 5}, None),
+    ("Opción 2: 3 contratos en los partidos", {"games_size": 3}, None),
+    ("Opción 3: partidos solo desde 92¢", {"games_min_price": Decimal("0.92")}, None),
+    ("Opción 3: partidos solo desde 90¢", {"games_min_price": Decimal("0.90")}, None),
+    ("Opciones 1 y 3: 3 partidos a la vez y desde 92¢", {"games_max_open": 3, "games_min_price": Decimal("0.92")}, None),
+    ("Sin partidos: solo clima", {}, "weather"),
 ]
+
+
+def saturday_line(closed: list) -> str:
+    """Los partidos de los sábados frente al resto de días."""
+    sat = [c for c in closed if c["group"] == "games" and local(c["when"]).weekday() == 5]
+    rest = [c for c in closed if c["group"] == "games" and local(c["when"]).weekday() != 5]
+
+    def part(rows: list, label: str) -> str:
+        if not rows:
+            return f"{label}: sin partidos"
+        net = sum((c["net"] for c in rows), Decimal("0"))
+        cost = sum((c["cost"] for c in rows), Decimal("0"))
+        lost = sum(1 for c in rows if c["net"] < 0)
+        return f"{label}: {money(net, True)} en {len(rows)} partidos, {lost} perdidos ({pct(net / cost)} de lo movido)"
+
+    return part(sat, "sábados") + " · " + part(rest, "otros días")
+
+
+def summary_row(title: str, r: dict) -> list:
+    closed = r["closed"]
+    net = sum((c["net"] for c in closed), Decimal("0"))
+    games = [c for c in closed if c["group"] == "games"]
+    by_day = defaultdict(lambda: Decimal("0"))
+    for c in closed:
+        by_day[local(c["when"]).date()] += c["net"]
+    worst = min(by_day.values()) if by_day else Decimal("0")
+    lost_days = sum(1 for v in by_day.values() if v < 0)
+    return [
+        title,
+        money(net, True),
+        f"{len(games)} / {sum(1 for c in games if c['net'] < 0)}",
+        money(worst, True),
+        money(-r["max_drawdown"]),
+        f"{lost_days} de {len(by_day)}",
+    ]
 
 
 def run_simulations(paths: list) -> None:
@@ -333,21 +400,37 @@ def run_simulations(paths: list) -> None:
         markets.extend(data["markets"])
         print(f"{path}: {len(data['markets'])} mercados ({data['group']}, {data['days']} días)")
     with_ts = sum(1 for m in markets if m.get("has_settlement_ts"))
-    print(f"Mercados con hora de liquidación: {with_ts} de {len(markets)}\n")
-    for title, cash, order, position, exposure, only in SCENARIOS:
+    print(f"Mercados con hora de liquidación: {with_ts} de {len(markets)}")
+    print("Todas empiezan con 30 $ y 5 contratos por mercado; el clima es igual en todas.\n")
+    rows = []
+    for title, rules, only in SCENARIOS:
         chosen = [m for m in markets if only is None or group_of(m["series"]) == only]
         result = simulate(
             chosen,
-            cash=Decimal(cash),
-            order_size=order,
-            max_position=position,
-            max_exposure=Decimal(exposure),
+            cash=Decimal(NOW["cash"]),
+            order_size=NOW["order_size"],
+            max_position=NOW["max_position"],
+            max_exposure=Decimal(NOW["max_exposure"]),
+            **rules,
         )
-        print(report(title, result))
+        text = report(title, result)
+        if any(c["group"] == "games" for c in result["closed"]):
+            extra = saturday_line(result["closed"])
+            if rules.get("games_max_open"):
+                extra += f"\nPartidos que no abrió por el límite: {result['skipped_for_limit']}"
+            text = text.rstrip("\n") + "\n" + extra + "\n"
+        print(text)
+        rows.append(summary_row(title, result))
+    head = ["Escenario", "Resultado", "Partidos / perdidos", "Peor día", "Peor bajada", "Días en pérdida"]
+    widths = [max(len(str(r[k])) for r in rows + [head]) for k in range(len(head))]
+    print("=== Resumen ===")
+    for r in [head] + rows:
+        print("  ".join(str(v).ljust(widths[k]) if k == 0 else str(v).rjust(widths[k]) for k, v in enumerate(r)))
     print(
-        "Ojo: supone que el bot se habría llevado las primeras ventas del favorito entre 88 y 97¢ en cada "
+        "\nOjo: supone que el bot se habría llevado las primeras ventas del favorito entre 88 y 97¢ en cada "
         "mercado (va un tick por delante). En la realidad compite con otros y compraría menos, así que el "
-        "resultado real será más bajo. Las comisiones de maker están incluidas."
+        "resultado real será más bajo. Las comisiones de maker están incluidas. La comparación entre "
+        "escenarios es justa: todos usan las mismas operaciones."
     )
 
 

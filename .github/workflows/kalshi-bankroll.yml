@@ -1,7 +1,7 @@
 # Simulación con dinero virtual del bot de Kalshi (repositorio operativasimple-glitch/NotesAi).
 # Solo lee datos públicos de mercados ya liquidados: no usa ninguna clave ni envía órdenes,
 # y no toca el bot desplegado (que se despliega desde el otro repositorio).
-name: "Kalshi: simulación con 100 $"
+name: "Kalshi: simulación con dinero virtual"
 
 on:
   workflow_dispatch:
@@ -41,11 +41,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r notesai/kalshi-bot/requirements.txt
-      - name: Mercados liquidados de los últimos 60 días
+      - name: Mercados liquidados de las últimas 6 semanas
         working-directory: notesai/kalshi-bot
         run: |
           printf '[http]\nreads_per_second = 10\n' > config.toml
-          python "$GITHUB_WORKSPACE/kalshi_sim/bankroll.py" fetch --group ${{ matrix.group }} --days 60 \
+          python "$GITHUB_WORKSPACE/kalshi_sim/bankroll.py" fetch --group ${{ matrix.group }} --days 42 \
             --out "$GITHUB_WORKSPACE/${{ matrix.group }}.json"
       - uses: actions/upload-artifact@v4
         with:
