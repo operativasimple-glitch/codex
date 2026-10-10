@@ -1,0 +1,8 @@
+# La memoria del pueblo y los secretos no se suben nunca.
+data/
+.env
+*.pem
+*.key
+__pycache__/
+.pytest_cache/
+.ruff_cache/
