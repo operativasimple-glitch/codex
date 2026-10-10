@@ -14,6 +14,7 @@ from .consejo import ClaudeMember, Investigadora
 from .cronista import Cronista
 from .kali import Kali
 from .nube import Nube
+from .probadora import Probadora
 from .radar import Radar
 from .vigia import Vigia
 
@@ -38,6 +39,7 @@ def build_agents(world: World, config: Config) -> list:
         Radar(world, KalshiPublic(config.kalshi_api)),
         Cronista(world, config.tz),
         Investigadora(world, KalshiPublic(config.kalshi_api)),
+        Probadora(world, KalshiPublic(config.kalshi_api), config.tz),
     ]
     if config.anthropic_api_key and config.ai_max_calls > 0:
         from ..council.claude import ClaudeForecaster

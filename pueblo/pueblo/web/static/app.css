@@ -648,6 +648,7 @@ img { max-width: 100%; }
 .says b { font-family: var(--pixel); }
 .says .why { flex-basis: 100%; margin: 0 0 0 26px; color: var(--ink-2); font-size: var(--step--1); }
 .council-says { color: var(--ink); }
+.test-pnl { flex: none; font-variant-numeric: tabular-nums; }
 .council-says.worse { color: var(--alert); font-weight: 700; }
 .who-row {
   display: grid;

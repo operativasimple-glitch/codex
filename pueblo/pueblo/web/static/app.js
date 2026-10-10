@@ -20,7 +20,7 @@
     return node;
   }
 
-  const ORDER = ['kali', 'nube', 'vigia', 'radar', 'cronista', 'investigadora', 'tormenta', 'claude', 'piloto',
+  const ORDER = ['kali', 'nube', 'vigia', 'radar', 'cronista', 'probadora', 'investigadora', 'tormenta', 'claude', 'piloto',
     'dinero', 'codicia', 'miedo'];
   const DEFAULT_BOTS = [
     { id: 'kali', name: 'Kali', color: '#f2c94c', home: 'mercado' },
@@ -28,6 +28,7 @@
     { id: 'vigia', name: 'Vigía', color: '#ff6b6b', home: 'puente' },
     { id: 'radar', name: 'Radar', color: '#6ee7a8', home: 'laboratorio' },
     { id: 'cronista', name: 'Cronista', color: '#c792ea', home: 'archivo' },
+    { id: 'probadora', name: 'Probadora', color: '#5ee7f0', home: 'pruebas' },
     { id: 'investigadora', name: 'Investigadora', color: '#dcd8ee', home: 'consejo' },
     { id: 'tormenta', name: 'Cazatormentas', color: '#2a78d6', home: 'consejo' },
     { id: 'piloto', name: 'Piloto', color: '#e87ba4', home: 'consejo' },
@@ -38,20 +39,14 @@
   const MOODS = { ok: 'Bien', happy: 'Feliz', sad: 'Triste', sleep: 'Descansando', sick: 'Con problemas', alert: 'En alerta' };
   const KIND_LABEL = { alert: 'Aviso', trade: 'Operación', diary: 'Crónica', chat: 'Charla' };
   const SOON = {
-    pruebas: {
-      title: 'Pruebas',
-      who: 'Próximamente: la cámara de pruebas',
-      text: 'Aquí se probará cada idea con meses de mercados ya cerrados (como la simulación de 100 $), sin gastar ' +
-        'dinero, antes de dejarla jugar en serio.',
-    },
     forja: {
       title: 'Forja',
       who: 'Próximamente: la forja de estrategias',
-      text: 'Con lo que aprenda el Consejo, aquí se forjarán bots nuevos. Solo los que demuestren durante semanas que ' +
-        'ganan (de mentira) podrán usar dinero real, siempre con tu permiso y con un presupuesto que tú elijas.',
+      text: 'Con lo que aprendan el Consejo y las Pruebas, aquí se forjarán bots nuevos. Solo los que demuestren durante ' +
+        'semanas que ganan (de mentira) podrán usar dinero real, siempre con tu permiso y con un presupuesto que tú elijas.',
     },
   };
-  const SOON_ALIAS = { lab: 'pruebas', arena: 'forja' };
+  const SOON_ALIAS = { arena: 'forja' };
   const ROOM_INFO = {
     mercado: ['Mercado', 'Aquí trabaja Kali. Cada vez que hace algo de verdad (una orden, una compra, un cobro) viene aquí.'],
     laboratorio: ['Laboratorio', 'Radar busca oportunidades en todos los mercados de Kalshi y la Investigadora prepara los del Consejo.'],
@@ -60,6 +55,7 @@
     boveda: ['Bóveda', 'Donde se cuentan las ganancias y las pérdidas. Kali viene cuando se decide un mercado o mira el saldo.'],
     puente: ['Puente', 'Vigía vigila el riesgo. Aquí está tu terminal: lo que los bots te dejan llega aquí.'],
     archivo: ['Archivo', 'Cronista escribe el diario del pueblo y cuelga las noticias en el tablón.'],
+    pruebas: ['Pruebas', 'La Probadora juega de mentira los partidos como Kali, pero de cuatro maneras a la vez, para ver cuál gana más.'],
   };
   const MEMBER_ABOUT = {
     tormenta: 'Para cada tramo de temperatura calcula la probabilidad con la máxima prevista por el Servicio Meteorológico de EE. UU. y lo ya medido hoy.',
@@ -309,6 +305,13 @@
     return String(name || '').replace('Máxima en ', '');
   }
 
+  const DEMO_TESTS = [
+    { id: 'desde92', name: 'Solo desde 92¢', rule: 'desde 92¢ · 5 contratos', trades: 19, wins: 19, pnl: 3.85, worst_day: 0.6, open: 2 },
+    { id: 'max3', name: 'Máx. 3 partidos a la vez', rule: 'desde 88¢ · 5 contratos · máx. 3 a la vez', trades: 22, wins: 21, pnl: 1.95, worst_day: -3.9, open: 3 },
+    { id: 'menos', name: '3 contratos por partido', rule: 'desde 88¢ · 3 contratos', trades: 31, wins: 29, pnl: 1.62, worst_day: -2.31, open: 4 },
+    { id: 'tal_cual', name: 'Kali tal cual', rule: 'desde 88¢ · 5 contratos', trades: 31, wins: 29, pnl: 1.4, worst_day: -4.05, open: 4 },
+  ];
+
   function demoCouncil(bots) {
     const now = new Date().toISOString();
     const act = (room, text) => ({ room, text, at: now });
@@ -333,6 +336,21 @@
     const board = DEMO_MEMBERS.map(([id, name, color, , trades, wins, pnl, open]) => (
       { id, name, color, trades, wins, pnl, roi: Math.round((pnl / (trades * 0.6)) * 1000) / 1000, open }
     ));
+    bots.push({
+      id: 'probadora', name: 'Probadora', role: 'Prueba de mentira otras formas de jugar los partidos', home: 'pruebas',
+      color: '#5ee7f0', mood: 'ok', updated_at: now,
+      about: 'Sigue los partidos de Kalshi y apuesta de mentira como Kali, pero de cuatro maneras a la vez. Cuando acaba cada partido apunta cuál habría ganado más. No compra nada.',
+      status: 'Pruebas en partidos · 4 partidos abiertos de mentira',
+      activity: act('pruebas', 'prueba 4 maneras en 9 partidos · va mejor «Solo desde 92¢»'),
+      detail: {
+        variants: DEMO_TESTS,
+        last: [
+          { ticker: 'D1', name: 'Gana Ohio State', side: 'SÍ', price: '0.94', count: 5, won: true, pnl: '0.29' },
+          { ticker: 'D2', name: 'Gana Texas', side: 'SÍ', price: '0.89', count: 5, won: false, pnl: '-4.46' },
+          { ticker: 'D3', name: 'Gana los Dodgers', side: 'NO', price: '0.91', count: 5, won: true, pnl: '0.44' },
+        ],
+      },
+    });
     bots.push({
       id: 'investigadora', name: 'Investigadora', role: 'Organiza el Consejo y lleva el marcador', home: 'consejo',
       color: '#dcd8ee', mood: 'ok', updated_at: now,
@@ -421,6 +439,11 @@
       w.say('vigia', 'Se recupera «Gana Pittsburgh»: vuelve al 90 %.', 'tu');
     },
     (w) => w.say('nube', 'Tranquila, Kali: el NO a «85° a 86°» de Austin ya está ganado (van 90°).', 'kali'),
+    (w) => {
+      w.act('probadora', 'pruebas', 'apunta: Texas pierde · solo desde 92¢ no entró');
+      w.say('probadora', 'Partido perdido de mentira: «Gana Texas» (SÍ a 89¢), −$4,46. Solo desde 92¢ no habría entrado.',
+        'todos', 'trade', { net: '-4.46', paper: true });
+    },
     (w) => {
       w.say('tormenta', '¡Acerté con «Máxima en Miami · 88° a 89°»! +$0,61 de mentira.', 'todos', 'trade', { net: '0.61', paper: true });
       w.say('investigadora', 'Se han decidido 3 apuestas del Consejo: 2 aciertos. Va ganando Cazatormentas (+$3,45).', 'todos');
@@ -1779,13 +1802,33 @@
     return li;
   }
 
+  // Las maneras de jugar los partidos que prueba la Probadora, de la que más gana a la que menos.
+  function testsTable(rows) {
+    const ul = el('ul', 'rows');
+    for (const r of rows) {
+      const li = el('li', 'row');
+      const top = el('div', 'row-top');
+      const pnl = num(r.pnl) || 0;
+      top.append(el('span', 'row-name', r.name),
+        el('b', `test-pnl ${r.trades ? (pnl > 0 ? 'up' : pnl < 0 ? 'down' : '') : ''}`, r.trades ? money(pnl, true) : '—'));
+      const lost = (r.trades || 0) - (r.wins || 0);
+      const bits = r.trades
+        ? [plural(r.trades, 'partido', 'partidos'), plural(lost, 'perdido', 'perdidos'), `peor día ${money(r.worst_day, true)}`]
+        : ['ningún partido decidido aún'];
+      li.append(top, el('div', 'row-sub', r.rule || ''), el('div', 'row-sub', bits.join(' · ')));
+      ul.append(li);
+    }
+    return ul;
+  }
+
   function renderCouncil(force) {
     if (state.tab !== 'consejo' && !force) return;
     const inv = state.byId.get('investigadora');
     const d = (inv && inv.detail) || {};
     const claude = ((state.byId.get('claude') || {}).detail || {}).opinions;
     const held = (((state.byId.get('kali') || {}).detail || {}).positions || []).map((x) => [x.ticker, x.side]);
-    const sig = JSON.stringify([d.topics, d.board, claude, held]);
+    const tests = ((state.byId.get('probadora') || {}).detail || {}).variants || [];
+    const sig = JSON.stringify([d.topics, d.board, claude, held, tests]);
     if (!force && sig === state.councilSig) return;
     state.councilSig = sig;
     const topics = d.topics || [];
@@ -1806,6 +1849,8 @@
     if (topics.length) $('#legend').append(legend, cons);
     $('#topics-title').hidden = !topics.length;
     $('#topics').replaceChildren(...topics.map(topicItem));
+    $('#tests-title').hidden = !tests.length;
+    $('#tests').replaceChildren(...(tests.length ? [testsTable(tests)] : []));
   }
 
   // --- la ficha de cada vecino ---
@@ -1980,6 +2025,33 @@
         goTab('consejo');
       });
       box.append(btn);
+      return box;
+    },
+    probadora(b) {
+      const d = b.detail || {};
+      const box = el('div', 'detail');
+      const rows = d.variants || [];
+      if (!rows.length) {
+        box.append(el('p', 'note', 'Todavía no he probado ningún partido. Empiezo con los que acaban en las próximas 6 horas.'));
+        return box;
+      }
+      box.append(testsTable(rows));
+      const last = d.last || [];
+      if (last.length) {
+        box.append(el('h3', null, 'Últimos partidos (Kali tal cual, de mentira)'));
+        const ul = el('ul', 'rows');
+        for (const t of last.slice(0, 6)) {
+          const li = el('li', 'row');
+          const top = el('div', 'row-top');
+          const n = num(t.pnl);
+          top.append(el('span', 'row-name', t.name || t.ticker),
+            el('span', `row-sub ${n > 0 ? 'up' : n < 0 ? 'down' : ''}`, `${t.won ? 'ganado' : 'perdido'} · ${money(n, true)}`));
+          li.append(top, el('div', 'row-sub', `${t.side} a ${cents(t.price)} · ${t.count} contratos`));
+          ul.append(li);
+        }
+        box.append(ul);
+      }
+      box.append(el('p', 'note', 'Todo es de mentira: no compra nada. Supone que se habría llevado el precio que había en ese momento.'));
       return box;
     },
     claude(b) {
@@ -2306,7 +2378,11 @@
       goTab('tu');
       return;
     }
-    if (hit.owner === 'lab' || hit.owner === 'arena') {
+    if (hit.owner === 'lab') {
+      openRoom('pruebas');
+      return;
+    }
+    if (hit.owner === 'arena') {
       openSoon(hit.owner);
       return;
     }

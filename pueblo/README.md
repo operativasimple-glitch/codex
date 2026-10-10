@@ -23,9 +23,10 @@ El bot de Kalshi y su panel no se tocan. El pueblo es un servicio aparte que **s
 | **Radar** | Laboratorio | Cada 20 minutos cuenta los favoritos claros (88–97¢, poco spread) que Kali no mira. | Datos públicos de mercados de Kalshi (sin clave). |
 | **Cronista** | Archivo | Escribe el diario a las 8:00 y a las 21:30 (con quién va ganando en el Consejo) y una noticia cuando Kali gana o pierde 2 $ o más de golpe. | Lo que cuentan los demás. |
 | **Investigadora** | Consejo | Trae al Consejo los mercados de clima que se deciden pronto y las apuestas abiertas de Kali, apunta las apuestas de mentira y lleva el marcador. Avisa a Kali si el Consejo cree que una de sus apuestas vale bastante menos de lo que pagó. | Datos públicos de Kalshi y lo que cuentan Nube y Kali. |
+| **Probadora** | Pruebas | Juega de mentira los partidos como Kali, pero de cuatro maneras a la vez: tal cual, con como mucho 3 partidos abiertos a la vez, con 3 contratos por partido y solo desde 92¢. Cuando acaba cada partido apunta cuál habría ganado más. | Datos públicos de Kalshi. |
 | **El Consejo** | Consejo | Cinco personajes que piensan distinto (ver abajo) y, si quieres, Claude. | Lo mismo que la Investigadora. |
 
-Las salas **Pruebas** y **Forja** están marcadas como *pronto* (ver *Qué viene después*).
+La sala **Forja** está marcada como *pronto* (ver *Qué viene después*).
 
 Toca una sala para acercarte (dentro se ve qué hace cada uno); tócala otra vez para ver quién está.
 Toca un bot para ver su ficha; con **Hablar** te contesta con lo que sabe en ese momento.
@@ -48,6 +49,9 @@ ya restada la comisión), **apuesta 1 contrato de mentira**. Cuando el mercado s
 solo lo que habría ganado o perdido. La pestaña **Consejo** enseña el marcador y, para cada
 mercado, una tira con el precio del mercado (la raya), el de cada personaje (los puntos) y la
 mediana del Consejo (el rombo). Kali ve en su ficha lo que el Consejo cree que vale cada apuesta.
+
+En la misma pestaña está el marcador de las **Pruebas** de la Probadora: qué manera de jugar los
+partidos habría ganado más desde que empezó.
 
 **Nada de esto mueve dinero.** Sirve para ver, durante semanas, qué manera de pensar gana de
 verdad antes de plantearse nada más.
@@ -114,9 +118,9 @@ con más calma para no saturar a nadie.
 
 1. **Ahora: ayudantes y el Consejo.** Miran, se avisan entre ellos y te avisan a ti, y el
    Consejo apuesta de mentira para ver qué manera de pensar gana. No mueven dinero.
-2. **Pruebas y Forja.** En Pruebas se probará cada idea con meses de mercados ya cerrados (como
-   la simulación de 100 $). Con lo que funcione en Pruebas y en el marcador del Consejo, en la
-   Forja se harán bots nuevos que seguirán con dinero de mentira durante semanas.
+2. **Forja.** Con lo que funcione en las Pruebas, en el marcador del Consejo y en la simulación con
+   mercados ya cerrados (`kalshi_sim/` en este repositorio), en la Forja se harán bots nuevos que
+   seguirán con dinero de mentira durante semanas.
 3. **Dinero real, solo con permiso.** Un bot solo usará dinero real si ha demostrado que gana, si
    tú lo apruebas y con un presupuesto pequeño que elijas tú. Si Kalshi lo permite, en una
    subcuenta aparte para que no se mezcle con Kali.

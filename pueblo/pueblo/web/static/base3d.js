@@ -23,7 +23,7 @@ export const ROOMS = {
   archivo: { col: 0, row: 1, name: 'Archivo', glow: '#c792ea', floor: '#ebe1f7' },
   consejo: { col: 1, row: 1, name: 'Consejo', glow: '#f472b6', floor: '#f3e0ee' },
   mercado: { col: 2, row: 1, name: 'Mercado', glow: '#f2c94c', floor: '#f6edd3' },
-  pruebas: { col: 0, row: 2, name: 'Pruebas', glow: '#5ee7f0', floor: '#d8e2ea', soon: true },
+  pruebas: { col: 0, row: 2, name: 'Pruebas', glow: '#5ee7f0', floor: '#d8e2ea' },
   puente: { col: 1, row: 2, name: 'Puente', glow: '#ff6b6b', floor: '#f2dfe4' },
   boveda: { col: 2, row: 2, name: 'Bóveda', glow: '#ffd166', floor: '#f5ead0' },
 };
@@ -46,7 +46,7 @@ for (let i = 0; i < 9; i++) {
   SPOTS.consejo.push([Math.cos(a) * 1.85, Math.sin(a) * 1.85, 0, 0]);
 }
 // Quién tiene sitio fijo (su "mesa") cuando está en su sala.
-const DESK = { kali: 0, nube: 0, radar: 0, cronista: 0, vigia: 0, investigadora: 0 };
+const DESK = { kali: 0, nube: 0, radar: 0, cronista: 0, vigia: 0, investigadora: 0, probadora: 0 };
 const MAIL_SPOT = 1; // en el Puente, la terminal con tus mensajes
 const BOARD_SPOT = 2; // en el Archivo, el tablón del diario
 // Para no atravesar muebles: círculos que se rodean al caminar.
@@ -1001,7 +1001,8 @@ export class Base {
       beam.position.y = 1.0;
       add(beam);
       for (const z of [-1.6, -0.6]) add(box(0.6, 1.5, 0.6, mat('#e9eef5'), -2.3, 0, z));
-      this.soonSign(g, r);
+      // El marcador de las pruebas de mentira en los partidos.
+      this.screens.tests = standing(2.1, 1.3, 384, drawTests, 0.9, -2.3, 1.45);
     }
   }
 
@@ -1130,6 +1131,7 @@ export class Base {
     const council = d('investigadora');
     const nube = d('nube');
     const radar = d('radar');
+    const tests = d('probadora');
     const vigia = d('vigia');
     const counts = {
       mercado: kali.connected ? `${(kali.positions || []).length} abiertas` : 'sin panel',
@@ -1139,18 +1141,20 @@ export class Base {
       boveda: kali.today && kali.today.net !== undefined ? `hoy ${money(kali.today.net, true)}` : '',
       puente: this.flags.mail ? `${this.flags.mail} para ti` : vigia.alerts_today ? `${vigia.alerts_today} avisos` : 'en calma',
       archivo: 'diario',
+      pruebas: (tests.variants || []).length ? `${tests.variants.length} maneras` : '',
     };
     for (const [id, text] of Object.entries(counts)) {
       if (this.labels[id] && this.labels[id].count.textContent !== text) this.labels[id].count.textContent = text;
     }
-    const sig = JSON.stringify([kali.positions, kali.today, council.board, (council.topics || []).length, nube.cities, radar.scanned]);
+    const sig = JSON.stringify([kali.positions, kali.today, council.board, (council.topics || []).length, nube.cities, radar.scanned, tests.variants]);
     if (sig === this.dataSig) return;
     this.dataSig = sig;
-    this.data = { kali, council, nube, radar, names: Object.fromEntries(Object.values(by).map((b) => [b.id, b])) };
+    this.data = { kali, council, nube, radar, tests, names: Object.fromEntries(Object.values(by).map((b) => [b.id, b])) };
     this.screens.weather.redraw(this.data);
     this.screens.board.redraw(this.data);
     this.screens.ticker.redraw(this.data);
     this.screens.vault.redraw(this.data);
+    if (this.screens.tests) this.screens.tests.redraw(this.data);
     this.screens.code.forEach((s, i) => s.redraw({ ...this.data, seed: i }));
     this.screens.charts.forEach((s, i) => s.redraw({ ...this.data, seed: i }));
     this.topicIndex = 0;
@@ -1848,6 +1852,29 @@ function drawMail(ctx, w, h, data) {
     ctx.fillText(String(Math.min(n, 99)), w * 0.8, h * 0.26);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+}
+
+function drawTests(ctx, w, h, data) {
+  panelBg(ctx, w, h, '#0d2a33', '#04141a');
+  ctx.fillStyle = '#9ff3ff';
+  ctx.font = `700 ${h * 0.12}px ${FONT}`;
+  ctx.fillText('PRUEBAS · PARTIDOS', w * 0.06, h * 0.17);
+  const rows = ((data && data.tests && data.tests.variants) || []).slice(0, 4);
+  ctx.font = `700 ${h * 0.105}px ${TEXT}`;
+  rows.forEach((r, i) => {
+    const y = h * (0.37 + i * 0.17);
+    ctx.fillStyle = '#e6fbff';
+    ctx.fillText(fitText(ctx, r.name, w * 0.6), w * 0.06, y);
+    ctx.textAlign = 'right';
+    const pnl = Number(r.pnl);
+    ctx.fillStyle = !r.trades ? '#9fb7bd' : pnl > 0 ? '#7dffb2' : pnl < 0 ? '#ff9b94' : '#ffffff';
+    ctx.fillText(r.trades ? money(pnl, true) : '—', w * 0.94, y);
+    ctx.textAlign = 'left';
+  });
+  if (!rows.length) {
+    ctx.fillStyle = '#9fb7bd';
+    ctx.fillText('Esperando partidos', w * 0.06, h * 0.5);
   }
 }
 
