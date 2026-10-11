@@ -12,6 +12,7 @@ from ..sources.panel import PanelClient
 from ..world import World
 from .consejo import ClaudeMember, Investigadora
 from .cronista import Cronista
+from .herrera import Herrera
 from .kali import Kali
 from .nube import Nube
 from .probadora import Probadora
@@ -34,6 +35,7 @@ def build_agents(world: World, config: Config) -> list:
     panel = PanelClient(config.panel_url, config.panel_password) if config.panel_configured else None
     agents = [
         Kali(world, panel, tz_minutes(config.tz)),
+        Herrera(world, panel, tz_minutes(config.tz), config.tz),
         Nube(world, NWSClient(config.contact)),
         Vigia(world),
         Radar(world, KalshiPublic(config.kalshi_api)),

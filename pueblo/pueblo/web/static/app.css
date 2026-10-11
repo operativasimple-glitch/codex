@@ -649,6 +649,21 @@ img { max-width: 100%; }
 .says .why { flex-basis: 100%; margin: 0 0 0 26px; color: var(--ink-2); font-size: var(--step--1); }
 .council-says { color: var(--ink); }
 .test-pnl { flex: none; font-variant-numeric: tabular-nums; }
+.group-right { display: inline-flex; flex: none; align-items: center; gap: 8px; }
+.verdict {
+  padding: 0 6px;
+  border: 1px solid var(--edge);
+  background: var(--panel-2);
+  color: var(--ink);
+  font: 700 11px / 1.4 var(--pixel);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.verdict-gana { background: #c9f2d9; color: #12402a; }
+.verdict-pierde { background: #ffd2cc; color: #5a120c; }
+.verdict-justo { background: #fff1c7; color: #4d3a08; }
+.verdict-va-ganando { background: #e4f6ea; color: #1d5236; }
+.verdict-va-perdiendo { background: #ffe6d6; color: #6a2a0c; }
 .council-says.worse { color: var(--alert); font-weight: 700; }
 .who-row {
   display: grid;

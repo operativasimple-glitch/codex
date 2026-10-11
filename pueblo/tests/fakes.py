@@ -55,6 +55,7 @@ class FakePanel:
             "yesterday_totals": {"net": "3.27", "markets": 15, "wins": 15, "losses": 0},
             "totals": {"net": "8.84", "markets": 35},
             "recent": self.result_rows,
+            "curve": getattr(self, "curve_rows", []),
         }
 
     def logs(self, after=0):

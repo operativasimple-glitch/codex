@@ -19,7 +19,7 @@ const ELEVATION = 0.84;
 export const ROOMS = {
   observatorio: { col: 0, row: 0, name: 'Observatorio', glow: '#7cc6fe', floor: '#dde8fb' },
   laboratorio: { col: 1, row: 0, name: 'Laboratorio', glow: '#5be0a0', floor: '#d9f2e7' },
-  forja: { col: 2, row: 0, name: 'Forja', glow: '#ff8a3d', floor: '#e6dcd5', soon: true },
+  forja: { col: 2, row: 0, name: 'Forja', glow: '#ff8a3d', floor: '#e6dcd5' },
   archivo: { col: 0, row: 1, name: 'Archivo', glow: '#c792ea', floor: '#ebe1f7' },
   consejo: { col: 1, row: 1, name: 'Consejo', glow: '#f472b6', floor: '#f3e0ee' },
   mercado: { col: 2, row: 1, name: 'Mercado', glow: '#f2c94c', floor: '#f6edd3' },
@@ -46,7 +46,7 @@ for (let i = 0; i < 9; i++) {
   SPOTS.consejo.push([Math.cos(a) * 1.85, Math.sin(a) * 1.85, 0, 0]);
 }
 // Quién tiene sitio fijo (su "mesa") cuando está en su sala.
-const DESK = { kali: 0, nube: 0, radar: 0, cronista: 0, vigia: 0, investigadora: 0, probadora: 0 };
+const DESK = { kali: 0, nube: 0, radar: 0, cronista: 0, vigia: 0, investigadora: 0, probadora: 0, herrera: 0 };
 const MAIL_SPOT = 1; // en el Puente, la terminal con tus mensajes
 const BOARD_SPOT = 2; // en el Archivo, el tablón del diario
 // Para no atravesar muebles: círculos que se rodean al caminar.
@@ -285,6 +285,19 @@ function accessory(id, head, color) {
       bun.position.set(0, top + 0.06, -0.05);
       g.add(bun);
     }
+  } else if (id === 'herrera') {
+    // Casco de trabajo y martillo.
+    const helmet = mesh(new THREE.SphereGeometry(0.2, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat('#ff8a3d'));
+    helmet.position.y = top - 0.02;
+    helmet.scale.y = 0.6;
+    g.add(helmet);
+    g.add(cyl(0.22, 0.22, 0.02, mat('#e06d22'), 0, top - 0.02, 0, 22));
+    const hammer = new THREE.Group();
+    hammer.add(box(0.025, 0.2, 0.025, mat('#8a5a3c'), 0, 0, 0));
+    hammer.add(box(0.1, 0.05, 0.05, mat('#5b6178', { metalness: 0.6 }), 0, 0.18, 0));
+    hammer.position.set(0.24, -0.25, 0.05);
+    hammer.rotation.z = -0.4;
+    g.add(hammer);
   } else if (id === 'tormenta') {
     const bolt = glowMat('#ffe14d', 1.2);
     const parts = [[0.0, 0.05, 0.4], [0.03, 0.13, -0.5], [0.0, 0.21, 0.4]];
@@ -841,7 +854,7 @@ export class Base {
       const lines = [];
       for (const x of [-1.2, 0.4]) {
         add(box(1.3, 0.62, 0.62, mat('#ece8f8'), x, 0, -2.4));
-        const s = screen(0.9, 0.55, 192, drawCode);
+        const s = screen(0.9, 0.55, 256, drawScan);
         s.mesh.position.set(x, 0.98, -2.43);
         add(box(0.98, 0.62, 0.05, mat('#2a2347'), x, 0.66, -2.48));
         add(s.mesh);
@@ -917,21 +930,17 @@ export class Base {
     } else if (id === 'mercado') {
       this.screens.ticker = standing(2.0, 1.2, 384, drawTicker, -2.25, -2.25, 1.45);
       add(box(2.4, 0.66, 0.72, mat('#d39a5f'), 0.9, 0, -2.4));
-      const charts = [];
-      for (const x of [0.2, 0.95, 1.7]) {
-        add(box(0.66, 0.44, 0.05, mat('#2a2347'), x, 0.7, -2.55));
-        const s = screen(0.58, 0.36, 128, drawChart);
-        s.mesh.position.set(x, 0.92, -2.52);
-        add(s.mesh);
-        charts.push(s);
-      }
-      this.screens.charts = charts;
+      add(box(2.08, 0.74, 0.05, mat('#2a2347'), 0.95, 0.7, -2.55));
+      const curve = screen(1.98, 0.64, 384, drawCurve);
+      curve.mesh.position.set(0.95, 1.05, -2.52);
+      add(curve.mesh);
+      this.screens.curve = curve;
       const gold = mat('#ffcf33', { metalness: 0.65, roughness: 0.3, emissive: '#4a3300', emissiveIntensity: 0.35 });
       for (const [x, z, n] of [[2.2, -1.2, 5], [2.45, -0.9, 3], [1.95, -0.85, 4]]) {
         for (let i = 0; i < n; i++) add(cyl(0.11, 0.11, 0.045, gold, x, i * 0.05, z, 18));
       }
     } else if (id === 'puente') {
-      this.screens.radar = standing(1.9, 1.3, 256, drawRadar, -2.25, -2.25, 1.45);
+      this.screens.radar = standing(1.9, 1.3, 320, drawRisk, -2.25, -2.25, 1.45);
       // Consola con luces.
       for (const x of [-0.8, 0, 0.8]) {
         add(box(0.72, 0.6, 0.55, mat('#ece8f8'), x, 0, -2.3));
@@ -989,7 +998,7 @@ export class Base {
       this.animated.push((dt, t) => { fire.intensity = 5 + Math.sin(t * 13) * 1.2 + Math.sin(t * 7.3) * 0.8; });
       add(box(0.7, 0.35, 0.3, mat('#3a3f52'), 0.6, 0, -1.8));
       add(box(0.9, 0.12, 0.4, mat('#4b5163'), 0.6, 0.35, -1.8));
-      this.soonSign(g, r);
+      this.screens.forge = standing(2.1, 1.35, 384, drawForge, 1.0, -2.35, 1.5);
     } else if (id === 'pruebas') {
       const pad = cyl(1.2, 1.25, 0.08, mat('#2a2f4a'), 0, 0, 0, 40);
       add(pad);
@@ -1004,27 +1013,6 @@ export class Base {
       // El marcador de las pruebas de mentira en los partidos.
       this.screens.tests = standing(2.1, 1.3, 384, drawTests, 0.9, -2.3, 1.45);
     }
-  }
-
-  soonSign(g, r) {
-    const sign = screen(1.5, 0.55, 256, (ctx, w, h) => {
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(20,16,50,0.85)';
-      ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = r.glow;
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, w - 6, h - 6);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `700 ${Math.round(h * 0.42)}px ${FONT}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('PRONTO', w / 2, h / 2 + 2);
-    });
-    sign.mesh.material.transparent = true;
-    sign.mesh.position.set(0.6, 1.5, 0.6);
-    sign.mesh.rotation.y = Math.PI / 4;
-    g.add(sign.mesh);
-    this.animated.push((dt, t) => { sign.mesh.position.y = 1.5 + Math.sin(t * 1.4 + r.col) * 0.06; });
   }
 
   addLabels() {
@@ -1132,6 +1120,7 @@ export class Base {
     const nube = d('nube');
     const radar = d('radar');
     const tests = d('probadora');
+    const smith = d('herrera');
     const vigia = d('vigia');
     const counts = {
       mercado: kali.connected ? `${(kali.positions || []).length} abiertas` : 'sin panel',
@@ -1142,21 +1131,23 @@ export class Base {
       puente: this.flags.mail ? `${this.flags.mail} para ti` : vigia.alerts_today ? `${vigia.alerts_today} avisos` : 'en calma',
       archivo: 'diario',
       pruebas: (tests.variants || []).length ? `${tests.variants.length} maneras` : '',
+      forja: smith.totals ? `30 días ${money(smith.totals.net, true)}` : smith.connected === false ? 'sin panel' : '',
     };
     for (const [id, text] of Object.entries(counts)) {
       if (this.labels[id] && this.labels[id].count.textContent !== text) this.labels[id].count.textContent = text;
     }
-    const sig = JSON.stringify([kali.positions, kali.today, council.board, (council.topics || []).length, nube.cities, radar.scanned, tests.variants]);
+    const sig = JSON.stringify([kali.positions, kali.today, council.board, (council.topics || []).length, nube.cities, radar.scanned, radar.by_series, tests.variants, smith.totals, smith.groups, (smith.curve || []).length]);
     if (sig === this.dataSig) return;
     this.dataSig = sig;
-    this.data = { kali, council, nube, radar, tests, names: Object.fromEntries(Object.values(by).map((b) => [b.id, b])) };
+    this.data = { kali, council, nube, radar, tests, smith, names: Object.fromEntries(Object.values(by).map((b) => [b.id, b])) };
     this.screens.weather.redraw(this.data);
     this.screens.board.redraw(this.data);
     this.screens.ticker.redraw(this.data);
     this.screens.vault.redraw(this.data);
     if (this.screens.tests) this.screens.tests.redraw(this.data);
-    this.screens.code.forEach((s, i) => s.redraw({ ...this.data, seed: i }));
-    this.screens.charts.forEach((s, i) => s.redraw({ ...this.data, seed: i }));
+    this.screens.code.forEach((s, i) => s.redraw({ ...this.data, part: i }));
+    this.screens.curve.redraw(this.data);
+    if (this.screens.forge) this.screens.forge.redraw(this.data);
     this.topicIndex = 0;
     this.nextTopicAt = 0;
   }
@@ -1401,7 +1392,7 @@ export class Base {
   tickScreens(t) {
     if (this.screens.radar && (!this.radarAt || t - this.radarAt > 0.12 || this.reduced)) {
       this.radarAt = t;
-      this.screens.radar.redraw({ t, mail: this.flags.mail });
+      this.screens.radar.redraw({ t, kali: this.data.kali });
     }
     const topics = (this.data.council && this.data.council.topics) || [];
     if (topics.length && this.t >= (this.nextTopicAt || 0)) {
@@ -1627,17 +1618,50 @@ function drawWeather(ctx, w, h, data) {
   }
 }
 
-function drawCode(ctx, w, h, data) {
-  ctx.fillStyle = '#0c1a1a';
-  ctx.fillRect(0, 0, w, h);
-  const seed = (data && data.seed) || 0;
-  for (let i = 0; i < 8; i++) {
-    const len = 0.3 + (((i * 37 + seed * 11) % 10) / 10) * 0.6;
-    ctx.fillStyle = i % 3 === 0 ? '#62f2ff' : '#5be0a0';
-    ctx.globalAlpha = 0.85;
-    ctx.fillRect(w * 0.06 + (i % 2) * w * 0.06, h * (0.1 + i * 0.105), w * len * 0.8, h * 0.05);
+function drawScan(ctx, w, h, data) {
+  // Lo que encuentra Radar de verdad: cuántos mercados mira y dónde están los favoritos.
+  panelBg(ctx, w, h, '#0c1f1a', '#04100c');
+  const radar = (data && data.radar) || {};
+  ctx.fillStyle = '#5be0a0';
+  ctx.font = `700 ${h * 0.14}px ${FONT}`;
+  if (radar.scanned === undefined) {
+    ctx.fillText('RADAR', w * 0.07, h * 0.22);
+    ctx.fillStyle = '#a7d8c2';
+    ctx.font = `700 ${h * 0.12}px ${TEXT}`;
+    ctx.fillText('Primera vuelta…', w * 0.07, h * 0.55);
+    return;
   }
-  ctx.globalAlpha = 1;
+  if (!data.part) {
+    ctx.fillText('RADAR · MIRA', w * 0.07, h * 0.22);
+    const rows = [[radar.scanned, 'mercados'], [radar.favorites, 'favoritos claros'], [radar.outside, 'fuera de Kali']];
+    rows.forEach(([n, label], i) => {
+      const y = h * (0.47 + i * 0.2);
+      ctx.fillStyle = '#e6fff4';
+      ctx.font = `700 ${h * 0.15}px ${TEXT}`;
+      ctx.fillText(String(n ?? '—'), w * 0.07, y);
+      ctx.fillStyle = '#a7d8c2';
+      ctx.font = `400 ${h * 0.12}px ${TEXT}`;
+      ctx.fillText(label, w * 0.38, y);
+    });
+    return;
+  }
+  ctx.fillText('DÓNDE', w * 0.07, h * 0.22);
+  const series = (radar.by_series || []).slice(0, 4);
+  if (!series.length) {
+    ctx.fillStyle = '#a7d8c2';
+    ctx.font = `400 ${h * 0.12}px ${TEXT}`;
+    ctx.fillText('Nada fuera de Kali', w * 0.07, h * 0.5);
+    return;
+  }
+  series.forEach((sr, i) => {
+    const y = h * (0.45 + i * 0.17);
+    ctx.fillStyle = '#e6fff4';
+    ctx.font = `700 ${h * 0.12}px ${TEXT}`;
+    ctx.fillText(fitText(ctx, sr.label || sr.series, w * 0.66), w * 0.07, y);
+    ctx.textAlign = 'right';
+    ctx.fillText(String(sr.count), w * 0.93, y);
+    ctx.textAlign = 'left';
+  });
 }
 
 function drawBooks(ctx, w, h) {
@@ -1774,32 +1798,70 @@ function drawTicker(ctx, w, h, data) {
   }
 }
 
-function drawChart(ctx, w, h, data) {
-  ctx.fillStyle = '#0b1420';
-  ctx.fillRect(0, 0, w, h);
-  const kali = (data && data.kali) || {};
-  const up = !(kali.today && Number(kali.today.net) < 0);
-  ctx.strokeStyle = up ? '#4dff9a' : '#ff6b6b';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  const seed = ((data && data.seed) || 0) + 1;
-  for (let i = 0; i <= 12; i++) {
-    const x = (i / 12) * w;
-    const trend = up ? 1 - i / 12 : i / 12;
-    const y = h * (0.2 + 0.6 * trend) + Math.sin(i * 1.7 * seed) * h * 0.08;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+function drawCurve(ctx, w, h, data) {
+  // La ganancia real acumulada de Kali en los últimos 30 días (lo que cuenta la Herrera).
+  panelBg(ctx, w, h, '#0b1420', '#050a12');
+  const smith = (data && data.smith) || {};
+  const points = (smith.curve || []).map((p) => Number(p.total)).filter((v) => Number.isFinite(v));
+  ctx.fillStyle = '#9fc3ff';
+  ctx.font = `700 ${h * 0.15}px ${FONT}`;
+  ctx.fillText('KALI · 30 DÍAS', w * 0.04, h * 0.2);
+  if (points.length < 2) {
+    ctx.fillStyle = '#c6d4ea';
+    ctx.font = `400 ${h * 0.15}px ${TEXT}`;
+    ctx.fillText(smith.connected === false ? 'Sin panel' : 'Aún sin cierres', w * 0.04, h * 0.62);
+    return;
   }
+  const last = points[points.length - 1];
+  ctx.textAlign = 'right';
+  ctx.fillStyle = last >= 0 ? '#7dffb2' : '#ff9b94';
+  ctx.font = `700 ${h * 0.17}px ${TEXT}`;
+  ctx.fillText(money(last, true), w * 0.96, h * 0.21);
+  ctx.textAlign = 'left';
+  const lo = Math.min(0, ...points);
+  const hi = Math.max(0, ...points);
+  const span = hi - lo || 1;
+  const x0 = w * 0.04;
+  const x1 = w * 0.96;
+  const y0 = h * 0.32;
+  const y1 = h * 0.92;
+  const y = (v) => y1 - ((v - lo) / span) * (y1 - y0);
+  ctx.strokeStyle = 'rgba(200,215,240,0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y(0));
+  ctx.lineTo(x1, y(0));
+  ctx.stroke();
+  ctx.strokeStyle = last >= 0 ? '#4dff9a' : '#ff6b6b';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  points.forEach((v, i) => {
+    const x = x0 + (i / (points.length - 1)) * (x1 - x0);
+    if (i === 0) ctx.moveTo(x, y(v));
+    else ctx.lineTo(x, y(v));
+  });
   ctx.stroke();
 }
 
-function drawRadar(ctx, w, h, data) {
+function drawRisk(ctx, w, h, data) {
+  // El radar de Vigía: cada punto es una apuesta abierta de Kali; cuanto más lejos del centro y más
+  // roja, menos probable que gane ahora mismo.
   ctx.fillStyle = '#04140f';
   ctx.fillRect(0, 0, w, h);
+  const positions = ((data && data.kali && data.kali.positions) || []).slice(0, 12);
+  const weak = positions.filter((p) => Number(p.chance) < 0.6).length;
+  ctx.fillStyle = weak ? '#ff9b94' : '#5be0a0';
+  ctx.font = `700 ${h * 0.09}px ${FONT}`;
+  ctx.fillText(positions.length ? `RIESGO · ${positions.length} ABIERTAS` : 'SIN APUESTAS ABIERTAS', w * 0.04, h * 0.1);
+  if (weak) {
+    ctx.textAlign = 'right';
+    ctx.fillText(`${weak} FLOJA${weak > 1 ? 'S' : ''}`, w * 0.96, h * 0.1);
+    ctx.textAlign = 'left';
+  }
   const cx = w / 2;
-  const cy = h / 2;
-  const r = Math.min(w, h) * 0.42;
-  ctx.strokeStyle = 'rgba(91,224,160,0.45)';
+  const cy = h * 0.57;
+  const r = Math.min(w, h) * 0.38;
+  ctx.strokeStyle = 'rgba(91,224,160,0.4)';
   ctx.lineWidth = 2;
   for (const k of [0.33, 0.66, 1]) {
     ctx.beginPath();
@@ -1809,7 +1871,7 @@ function drawRadar(ctx, w, h, data) {
   const t = (data && data.t) || 0;
   const a = t * 1.6;
   const grad = ctx.createLinearGradient(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-  grad.addColorStop(0, 'rgba(91,224,160,0.9)');
+  grad.addColorStop(0, 'rgba(91,224,160,0.8)');
   grad.addColorStop(1, 'rgba(91,224,160,0)');
   ctx.strokeStyle = grad;
   ctx.lineWidth = 4;
@@ -1817,15 +1879,15 @@ function drawRadar(ctx, w, h, data) {
   ctx.moveTo(cx, cy);
   ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
   ctx.stroke();
-  for (let i = 0; i < 5; i++) {
-    const ang = i * 2.1;
-    const rr = r * (0.3 + (i % 3) * 0.25);
-    const age = ((a - ang) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-    ctx.fillStyle = `rgba(160,255,200,${Math.max(0, 1 - age / 2.5)})`;
+  positions.forEach((p, i) => {
+    const chance = Math.max(0, Math.min(1, Number(p.chance) || 0));
+    const ang = (i / positions.length) * Math.PI * 2 - Math.PI / 2;
+    const rr = r * (0.18 + 0.82 * (1 - chance));
+    ctx.fillStyle = chance >= 0.85 ? '#5be0a0' : chance >= 0.6 ? '#ffd166' : '#ff6b6b';
     ctx.beginPath();
-    ctx.arc(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr, 5, 0, Math.PI * 2);
+    ctx.arc(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr, Math.max(5, h * 0.035), 0, Math.PI * 2);
     ctx.fill();
-  }
+  });
 }
 
 function drawMail(ctx, w, h, data) {
@@ -1853,6 +1915,37 @@ function drawMail(ctx, w, h, data) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
   }
+}
+
+function drawForge(ctx, w, h, data) {
+  // La Herrera: lo que gana y lo que pierde Kali con dinero real, por liga y ciudad.
+  panelBg(ctx, w, h, '#2a1408', '#120803');
+  const smith = (data && data.smith) || {};
+  ctx.fillStyle = '#ffb27a';
+  ctx.font = `700 ${h * 0.11}px ${FONT}`;
+  ctx.fillText('DINERO REAL · 30 DÍAS', w * 0.05, h * 0.15);
+  ctx.font = `700 ${h * 0.1}px ${TEXT}`;
+  if (!smith.connected || !smith.totals) {
+    ctx.fillStyle = '#f2d2bb';
+    ctx.fillText(smith.connected === false ? 'Sin panel' : 'Aún sin cierres', w * 0.05, h * 0.45);
+    return;
+  }
+  const series = (smith.groups && smith.groups.series) || [];
+  const shown = series.length > 4 ? [...series.slice(0, 2), ...series.slice(-2)] : series;
+  shown.forEach((g, i) => {
+    const y = h * (0.33 + i * 0.14);
+    ctx.fillStyle = '#fff1e6';
+    ctx.fillText(fitText(ctx, g.label, w * 0.62), w * 0.05, y);
+    ctx.textAlign = 'right';
+    const net = Number(g.net);
+    ctx.fillStyle = net > 0 ? '#7dffb2' : net < 0 ? '#ff9b94' : '#ffffff';
+    ctx.fillText(money(net, true), w * 0.95, y);
+    ctx.textAlign = 'left';
+  });
+  const t = smith.totals;
+  ctx.fillStyle = '#ffd7b8';
+  ctx.font = `400 ${h * 0.09}px ${TEXT}`;
+  ctx.fillText(`Total ${money(Number(t.net), true)} · ${t.wins} de ${t.markets} ganados`, w * 0.05, h * 0.93);
 }
 
 function drawTests(ctx, w, h, data) {

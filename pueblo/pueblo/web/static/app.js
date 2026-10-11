@@ -20,10 +20,11 @@
     return node;
   }
 
-  const ORDER = ['kali', 'nube', 'vigia', 'radar', 'cronista', 'probadora', 'investigadora', 'tormenta', 'claude', 'piloto',
+  const ORDER = ['kali', 'herrera', 'nube', 'vigia', 'radar', 'cronista', 'probadora', 'investigadora', 'tormenta', 'claude', 'piloto',
     'dinero', 'codicia', 'miedo'];
   const DEFAULT_BOTS = [
     { id: 'kali', name: 'Kali', color: '#f2c94c', home: 'mercado' },
+    { id: 'herrera', name: 'Herrera', color: '#ff8a3d', home: 'forja' },
     { id: 'nube', name: 'Nube', color: '#7cc6fe', home: 'observatorio' },
     { id: 'vigia', name: 'Vigía', color: '#ff6b6b', home: 'puente' },
     { id: 'radar', name: 'Radar', color: '#6ee7a8', home: 'laboratorio' },
@@ -38,15 +39,6 @@
   ];
   const MOODS = { ok: 'Bien', happy: 'Feliz', sad: 'Triste', sleep: 'Descansando', sick: 'Con problemas', alert: 'En alerta' };
   const KIND_LABEL = { alert: 'Aviso', trade: 'Operación', diary: 'Crónica', chat: 'Charla' };
-  const SOON = {
-    forja: {
-      title: 'Forja',
-      who: 'Próximamente: la forja de estrategias',
-      text: 'Con lo que aprendan el Consejo y las Pruebas, aquí se forjarán bots nuevos. Solo los que demuestren durante ' +
-        'semanas que ganan (de mentira) podrán usar dinero real, siempre con tu permiso y con un presupuesto que tú elijas.',
-    },
-  };
-  const SOON_ALIAS = { arena: 'forja' };
   const ROOM_INFO = {
     mercado: ['Mercado', 'Aquí trabaja Kali. Cada vez que hace algo de verdad (una orden, una compra, un cobro) viene aquí.'],
     laboratorio: ['Laboratorio', 'Radar busca oportunidades en todos los mercados de Kalshi y la Investigadora prepara los del Consejo.'],
@@ -55,7 +47,12 @@
     boveda: ['Bóveda', 'Donde se cuentan las ganancias y las pérdidas. Kali viene cuando se decide un mercado o mira el saldo.'],
     puente: ['Puente', 'Vigía vigila el riesgo. Aquí está tu terminal: lo que los bots te dejan llega aquí.'],
     archivo: ['Archivo', 'Cronista escribe el diario del pueblo y cuelga las noticias en el tablón.'],
+    forja: ['Forja', 'La Herrera repasa el dinero real de Kali: qué liga, ciudad y precio gana o pierde, y qué ajuste del panel lo cambiaría.'],
     pruebas: ['Pruebas', 'La Probadora juega de mentira los partidos como Kali, pero de cuatro maneras a la vez, para ver cuál gana más.'],
+  };
+  const ROOM_OWNER = {
+    mercado: 'kali', boveda: 'kali', forja: 'herrera', observatorio: 'nube', laboratorio: 'radar', archivo: 'cronista',
+    pruebas: 'probadora',
   };
   const MEMBER_ABOUT = {
     tormenta: 'Para cada tramo de temperatura calcula la probabilidad con la máxima prevista por el Servicio Meteorológico de EE. UU. y lo ya medido hoy.',
@@ -220,6 +217,44 @@
           today: { net: '1.85', markets: 9, wins: 9, losses: 0 },
           yesterday: { net: '2.40', markets: 12, wins: 11, losses: 1 },
           totals: { net: '6.10', markets: 41 },
+        },
+      },
+      {
+        id: 'herrera', name: 'Herrera', role: 'Mira qué funciona y qué no en el dinero real de Kali', home: 'forja', color: '#ff8a3d',
+        about: 'Repasa los mercados que Kali ha cerrado en los últimos 30 días y los separa por liga, por ciudad y por el precio que pagó.',
+        status: '30 días: +$2,49 en 71 mercados · 5 perdidos', mood: 'alert', updated_at: now,
+        activity: { room: 'forja', text: 'lo que más pierde: Fútbol americano universitario −$9,80', at: now },
+        detail: {
+          connected: true, days: 30,
+          totals: { markets: 71, wins: 66, losses: 5, net: 2.49, avg_price: 0.922, rate: 0.9296, need: 0.9235, verdict: 'gana' },
+          advice: [
+            { key: 'series:KXNCAAFGAME', level: 'alert', text: '«Fútbol americano universitario» pierde dinero: 14 mercados, 3 perdidos, −$9,80. Puedes quitar KXNCAAFGAME en Ajustes → Mercados → Series.' },
+            { key: 'size', level: 'info', text: 'Cada apuesta es un 19 % de tu saldo y un fallo se come unos 12 aciertos. Con menos contratos por orden (Ajustes → Estrategia) los días malos duelen mucho menos.' },
+          ],
+          groups: {
+            kinds: [
+              { key: 'partidos', label: 'Partidos', markets: 30, wins: 27, losses: 3, net: -6.1, rate: 0.9, need: 0.915, verdict: 'pierde' },
+              { key: 'clima', label: 'Clima', markets: 41, wins: 39, losses: 2, net: 8.59, rate: 0.951, need: 0.928, verdict: 'gana' },
+            ],
+            series: [
+              { key: 'KXNCAAFGAME', label: 'Fútbol americano universitario', markets: 14, wins: 11, losses: 3, net: -9.8, rate: 0.786, need: 0.909, verdict: 'pierde' },
+              { key: 'KXHIGHAUS', label: 'Clima · Austin', markets: 6, wins: 5, losses: 1, net: -2.31, rate: 0.833, need: 0.925, verdict: 'va perdiendo' },
+              { key: 'KXNHLGAME', label: 'Hockey (NHL)', markets: 4, wins: 4, losses: 0, net: 1.52, rate: 1, need: 0.905, verdict: 'pocos datos' },
+              { key: 'KXMLBGAME', label: 'Béisbol (MLB)', markets: 12, wins: 12, losses: 0, net: 2.18, rate: 1, need: 0.921, verdict: 'va ganando' },
+              { key: 'KXHIGHNY', label: 'Clima · Nueva York', markets: 7, wins: 7, losses: 0, net: 2.55, rate: 1, need: 0.93, verdict: 'va ganando' },
+            ],
+            bands: [
+              { key: 'menos de 90¢', label: 'menos de 90¢', markets: 9, wins: 7, losses: 2, net: -6.25, rate: 0.778, need: 0.892, verdict: 'pierde' },
+              { key: '90–91¢', label: '90–91¢', markets: 24, wins: 22, losses: 2, net: -1.94, rate: 0.917, need: 0.912, verdict: 'pierde' },
+              { key: '92–93¢', label: '92–93¢', markets: 22, wins: 21, losses: 1, net: 4.12, rate: 0.955, need: 0.93, verdict: 'gana' },
+              { key: '94¢ o más', label: '94¢ o más', markets: 16, wins: 16, losses: 0, net: 6.56, rate: 1, need: 0.951, verdict: 'gana' },
+            ],
+          },
+          losses: [
+            { ticker: 'D1', name: 'Gana Texas', label: 'Fútbol americano universitario', side: 'SÍ', price: 0.89, net: -4.46, date: '2026-10-10' },
+            { ticker: 'D2', name: 'Máxima en Austin · 91° a 92°', label: 'Clima · Austin', side: 'NO', price: 0.9, net: -4.51, date: '2026-10-09' },
+          ],
+          curve: Array.from({ length: 60 }, (_, i) => ({ date: '', total: Math.round((i < 48 ? i * 0.3 : 14.4 - (i - 48) * 1.0) * 100) / 100 })),
         },
       },
       {
@@ -1103,7 +1138,7 @@
     }
 
     addLabels() {
-      const names = { laboratorio: 'Laboratorio · pronto', arena: 'Arena · pronto', casa: 'Tu casa' };
+      const names = { laboratorio: 'Pruebas', arena: 'Forja', casa: 'Tu casa' };
       for (const th of this.map.things) {
         if (!names[th.id]) continue;
         const node = el('div', 'place-label', names[th.id]);
@@ -2027,6 +2062,47 @@
       box.append(btn);
       return box;
     },
+    herrera(b) {
+      const d = b.detail || {};
+      const box = el('div', 'detail');
+      if (!d.connected) {
+        box.append(el('p', 'note warn', 'La Herrera todavía no ve el panel de Kali. En Railway, pon PANEL_URL y PANEL_PASSWORD en las variables de este servicio.'));
+        return box;
+      }
+      const t = d.totals;
+      if (!t) {
+        box.append(el('p', 'note', 'Kali todavía no ha cerrado mercados en estos 30 días.'));
+        return box;
+      }
+      const stats = el('dl', 'stats');
+      stats.append(
+        stat(`Últimos ${d.days || 30} días`, money(t.net, true), `${plural(t.markets, 'mercado', 'mercados')} · ${plural(t.losses, 'perdido', 'perdidos')}`, num(t.net)),
+        stat('Acierto', pct(t.rate), `necesita ${pct(t.need)} con lo que paga`, num(t.rate) >= num(t.need) ? 1 : -1),
+      );
+      box.append(stats);
+      for (const a of d.advice || []) box.append(el('p', `note${a.level === 'alert' ? ' warn' : ''}`, a.text));
+      const groups = d.groups || {};
+      const sections = [['Por liga y ciudad', groups.series], ['Por precio de compra', groups.bands], ['Por tipo', groups.kinds]];
+      for (const [title, list] of sections) {
+        if (!list || !list.length) continue;
+        box.append(el('h3', null, title), groupRows(list));
+      }
+      const losses = d.losses || [];
+      if (losses.length) {
+        box.append(el('h3', null, 'Últimas pérdidas'));
+        const ul = el('ul', 'rows');
+        for (const l of losses.slice(0, 8)) {
+          const li = el('li', 'row');
+          const top = el('div', 'row-top');
+          top.append(el('span', 'row-name', l.name), el('b', 'test-pnl down', money(l.net, true)));
+          li.append(top, el('div', 'row-sub', [l.label, `${l.side} a ${cents(l.price)}`, l.date].filter(Boolean).join(' · ')));
+          ul.append(li);
+        }
+        box.append(ul);
+      }
+      box.append(el('p', 'note', 'Son los mercados que ha cerrado el bot con dinero real (los compras tuyas a mano no cuentan). La Herrera no cambia nada: los ajustes se cambian en el panel.'));
+      return box;
+    },
     probadora(b) {
       const d = b.detail || {};
       const box = el('div', 'detail');
@@ -2092,6 +2168,27 @@
       return box;
     },
   };
+
+  const VERDICT = { gana: 'Gana', pierde: 'Pierde', 'va ganando': 'Va ganando', 'va perdiendo': 'Va perdiendo', justo: 'Justo', 'pocos datos': 'Pocos datos' };
+
+  // Grupos de mercados de la Herrera: qué gana y qué pierde, con el acierto que necesita.
+  function groupRows(list) {
+    const ul = el('ul', 'rows');
+    for (const g of list) {
+      const li = el('li', 'row');
+      const top = el('div', 'row-top');
+      const net = num(g.net) || 0;
+      const right = el('span', 'group-right');
+      right.append(el('span', `verdict verdict-${String(g.verdict).replace(/ /g, '-')}`, VERDICT[g.verdict] || g.verdict),
+        el('b', `test-pnl ${net > 0 ? 'up' : net < 0 ? 'down' : ''}`, money(net, true)));
+      top.append(el('span', 'row-name', g.label), right);
+      const bits = [plural(g.markets, 'mercado', 'mercados'), plural(g.losses, 'perdido', 'perdidos')];
+      if (g.rate !== null && g.rate !== undefined) bits.push(`acierta ${pct(g.rate)} (necesita ${pct(g.need)})`);
+      li.append(top, el('div', 'row-sub', bits.join(' · ')));
+      ul.append(li);
+    }
+    return ul;
+  }
 
   function boardRow(id) {
     return (((state.byId.get('investigadora') || {}).detail || {}).board || []).find((r) => r.id === id) || null;
@@ -2238,24 +2335,6 @@
     return box;
   }
 
-  function openSoon(kind) {
-    const room = SOON_ALIAS[kind] || kind;
-    const info = SOON[room];
-    if (!info) return;
-    state.selected = null;
-    state.room = null;
-    const h2 = el('h2', null, info.title);
-    h2.id = 'sheet-title';
-    const head = el('div', 'sheet-head');
-    const titles = el('div');
-    titles.append(h2, el('p', 'role', info.who));
-    head.append(roomPicture(room), titles, el('span', 'mood', 'Pronto'));
-    $('#sheet-body').replaceChildren(head, el('p', 'about', info.text),
-      el('p', 'note', 'Ningún bot nuevo usará dinero real sin pasar antes por aquí y sin que tú lo apruebes.'));
-    $('#talk-btn').hidden = true;
-    showSheet();
-  }
-
   function goTab(name) {
     showTab(name);
     $('.tabs').scrollIntoView({ behavior: town && town.reduced ? 'auto' : 'smooth', block: 'start' });
@@ -2311,8 +2390,8 @@
   }
 
   function openRoom(room) {
-    if (SOON[room]) {
-      openSoon(room);
+    if (state.byId.has(ROOM_OWNER[room])) {
+      openSheet(ROOM_OWNER[room]);
       return;
     }
     if (room === 'consejo' && state.source) {
@@ -2383,7 +2462,7 @@
       return;
     }
     if (hit.owner === 'arena') {
-      openSoon(hit.owner);
+      openRoom('forja');
       return;
     }
     if (state.byId.has(hit.owner)) openSheet(hit.owner);
@@ -2467,7 +2546,7 @@
   }
 
   function wantsPixel() {
-    return window.location.hash.includes('pixel') || store('pueblo.vista') === 'pixel';
+    return window.location.hash.includes('pixel');
   }
 
   async function makeTown() {
@@ -2492,23 +2571,11 @@
     return new Town($('#map'), $('#overlay'));
   }
 
-  function setupViewLink() {
-    const link = $('#view-link');
-    link.textContent = view === '3d' ? 'Ver el pueblo pixel' : 'Ver la base 3D';
-    link.addEventListener('click', () => {
-      store('pueblo.vista', view === '3d' ? 'pixel' : '3d');
-      if (window.location.hash.includes('pixel')) window.location.hash = window.location.hash.replace('pixel', '');
-      window.location.reload();
-    });
-  }
-
   async function boot() {
     town = await makeTown();
     town.onPick = onPick;
     town.sync(DEFAULT_BOTS.map((b) => ({ ...b, mood: 'ok', status: '', detail: {} })));
-    setupViewLink();
     $('#login-form').addEventListener('submit', onLogin);
-    $('#demo-btn').addEventListener('click', startDemo);
     $('#logout-btn').addEventListener('click', onLogout);
     $('#talk-btn').addEventListener('click', talk);
     $('#sheet-close').addEventListener('click', closeSheet);
@@ -2527,7 +2594,6 @@
         renderFeeds(true);
       });
     }
-    for (const card of $$('[data-soon]')) card.addEventListener('click', () => openSoon(card.dataset.soon));
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && state.source) schedule(200);
     });

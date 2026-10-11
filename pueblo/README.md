@@ -8,8 +8,8 @@ una etiqueta con lo que hace ("compra 5 SÍ a 93¢ · Miami 88°–89°"), y cua
 hasta él y se lo dice en un bocadillo. Lo que es para ti llega a la terminal del Puente.
 
 Debajo están el diario con todo lo que se han dicho, lo que es para ti, el **Consejo** y la ficha de
-cada vecino. El pueblo pixel de antes sigue ahí: enlace **Ver el pueblo pixel** al pie de la página
-(o `#pixel` al final de la dirección). Si el móvil no puede con el 3D, sale el pixel solo.
+cada vecino. Todo enseña tu bot de verdad: no hay datos inventados ni salas de adorno. Si el móvil
+no puede con el 3D, sale el pueblo pixel de antes, con los mismos datos.
 
 El bot de Kalshi y su panel no se tocan. El pueblo es un servicio aparte que **solo lee** el panel.
 
@@ -17,6 +17,7 @@ El bot de Kalshi y su panel no se tocan. El pueblo es un servicio aparte que **s
 
 | Vecino | Sala | Qué hace | De dónde saca los datos |
 | --- | --- | --- | --- |
+| **Herrera** | Forja | Repasa los mercados que Kali ha cerrado con dinero real en los últimos 30 días y los separa por liga, por ciudad y por el precio que pagó. Solo dice que algo «pierde» cuando los números lo dejan claro (no por un fallo suelto) y te avisa de qué ajuste del panel lo cambiaría. | El panel del bot (solo lectura). |
 | **Kali** | Mercado | Es tu bot de Kalshi visto desde la base: cuenta lo que compra y cobra, y cómo va el día. Va a la sala de cada cosa que hace en su panel. | El panel del bot (solo lectura). |
 | **Nube** | Observatorio | Mira la máxima prevista y la medida hoy en las 7 ciudades del clima. Avisa a Kali si una previsión cambia y a Vigía si una apuesta de temperatura peligra. | Servicio Meteorológico de EE. UU. (api.weather.gov), la misma fuente con la que Kalshi decide. |
 | **Vigía** | Puente | Te avisa si una apuesta se hunde, si hay demasiado dinero en una sola o si Kali se acerca al freno de pérdidas. | Lo que cuenta Kali. |
@@ -26,10 +27,14 @@ El bot de Kalshi y su panel no se tocan. El pueblo es un servicio aparte que **s
 | **Probadora** | Pruebas | Juega de mentira los partidos como Kali, pero de cuatro maneras a la vez: tal cual, con como mucho 3 partidos abiertos a la vez, con 3 contratos por partido y solo desde 92¢. Cuando acaba cada partido apunta cuál habría ganado más. | Datos públicos de Kalshi. |
 | **El Consejo** | Consejo | Cinco personajes que piensan distinto (ver abajo) y, si quieres, Claude. | Lo mismo que la Investigadora. |
 
-La sala **Forja** está marcada como *pronto* (ver *Qué viene después*).
+Cada sala tiene su pantalla con datos de verdad: las apuestas abiertas de Kali y su curva de
+ganancias de 30 días (Mercado), el saldo de hoy (Bóveda), el radar de riesgo con cada apuesta abierta
+(Puente), lo que encuentra Radar (Laboratorio), el tiempo de las 7 ciudades (Observatorio), el
+marcador del Consejo, el de las Pruebas y lo que gana y pierde cada liga y ciudad (Forja).
 
-Toca una sala para acercarte (dentro se ve qué hace cada uno); tócala otra vez para ver quién está.
-Toca un bot para ver su ficha; con **Hablar** te contesta con lo que sabe en ese momento.
+Toca una sala para acercarte (dentro se ve qué hace cada uno); tócala otra vez para abrir la ficha de
+quien trabaja allí. Toca un bot para ver su ficha; con **Hablar** te contesta con lo que sabe en ese
+momento.
 
 ## El Consejo: ¿quién acertó?
 
@@ -78,14 +83,6 @@ cuenta de Anthropic: alrededor de 1–2 céntimos. Con el límite de 12 pregunta
 - La web tiene su propia contraseña (`PUEBLO_PASSWORD`), distinta de la del panel. Tras 5 intentos
   fallidos se bloquea un minuto.
 
-## Verlo ya
-
-En la pantalla de entrada hay un botón **Ver una demostración**: la misma base con datos
-inventados, sin contraseña ni servidor. También se abre añadiendo `#demo` a la dirección
-(`#demo-pixel` para la demostración del pueblo pixel).
-
-En el pueblo pixel la luz sigue tu hora. Para verlo a otra hora: `#noche`, `#tarde` o `#dia`.
-
 ## Ponerlo en Railway
 
 Es un servicio nuevo en el mismo proyecto del bot. **Crearlo no reinicia el bot.**
@@ -118,9 +115,9 @@ con más calma para no saturar a nadie.
 
 1. **Ahora: ayudantes y el Consejo.** Miran, se avisan entre ellos y te avisan a ti, y el
    Consejo apuesta de mentira para ver qué manera de pensar gana. No mueven dinero.
-2. **Forja.** Con lo que funcione en las Pruebas, en el marcador del Consejo y en la simulación con
-   mercados ya cerrados (`kalshi_sim/` en este repositorio), en la Forja se harán bots nuevos que
-   seguirán con dinero de mentira durante semanas.
+2. **Bots nuevos.** Con lo que funcione en las Pruebas, en el marcador del Consejo y en la simulación
+   con mercados ya cerrados (`kalshi_sim/` en este repositorio) se harán bots nuevos que seguirán con
+   dinero de mentira durante semanas.
 3. **Dinero real, solo con permiso.** Un bot solo usará dinero real si ha demostrado que gana, si
    tú lo apruebas y con un presupuesto pequeño que elijas tú. Si Kalshi lo permite, en una
    subcuenta aparte para que no se mezcle con Kali.
@@ -133,6 +130,9 @@ pip install -r requirements-dev.txt
 pytest
 PUEBLO_PASSWORD=una-contraseña python -m pueblo   # http://localhost:8090
 ```
+
+Para probar la web sin panel, `#demo` al final de la dirección abre una demostración con datos
+inventados (no aparece en la web normal).
 
 Un vecino nuevo es una clase de `pueblo/agents/` que hereda de `Agent`: le das `id`, `name`,
 `role`, `home` (su sala), `color` e `interval`, y en `tick()` hace su trabajo, dice a qué sala va
