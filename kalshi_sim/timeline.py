@@ -226,10 +226,37 @@ def analyze(paths: list) -> None:
             for code in GAME_SERIES:
                 print(line(f"{code} como ahora", [b for b in base if b["m"].series == code]))
                 print(line(f"{code} saltando caídas", [b for b in guarded if b["m"].series == code]))
+    entry_rules(groups)
     print(
         "\nOjo: supone que el bot se lleva la compra que hizo quien esperaba en el libro. Sirve para comparar "
         "reglas entre sí, con las mismas operaciones."
     )
+
+
+def entry_rules(groups: dict) -> None:
+    """Cuándo y a qué precio entrar, con todas las operaciones (no solo las últimas)."""
+    weather, games = groups["weather"], groups["games"]
+
+    def rule(hours: float, floor: int):
+        return lambda m, i, s, p: m.ts[i] >= m.close - hours * 3600 and p >= floor
+
+    if weather:
+        print("\n=== Clima: cuántas horas antes del cierre y desde qué precio ===")
+        for hours in (40, 30, 24, 18, 12, 8):
+            for floor in (880, 920, 940):
+                label = f"hasta {hours} h antes, desde {floor // 10}¢"
+                print(line(label, entries(weather, rule(hours, floor))))
+        print("\n=== Clima por ciudad (como ahora: hasta 40 h, desde 88¢ / hasta 24 h, desde 92¢) ===")
+        base = entries(weather, rule(40, 880))
+        late = entries(weather, rule(24, 920))
+        for code in WEATHER_SERIES:
+            print(line(f"{code} como ahora", [b for b in base if b["m"].series == code]))
+            print(line(f"{code} 24 h y 92¢", [b for b in late if b["m"].series == code]))
+    if games:
+        print("\n=== Partidos: desde qué precio y cuánto antes del final ===")
+        for hours in (6, 3, 1):
+            for floor in (880, 900, 920, 940):
+                print(line(f"hasta {hours} h antes, desde {floor // 10}¢", entries(games, rule(hours, floor))))
 
 
 def main() -> None:

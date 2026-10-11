@@ -1,0 +1,49 @@
+# Vuelve a analizar las operaciones ya descargadas por "Kalshi: precio alrededor de cada compra"
+# (se guardan 7 días), sin descargarlas otra vez. Solo datos públicos de mercados ya liquidados.
+name: "Kalshi: análisis de las operaciones descargadas"
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Ejecución de la que se toman las operaciones"
+        required: false
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-timeline-analyze.yml
+      - kalshi_sim/timeline.py
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kalshi-timeline-analyze
+  cancel-in-progress: true
+
+env:
+  DATA_RUN: ${{ github.event.inputs.run_id || '38175484511' }}
+
+jobs:
+  analyze:
+    name: Analizar
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: tl-*
+          merge-multiple: true
+          run-id: ${{ env.DATA_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Análisis
+        run: python kalshi_sim/timeline.py analyze tl-games.json.gz tl-weather.json.gz | tee out.txt
+      - name: Resumen
+        if: always()
+        run: |
+          { echo '## Operaciones descargadas'; echo '```'; cat out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true
