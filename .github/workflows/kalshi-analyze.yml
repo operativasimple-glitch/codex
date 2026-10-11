@@ -1,0 +1,50 @@
+# Análisis por apuesta con los datos ya descargados por "Kalshi: simulación con dinero virtual".
+# Solo lee datos públicos de mercados ya liquidados: no usa ninguna clave ni envía órdenes.
+name: "Kalshi: análisis por apuesta"
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Ejecución de la simulación de la que se toman los datos"
+        required: false
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-analyze.yml
+      - kalshi_sim/analyze.py
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kalshi-analyze
+  cancel-in-progress: true
+
+env:
+  # Los datos de la simulación del 10 de octubre (se guardan 3 días).
+  DATA_RUN: ${{ github.event.inputs.run_id || '38095708691' }}
+
+jobs:
+  analyze:
+    name: Analizar
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: data-*
+          merge-multiple: true
+          run-id: ${{ env.DATA_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Análisis
+        run: python kalshi_sim/analyze.py games.json weather.json | tee out.txt
+      - name: Resumen
+        if: always()
+        run: |
+          { echo '## Análisis por apuesta'; echo '```'; cat out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true

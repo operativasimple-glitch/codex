@@ -134,9 +134,12 @@ def simulate(
     games_min_price: Decimal = BAND[0],
     games_size: int = 0,
     games_max_open: int = 0,
+    per_event_weather: int = 0,
 ) -> dict:
     """games_*: reglas propias de los partidos (precio mínimo, contratos por partido y
-    partidos abiertos a la vez; 0 = como el resto)."""
+    partidos abiertos a la vez; 0 = como el resto). per_event_weather: tramos con dinero a la
+    vez por ciudad y día (0 = los de PER_EVENT)."""
+    event_limit = {**PER_EVENT, **({"weather": per_event_weather} if per_event_weather else {})}
     start_cash = cash
     opportunities = []
     for i, m in enumerate(markets):
@@ -204,7 +207,7 @@ def simulate(
         pos = held.get(i)
         if pos is None:
             used = per_event[m["event"]]
-            if m["settle"] <= ts or i in used or len(used) >= PER_EVENT[group]:
+            if m["settle"] <= ts or i in used or len(used) >= event_limit[group]:
                 continue  # ya liquidado, ya cerrado o sin hueco en el evento
             if group == "games" and games_max_open:
                 open_games = sum(1 for j in held if group_of(markets[j]["series"]) == "games")
