@@ -9,7 +9,7 @@ on:
     branches: [claude/kalshi-bot-kjmcj6]
     paths:
       - .github/workflows/kalshi-bankroll.yml
-      - kalshi_sim/**
+      - kalshi_sim/bankroll.py
 
 permissions:
   contents: read

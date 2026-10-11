@@ -151,18 +151,19 @@ def bankroll_report(games: list, weather: list) -> None:
     keep = [m for m in games if m["series"] in ("KXMLBGAME", "KXNHLGAME")]
     sets = (("solo clima", weather), ("clima + béisbol + hockey", weather + keep), ("todo", weather + games))
     for label, markets in sets:
-        for size, cap in ((5, 1000), (3, 1000), (5, 12), (3, 12), (2, 1000)):
+        for size, cap, floor in ((5, 1000, "0.88"), (3, 1000, "0.88"), (2, 1000, "0.88"), (5, 1000, "0.92"),
+                                 (3, 1000, "0.92"), (2, 1000, "0.92"), (3, 1000, "0.94"), (3, 12, "0.88")):
             r = simulate(markets, cash=Decimal(24), order_size=size, max_position=size, max_exposure=Decimal(cap),
-                         per_event_weather=1)
+                         per_event_weather=1, min_price=Decimal(floor))
             closed = r["closed"]
             net = sum((c["net"] for c in closed), Decimal(0))
             by_day: dict = defaultdict(lambda: Decimal(0))
             for c in closed:
                 by_day[int(c["when"] // 86400)] += c["net"]
             worst = min(by_day.values()) if by_day else Decimal(0)
-            capt = "sin límite" if cap >= 1000 else f"máx. {cap} $ en juego"
+            capt = ("" if cap >= 1000 else f"máx. {cap} $ en juego, ") + f"desde {int(Decimal(floor) * 100)}¢"
             print(
-                f"  {label:<26} {size} contratos, {capt:<18} → {money(net, True):>10} · peor día {money(worst, True):>9} · "
+                f"  {label:<26} {size} contratos, {capt:<28} → {money(net, True):>10} · peor día {money(worst, True):>9} · "
                 f"peor bajada {money(-r['max_drawdown']):>9} · {len(closed)} apuestas"
             )
 

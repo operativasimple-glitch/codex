@@ -131,7 +131,8 @@ def simulate(
     order_size: int,
     max_position: int,
     max_exposure: Decimal,
-    games_min_price: Decimal = BAND[0],
+    games_min_price: Decimal = None,
+    min_price: Decimal = BAND[0],
     games_size: int = 0,
     games_max_open: int = 0,
     per_event_weather: int = 0,
@@ -143,7 +144,7 @@ def simulate(
     start_cash = cash
     opportunities = []
     for i, m in enumerate(markets):
-        floor = games_min_price if group_of(m["series"]) == "games" else BAND[0]
+        floor = games_min_price if group_of(m["series"]) == "games" and games_min_price else min_price
         for ts, side, paid, count in m["fills"]:
             if Decimal(paid) >= floor:
                 opportunities.append((ts, i, side, Decimal(paid), Decimal(count)))
