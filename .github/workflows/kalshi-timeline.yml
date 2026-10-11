@@ -1,0 +1,74 @@
+# ¿Le entran al bot las compras justo cuando el precio se da la vuelta? (kalshi_sim/timeline.py)
+# Solo lee datos públicos de mercados ya liquidados: no usa ninguna clave ni envía órdenes.
+name: "Kalshi: precio alrededor de cada compra"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-timeline.yml
+      - kalshi_sim/timeline.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kalshi-timeline
+  cancel-in-progress: true
+
+env:
+  KALSHI_ENV: prod
+
+jobs:
+  fetch:
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [games, weather]
+    name: Descargar (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: operativasimple-glitch/NotesAi
+          ref: claude/kalshi-bot-kjmcj6
+          path: notesai
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r notesai/kalshi-bot/requirements.txt
+      - name: Operaciones de las últimas 6 semanas
+        working-directory: notesai/kalshi-bot
+        run: |
+          printf '[http]\nreads_per_second = 10\n' > config.toml
+          python "$GITHUB_WORKSPACE/kalshi_sim/timeline.py" fetch --group ${{ matrix.group }} --days 42 \
+            --out "$GITHUB_WORKSPACE/tl-${{ matrix.group }}.json.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tl-${{ matrix.group }}
+          path: tl-${{ matrix.group }}.json.gz
+          retention-days: 7
+
+  analyze:
+    name: Analizar
+    needs: fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: tl-*
+          merge-multiple: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Análisis
+        run: python kalshi_sim/timeline.py analyze tl-games.json.gz tl-weather.json.gz | tee out.txt
+      - name: Resumen
+        if: always()
+        run: |
+          { echo '## Precio alrededor de cada compra'; echo '```'; cat out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true
