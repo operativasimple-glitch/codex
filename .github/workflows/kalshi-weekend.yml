@@ -1,0 +1,87 @@
+# ¿Por qué perdió el bot el fin de semana del 10 y 11 de octubre? (kalshi_sim/weekend.py)
+# Solo lee datos públicos de mercados ya liquidados: no usa ninguna clave ni envía órdenes.
+name: "Kalshi: el fin de semana del 10 y 11 de octubre"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-weekend.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kalshi-weekend
+  cancel-in-progress: true
+
+env:
+  KALSHI_ENV: prod
+  # Las 6 semanas anteriores ya descargadas por "Kalshi: precio alrededor de cada compra".
+  OLD_RUN: "38175484511"
+
+jobs:
+  fetch:
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [games, weather]
+    name: Descargar (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: operativasimple-glitch/NotesAi
+          ref: claude/kalshi-bot-kjmcj6
+          path: notesai
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r notesai/kalshi-bot/requirements.txt
+      - name: Operaciones de la última semana
+        working-directory: notesai/kalshi-bot
+        run: |
+          printf '[http]\nreads_per_second = 10\n' > config.toml
+          python "$GITHUB_WORKSPACE/kalshi_sim/weekend.py" fetch --group ${{ matrix.group }} --days 7 \
+            --out "$GITHUB_WORKSPACE/wk-${{ matrix.group }}.json.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wk-${{ matrix.group }}
+          path: wk-${{ matrix.group }}.json.gz
+          retention-days: 7
+
+  report:
+    name: Informe
+    needs: fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wk-*
+          merge-multiple: true
+          path: new
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: tl-*
+          merge-multiple: true
+          path: old
+          run-id: ${{ env.OLD_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Informe
+        run: |
+          files=$(ls old/tl-*.json.gz 2>/dev/null; ls new/wk-*.json.gz)
+          python kalshi_sim/weekend.py report $files | tee out.txt
+      - name: Resumen
+        if: always()
+        run: |
+          { echo '## El fin de semana del 10 y 11 de octubre'; echo '```'; cat out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true
