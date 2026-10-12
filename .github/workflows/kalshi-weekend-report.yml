@@ -1,0 +1,57 @@
+# Vuelve a hacer el informe del fin de semana del 10 y 11 de octubre (kalshi_sim/weekend.py) con
+# los datos ya descargados (se guardan 7 días), sin descargarlos otra vez. Solo datos públicos.
+name: "Kalshi: informe del fin de semana (datos ya descargados)"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-weekend-report.yml
+      - kalshi_sim/weekend.py
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kalshi-weekend-report
+  cancel-in-progress: true
+
+env:
+  NEW_RUN: "38299101993"
+  OLD_RUN: "38175484511"
+
+jobs:
+  report:
+    name: Informe
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wk-*
+          merge-multiple: true
+          path: new
+          run-id: ${{ env.NEW_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: tl-*
+          merge-multiple: true
+          path: old
+          run-id: ${{ env.OLD_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Informe
+        run: |
+          files=$(ls old/tl-*.json.gz 2>/dev/null; ls new/wk-*.json.gz)
+          python kalshi_sim/weekend.py report $files | tee out.txt
+      - name: Resumen
+        if: always()
+        run: |
+          { echo '## El fin de semana del 10 y 11 de octubre'; echo '```'; cat out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true

@@ -30,7 +30,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).parent))
 from bankroll import GAME_SERIES, WEATHER_SERIES, WINDOW_HOURS  # noqa: E402
-from timeline import CONTRACTS, Market, entries  # noqa: E402
+from timeline import CONTRACTS, Market, entries, line  # noqa: E402
 
 TZ = ZoneInfo("America/Chicago")
 WEEKEND = (date(2026, 10, 9), date(2026, 10, 10), date(2026, 10, 11))
@@ -133,6 +133,7 @@ def load(paths: list) -> dict:
         m.name = r.get("n") or ticker
         m.title = r.get("ti") or ""
         m.day = event_day(r["e"])
+        m.volume = sum(t[3] for t in r["tl"])  # contratos negociados en la ventana del bot
         if m.day is not None:
             out[m.group].append(m)
     return out
@@ -183,7 +184,7 @@ def describe(b: dict) -> str:
     return (
         f"  {WEEKDAYS[when.weekday()]} {when:%H:%M} · {what:<13} {lado} a {b['p'] * 100:.0f}¢ · {m.name}{title}\n"
         f"      {hours:4.1f} h antes del final · después llegó a {cents(top)} · 1 h antes del final valía "
-        f"{hour_before} · {b['net']:+.2f} $"
+        f"{hour_before} · {b['net']:+.2f} $ · {m.volume} contratos negociados"
     )
 
 
@@ -286,6 +287,31 @@ def rules_report(markets: dict) -> None:
         )
 
 
+def liquidity_report(bets: list) -> None:
+    """¿Fallan más los partidos poco negociados? Cortes fijados con las semanas anteriores al finde."""
+    print("\n=== Partidos según lo negociado en las 6 h antes del final (cortes por tercios, con las semanas anteriores) ===")
+    for label, pick in (
+        ("universitario", lambda b: b["m"].series == "KXNCAAFGAME"),
+        ("todos los partidos", lambda b: b["m"].group == "games"),
+    ):
+        rows = [b for b in bets if pick(b)]
+        before = [b for b in rows if b["m"].day < WEEKEND[0]]
+        weekend = [b for b in rows if b["m"].day in WEEKEND[1:]]
+        if len(before) < 30:
+            continue
+        vols = sorted(b["m"].volume for b in before)
+        lo, hi = vols[len(vols) // 3], vols[2 * len(vols) // 3]
+        tiers = (
+            (f"poco negociados (< {lo} contratos)", lambda v: v < lo),
+            (f"intermedios ({lo}–{hi})", lambda v: lo <= v < hi),
+            (f"muy negociados (≥ {hi})", lambda v: v >= hi),
+        )
+        for when, chosen in (("6 semanas antes", before), ("sáb y dom 10–11", weekend)):
+            print(f"  {label}, {when}:")
+            for name, test in tiers:
+                print(line(name, [b for b in chosen if test(b["m"].volume)]))
+
+
 def report(paths: list) -> None:
     markets = load(paths)
     bets = bets_for(markets, rule(6, 880), rule(40, 880))
@@ -295,6 +321,7 @@ def report(paths: list) -> None:
     weekend_report(bets)
     luck_report(bets)
     weekends_report(bets)
+    liquidity_report(bets)
     rules_report(markets)
     daily_report(bets)
     print(
