@@ -134,6 +134,7 @@ def load(paths: list) -> dict:
         m.title = r.get("ti") or ""
         m.day = event_day(r["e"])
         m.volume = sum(t[3] for t in r["tl"])  # contratos negociados en la ventana del bot
+        m.counts = [t[3] for t in r["tl"]]
         if m.day is not None:
             out[m.group].append(m)
     return out
@@ -312,6 +313,68 @@ def liquidity_report(bets: list) -> None:
                 print(line(name, [b for b in chosen if test(b["m"].volume)]))
 
 
+def fee_n(count: int, price: float) -> float:
+    """Comisión de maker de una orden de `count` contratos (Kalshi redondea al céntimo hacia arriba)."""
+    return math.ceil(0.0175 * count * price * (1 - price) * 100 - 1e-9) / 100
+
+
+def stacked(markets: list, hours: float, floor: int, order: int, cap: int) -> list:
+    """Como el bot si puede ir sumando en el mismo mercado.
+
+    Cada vez que alguien le vende el favorito (con 5 s entre un llenado y el siguiente, lo que
+    tarda en volver a poner la orden) compra hasta `order` contratos más, hasta `cap` por
+    mercado. Un mercado por evento y siempre el mismo lado, como el bot.
+    """
+    first = []
+    for m in markets:
+        for i, side, paid in m.candidates():
+            if m.ts[i] >= m.close - hours * 3600 and paid >= floor:
+                first.append((m.ts[i], m, i, side))
+                break
+    first.sort(key=lambda f: f[0])
+    used, out = set(), []
+    for _, m, i0, side in first:
+        if m.event in used:
+            continue
+        used.add(m.event)
+        pos, cost, fees, last = 0, 0.0, 0.0, None
+        for i, s, paid in m.candidates():
+            if i < i0 or s != side or paid < floor or (last is not None and m.ts[i] - last < 5):
+                continue
+            q = min(order, cap - pos, m.counts[i])
+            price = paid / 1000
+            pos, cost, fees, last = pos + q, cost + q * price, fees + fee_n(q, price), m.ts[i]
+            if pos >= cap:
+                break
+        won = side == m.result
+        out.append({"m": m, "won": won, "contracts": pos, "cost": cost + fees,
+                    "net": (pos if won else 0) - cost - fees})
+    return out
+
+
+def stacking_report(markets: dict) -> None:
+    print("\n=== Si el bot va sumando contratos en el mismo mercado (5 por orden; reglas de entonces) ===")
+    print("  (cada vez que alguien le vende el favorito dentro de la banda, compra 5 más hasta el máximo)")
+    for group, label, hours in (("games", "partidos", 6), ("weather", "clima", 40)):
+        for cap in (5, 10, 20):
+            rows = stacked(markets[group], hours, 880, 5, cap)
+            for when, pick in (("6 semanas antes", lambda d: d < WEEKEND[0]), ("sáb y dom", lambda d: d in WEEKEND[1:])):
+                part_rows = [r for r in rows if pick(r["m"].day)]
+                if not part_rows:
+                    continue
+                won = [r for r in part_rows if r["won"]]
+                lost = [r for r in part_rows if not r["won"]]
+                net = sum(r["net"] for r in part_rows)
+                cost = sum(r["cost"] for r in part_rows)
+                avg = lambda xs: sum(r["contracts"] for r in xs) / len(xs) if xs else 0.0  # noqa: E731
+                worst = min((r["net"] for r in part_rows), default=0.0)
+                print(
+                    f"  {label:<9} máx. {cap:>2} por mercado, {when:<15} {len(part_rows):>4} mercados · "
+                    f"{net:+8.2f} $ ({net / cost * 100:+.1f} %) · contratos de media: ganados {avg(won):4.1f}, "
+                    f"perdidos {avg(lost):4.1f} · peor mercado {worst:+.2f} $"
+                )
+
+
 def report(paths: list) -> None:
     markets = load(paths)
     bets = bets_for(markets, rule(6, 880), rule(40, 880))
@@ -322,6 +385,7 @@ def report(paths: list) -> None:
     luck_report(bets)
     weekends_report(bets)
     liquidity_report(bets)
+    stacking_report(markets)
     rules_report(markets)
     daily_report(bets)
     print(
