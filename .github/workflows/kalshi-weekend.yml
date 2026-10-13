@@ -1,4 +1,4 @@
-# ¿Por qué perdió el bot el fin de semana del 10 y 11 de octubre? (kalshi_sim/weekend.py)
+# ¿Por qué perdió el bot del sábado 10 al lunes 12 de octubre? (kalshi_sim/weekend.py)
 # Solo lee datos públicos de mercados ya liquidados: no usa ninguna clave ni envía órdenes.
 name: "Kalshi: el fin de semana del 10 y 11 de octubre"
 

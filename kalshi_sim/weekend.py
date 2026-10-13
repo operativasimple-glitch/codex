@@ -33,7 +33,7 @@ from bankroll import GAME_SERIES, WEATHER_SERIES, WINDOW_HOURS  # noqa: E402
 from timeline import CONTRACTS, Market, entries, line  # noqa: E402
 
 TZ = ZoneInfo("America/Chicago")
-WEEKEND = (date(2026, 10, 9), date(2026, 10, 10), date(2026, 10, 11))
+WEEKEND = (date(2026, 10, 9), date(2026, 10, 10), date(2026, 10, 11), date(2026, 10, 12))
 WEEKDAYS = ("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
 MONTHS = {m: i + 1 for i, m in enumerate("JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split())}
 LEAGUE = {
@@ -246,7 +246,7 @@ def weekends_report(bets: list) -> None:
 
 def luck_report(bets: list) -> None:
     print("\n=== ¿Mala suerte o algo raro? (fallos del fin de semana frente a lo normal de las otras semanas) ===")
-    weekend = (WEEKEND[1], WEEKEND[2])
+    weekend = WEEKEND[1:]
     for label, pick in (
         ("todo", lambda b: True),
         ("partidos", lambda b: b["m"].group == "games"),
@@ -262,7 +262,7 @@ def luck_report(bets: list) -> None:
             continue
         p = k0 / n0
         print(
-            f"  {label:<14} sáb y dom: {plural(k, 'fallo', 'fallos')} en {n} ({k / n * 100:4.1f} %) · lo normal antes: "
+            f"  {label:<14} sáb a lun: {plural(k, 'fallo', 'fallos')} en {n} ({k / n * 100:4.1f} %) · lo normal antes: "
             f"{p * 100:4.1f} % ({k0} de {n0}), o sea {n * p:4.1f} esperables · que fallen {k} o más pasa el "
             f"{binom_tail(n, k, p) * 100:4.1f} % de las veces"
         )
@@ -282,7 +282,7 @@ def rules_report(markets: dict) -> None:
         n2, k2, net2, cost2 = tally(rows)
         days = len({b["m"].day for b in rows}) or 1
         print(
-            f"  {label:<36} sáb y dom: {n:>3} apuestas, {k:>2} perdidas, {net:+7.2f} $ · "
+            f"  {label:<36} sáb a lun: {n:>3} apuestas, {k:>2} perdidas, {net:+7.2f} $ · "
             f"todo el periodo: {n2} apuestas, {k2} perdidas, {net2:+.2f} $ ({net2 / cost2 * 100:+.1f} %), "
             f"{net2 / days:+.2f} $ al día"
         )
@@ -307,7 +307,7 @@ def liquidity_report(bets: list) -> None:
             (f"intermedios ({lo}–{hi})", lambda v: lo <= v < hi),
             (f"muy negociados (≥ {hi})", lambda v: v >= hi),
         )
-        for when, chosen in (("6 semanas antes", before), ("sáb y dom 10–11", weekend)):
+        for when, chosen in (("6 semanas antes", before), ("sáb a lun 10–12", weekend)):
             print(f"  {label}, {when}:")
             for name, test in tiers:
                 print(line(name, [b for b in chosen if test(b["m"].volume)]))
@@ -358,7 +358,7 @@ def stacking_report(markets: dict) -> None:
     for group, label, hours in (("games", "partidos", 6), ("weather", "clima", 40)):
         for cap in (5, 10, 20):
             rows = stacked(markets[group], hours, 880, 5, cap)
-            for when, pick in (("6 semanas antes", lambda d: d < WEEKEND[0]), ("sáb y dom", lambda d: d in WEEKEND[1:])):
+            for when, pick in (("6 semanas antes", lambda d: d < WEEKEND[0]), ("sáb a lun", lambda d: d in WEEKEND[1:])):
                 part_rows = [r for r in rows if pick(r["m"].day)]
                 if not part_rows:
                     continue
