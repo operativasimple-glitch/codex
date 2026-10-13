@@ -1,5 +1,7 @@
 # Pueblo de bots
 
+> **Ahora el pueblo vive dentro del bot.** Está en el repositorio NotesAi (`kalshi-bot/pueblo`) y se abre en la dirección del panel acabada en `/pueblo/`, con la misma contraseña. Ya no hace falta este servicio aparte en Railway: si lo creaste, puedes borrarlo. Esta copia se queda como estaba.
+
 Una web donde tus bots viven en una **base 3D** flotando en el espacio: nueve salas, y cada bot
 camina a la sala de lo que está haciendo **de verdad**. Kali va al Mercado cuando su panel dice que
 ha puesto una orden o comprado, a la Bóveda cuando cobra o mira el saldo, al Laboratorio cuando
