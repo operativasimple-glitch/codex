@@ -77,3 +77,4 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
 - **Tests**:
   - `node --test london-break/test/`
   - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test.
+  - `node test/manage-parity.mjs 5 <NinjaTrader 1-min file>` (from `london-break/test`) checks the breakeven and pyramiding options day by day.
