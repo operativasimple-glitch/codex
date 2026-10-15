@@ -21,7 +21,7 @@
 // 3) Si el precio toca el MÍNIMO de Londres → COMPRA; si toca el MÁXIMO → VENTA.
 // 4) Objetivo: el otro extremo del rango (o R fijo). Stop: tras el nivel (o tras el barrido).
 // Comisión en Propiedades: por contrato y por orden = mitad de la ida y vuelta (NQ 2.25 · MNQ 0.75).
-strategy("Ruptura rango Londres · NQ", shorttitle = "Londres NQ", overlay = true, pyramiding = 0,
+strategy("Ruptura rango Londres · NQ", shorttitle = "Londres NQ", overlay = true, pyramiding = 4,
      default_qty_type = strategy.fixed, default_qty_value = ${Math.max(1, Math.floor(+p.qty || 1))}, initial_capital = 50000, margin_long = 0, margin_short = 0,
      commission_type = strategy.commission.cash_per_contract, commission_value = ${perSide},
      slippage = ${Math.max(0, Math.floor(+p.slipTicks || 0))}, process_orders_on_close = false, calc_on_every_tick = false,
@@ -45,6 +45,14 @@ targetR    = input.float(${num(p.targetR)}, "Objetivo: R fijo", minval = 0.25, s
 minRR      = input.float(${num(p.minRR)}, "No operar si el objetivo es menor de X R (0 = off)", minval = 0, step = 0.25, group = "Reglas")
 maxTrades  = input.int(${Math.max(1, Math.floor(+p.maxTrades || 1))}, "Máx. entradas por día", minval = 1, group = "Reglas")
 direction  = input.string("${DIR[p.direction] || DIR.both}", "Dirección", options = ["Ambas", "Solo compras", "Solo ventas"], group = "Reglas")
+
+// ───── Gestión de la operación ─────
+beR        = input.float(${num(p.beR)}, "Breakeven al ir X R a favor (0 = off)", minval = 0, step = 0.25, group = "Gestión", tooltip = "R = distancia del stop. Se activa al cierre de la vela y protege desde la siguiente")
+beOff      = input.int(${Math.floor(+p.beOffTicks || 2)}, "Breakeven: ticks a favor de la entrada", minval = 0, group = "Gestión")
+addR       = input.float(${num(p.addEveryR)}, "Añadir contratos cada X R a favor (0 = off)", minval = 0, step = 0.25, group = "Gestión", tooltip = "Piramidar: cuando una vela cierra +1×, +2×… X R a favor desde el nivel de entrada, añade contratos a mercado en la apertura siguiente")
+maxAdds    = input.int(${Math.floor(+p.maxAdds || 0)}, "Máx. veces que añade", minval = 0, maxval = 3, group = "Gestión")
+addQty     = input.int(${Math.max(1, Math.floor(+p.addQty || 1))}, "Contratos por añadido", minval = 1, group = "Gestión")
+addToBE    = input.bool(${p.addMovesStopToBE === false ? 'false' : 'true'}, "Al añadir, mover el stop a breakeven", group = "Gestión")
 
 // ───── Estilo ─────
 cRange     = input.color(#5C6BC0, "Rango de Londres", group = "Estilo")
@@ -99,6 +107,10 @@ dist = stopMode == "% del rango tras el nivel" ? stopPct / 100 * rangeSize : sto
 
 // ───── Órdenes ─────
 var float stL = na
+var float refL = na
+var float refS = na
+var float riskL = na
+var float riskS = na
 var float tgL = na
 var float stS = na
 var float tgS = na
@@ -125,11 +137,15 @@ if pos == 0 and canEnter
         float tS = targetMode == "R fijo" ? math.round_to_mintick(H - (sS - H) * targetR) : L
         if longOk and (minRR <= 0 or tL - L >= minRR * (L - sL))
             strategy.entry("Compra", strategy.long, limit = L, oca_name = "LDN", oca_type = strategy.oca.cancel)
+            refL := L
+            riskL := L - sL
             stL := sL
             tgL := tL
             placedL := true
         if shortOk and (minRR <= 0 or H - tS >= minRR * (sS - H))
             strategy.entry("Venta", strategy.short, limit = H, oca_name = "LDN", oca_type = strategy.oca.cancel)
+            refS := H
+            riskS := sS - H
             stS := sS
             tgS := tS
             placedS := true
@@ -145,6 +161,8 @@ if pos == 0 and canEnter
             float tL = targetMode == "R fijo" ? math.round_to_mintick(close + (close - sL) * targetR) : H
             if minRR <= 0 or tL - close >= minRR * (close - sL)
                 strategy.entry("Compra", strategy.long)
+                refL := close
+                riskL := close - sL
                 stL := sL
                 tgL := tL
                 placedL := true
@@ -155,16 +173,58 @@ if pos == 0 and canEnter
             float tS = targetMode == "R fijo" ? math.round_to_mintick(close - (sS - close) * targetR) : L
             if minRR <= 0 or close - tS >= minRR * (sS - close)
                 strategy.entry("Venta", strategy.short)
+                refS := close
+                riskS := sS - close
                 stS := sS
                 tgS := tS
                 placedS := true
             brokeHigh := false
             sweepHigh := na
-// Stop y objetivo: se mantienen activos mientras la orden de entrada o la posición sigan vivas
-if not na(stL) and (pos > 0 or pos == 0 and placedL)
-    strategy.exit("Salida C", "Compra", stop = stL, limit = tgL, comment_loss = "Stop", comment_profit = "Objetivo")
-if not na(stS) and (pos < 0 or pos == 0 and placedS)
-    strategy.exit("Salida V", "Venta", stop = stS, limit = tgS, comment_loss = "Stop", comment_profit = "Objetivo")
+// ───── Gestión al cierre: breakeven y contratos añadidos ─────
+var float curStop = na
+var float bestPx = na
+var int lastCnt = 0
+var int addsDone = 0
+posSide = int(math.sign(pos))
+if posSide == 0
+    curStop := na
+    bestPx := na
+    lastCnt := 0
+    addsDone := 0
+else
+    float risk = posSide > 0 ? riskL : riskS
+    float ref = posSide > 0 ? refL : refS
+    float first = strategy.opentrades.entry_price(0)
+    if na(curStop)
+        curStop := posSide > 0 ? stL : stS
+    bestPx := na(bestPx) ? (posSide > 0 ? high : low) : posSide > 0 ? math.max(bestPx, high) : math.min(bestPx, low)
+    float beLvl = math.round_to_mintick(first + posSide * beOff * syminfo.mintick)
+    bool toBE = beR > 0 and (bestPx - first) * posSide >= beR * risk
+    if addToBE and lastCnt > 0 and strategy.opentrades > lastCnt
+        toBE := true
+    if toBE
+        curStop := posSide > 0 ? math.max(curStop, beLvl) : math.min(curStop, beLvl)
+    lastCnt := strategy.opentrades
+    // Añadir: si la vela cierra más allá de +k·X R desde el nivel, entra a mercado en la apertura siguiente
+    if addR > 0 and maxAdds > 0
+        int k = addsDone + 1
+        while k <= maxAdds and (close - math.round_to_mintick(ref + posSide * k * addR * risk)) * posSide >= 0
+            strategy.entry("Añadir " + str.tostring(k), posSide > 0 ? strategy.long : strategy.short, qty = addQty)
+            addsDone := k
+            k += 1
+
+// Stop y objetivo: activos mientras la orden de entrada o la posición sigan vivas (los añadidos comparten stop y objetivo)
+// Una sola llamada por salida (misma orden con el stop y el objetivo actuales)
+if posSide > 0 or pos == 0 and placedL and not na(stL)
+    strategy.exit("Salida C", "Compra", stop = posSide > 0 ? curStop : stL, limit = tgL, comment_loss = "Stop", comment_profit = "Objetivo")
+if posSide < 0 or pos == 0 and placedS and not na(stS)
+    strategy.exit("Salida V", "Venta", stop = posSide < 0 ? curStop : stS, limit = tgS, comment_loss = "Stop", comment_profit = "Objetivo")
+if posSide != 0 and maxAdds > 0
+    for k = 1 to maxAdds
+        strategy.exit("Salida A" + str.tostring(k), "Añadir " + str.tostring(k), stop = curStop, limit = posSide > 0 ? tgL : tgS, comment_loss = "Stop", comment_profit = "Objetivo")
+if posSide == 0 and maxAdds > 0
+    for k = 1 to maxAdds
+        strategy.cancel("Añadir " + str.tostring(k))
 if pos == 0 and not placedL
     strategy.cancel("Compra")
 if pos == 0 and not placedS
@@ -193,7 +253,7 @@ if afterLondon and not na(lnH)
 bgcolor(ready and m >= tf and m < tl ? color.new(cRange, 95) : na, title = "Ventana de entrada")
 
 posNow = strategy.position_size
-plot(posNow > 0 ? stL : posNow < 0 ? stS : na, "Stop", color = cShort, style = plot.style_linebr, linewidth = 2)
+plot(posNow != 0 ? curStop : na, "Stop", color = cShort, style = plot.style_linebr, linewidth = 2)
 plot(posNow > 0 ? tgL : posNow < 0 ? tgS : na, "Objetivo", color = cLong, style = plot.style_linebr, linewidth = 2)
 `;
   }
