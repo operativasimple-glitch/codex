@@ -49,3 +49,25 @@ cd ema-vwap/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs 
 ```
 
 `pine-parity.mjs` runs the Pine indicator with [PineTS](https://github.com/LuxAlgo/PineTS), an open-source Pine interpreter, on the same candles. It checks that every entry and exit of the plan, and the net result of every stop in the table, match the web engine.
+
+## London range breakout (`/london-break/`)
+
+A TradingView strategy for **NQ / MNQ** built on the London session range.
+
+1. Mark the high and low from 03:00 to 09:00 New York time (09:00–15:00 Spain).
+2. Do not trade before 09:30 New York (15:30 Spain).
+3. If price touches the London **low**, buy; if it touches the **high**, sell.
+4. The target is the other side of the range, or a fixed R.
+
+- **Entry modes**:
+  - *touch*: a limit order at the level.
+  - *reclaim*: after the break, enter when a bar closes back inside the range.
+- **Stop modes**: points beyond the level, a percentage of the range, or beyond the sweep extreme (reclaim mode only).
+- **Other settings**: max entries per day, direction, last entry time and closing time.
+- **Files**:
+  - `lb.js` is the simulator. It follows TradingView's order emulator: limit fills at the level, or at the open when the bar opens beyond it, and the intrabar path rule.
+  - `pine.js` generates the Pine v6 strategy.
+  - `londres_tocar_nivel.pine` and `londres_vuelve_dentro_2.5R.pine` are ready to paste.
+- **Tests**:
+  - `node --test london-break/test/`
+  - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test.
