@@ -42,7 +42,10 @@
     bStopPts: 20,
     bTargetMode: 'r',       // r: bTargetR × riesgo | range: proyección de bRangeK × rango desde el nivel | close: hasta la hora de cierre
     bTargetR: 2,
-    bRangeK: 1
+    bRangeK: 1,
+    bEntry: 'market',       // market: a mercado tras la confirmación | retest: orden limitada en el nivel roto (+ bRetestOff puntos)
+    bRetestOff: 0,
+    rangeSplit: 0,          // >0: decide por el rango: rango de Londres < rangeSplit × rango medio de NY (09:30–16:00, 10 días previos) → día de ruptura; si no, de manipulación
   };
 
   const hhmm = s => { const [h, m] = String(s).split(':').map(Number); return h * 60 + (m || 0); };
@@ -61,6 +64,10 @@
     gaps.sort((a, b) => a - b);
     const barMs = gaps.length ? gaps[gaps.length >> 1] : 60000;
 
+    const nyR = {}; // rango 09:30–16:00 de cada día
+    for (const b of bars) { const q = b.et || (b.et = E.tzParts(b.t)); if (q.min >= 570 && q.min < 960) { const x = nyR[q.date] || (nyR[q.date] = { h: -Infinity, l: Infinity }); x.h = Math.max(x.h, b.h); x.l = Math.min(x.l, b.l); } }
+    const nyKeys = Object.keys(nyR).sort();
+    const avgNY = key => { const prev = nyKeys.filter(k => k < key).slice(-10); return prev.length ? prev.reduce((a, k) => a + nyR[k].h - nyR[k].l, 0) / prev.length : null; };
     const trades = [], days = [];
     let pos = null;                 // { side, entry, stop, target, idx, risk }
     let limits = null;              // { buy: {px, stop, target}, sell: {...} }
@@ -80,6 +87,7 @@
       pos = { side, entry: px + side * slip, stop: o.stop, target: o.target, idx: i, risk: Math.abs(o.ref - o.stop), H: day.H, L: day.L,
         kind: o.kind || (p.entryMode === 'touch' ? 'toque' : 'manipulación') };
       day.n++;
+      day.pend = null;
       limits = null; // OCA: la otra orden se cancela
     };
 
@@ -149,7 +157,7 @@
       const key = b.et.date;
       if (!day || day.key !== key) {
         if (day) days.push(day);
-        day = { key, H: null, L: null, n: 0, brokeLow: false, sweepLow: null, brokeHigh: false, sweepHigh: null, outLow: 0, outHigh: 0, doneLow: false, doneHigh: false };
+        day = { key, H: null, L: null, n: 0, brokeLow: false, sweepLow: null, brokeHigh: false, sweepHigh: null, outLow: 0, outHigh: 0, doneLow: false, doneHigh: false, pend: null, avg: avgNY(key) };
       }
       if (inLondon(b.et.min)) {
         day.H = day.H == null ? b.h : Math.max(day.H, b.h);
@@ -180,15 +188,18 @@
           // Ruptura: N velas seguidas cerrando fuera → a favor de la rotura
           day.outLow = b.c < L ? day.outLow + 1 : 0;
           day.outHigh = b.c > H ? day.outHigh + 1 : 0;
-          const bOn = p.breakMode !== 'reclaim', rOn = p.breakMode !== 'breakout';
+          let bOn = p.breakMode !== 'reclaim', rOn = p.breakMode !== 'breakout';
+          if (+p.rangeSplit > 0 && day.avg) { const narrow = range / day.avg < +p.rangeSplit; bOn = bOn && narrow; rOn = rOn && !narrow; }
           const bTgt = (side, ref, stop, lvl) => p.bTargetMode === 'r' ? rt(ref + side * Math.abs(ref - stop) * +p.bTargetR) : p.bTargetMode === 'range' ? rt(lvl + side * +p.bRangeK * range) : side * Infinity;
           if (bOn && shortOk && !day.doneLow && day.outLow >= +p.acceptBars && L - b.c >= +p.acceptPts) {
             const st = rt(p.bStopMode === 'level' ? L + +p.bStopPts : b.c + +p.bStopPts), t = bTgt(-1, b.c, st, L);
-            if (t < b.c) market = { side: -1, ref: b.c, stop: st, target: t, kind: 'ruptura' }; // sin recorrido si ya pasó la proyección
+            if (p.bEntry === 'retest') { const px = rt(L - +p.bRetestOff), s2 = rt(L + +p.bStopPts); day.pend = { side: -1, px, ref: px, stop: s2, target: bTgt(-1, px, s2, L), kind: 'ruptura' }; }
+            else if (t < b.c) market = { side: -1, ref: b.c, stop: st, target: t, kind: 'ruptura' }; // sin recorrido si ya pasó la proyección
             day.doneLow = true; day.brokeLow = false; day.sweepLow = null;
           } else if (bOn && longOk && !day.doneHigh && day.outHigh >= +p.acceptBars && b.c - H >= +p.acceptPts) {
             const st = rt(p.bStopMode === 'level' ? H - +p.bStopPts : b.c - +p.bStopPts), t = bTgt(1, b.c, st, H);
-            if (t > b.c) market = { side: 1, ref: b.c, stop: st, target: t, kind: 'ruptura' };
+            if (p.bEntry === 'retest') { const px = rt(H + +p.bRetestOff), s2 = rt(H - +p.bStopPts); day.pend = { side: 1, px, ref: px, stop: s2, target: bTgt(1, px, s2, H), kind: 'ruptura' }; }
+            else if (t > b.c) market = { side: 1, ref: b.c, stop: st, target: t, kind: 'ruptura' };
             day.doneHigh = true; day.brokeHigh = false; day.sweepHigh = null;
           } else if (rOn && longOk && !day.doneLow && day.brokeLow && b.c > L) {
             // Manipulación: rompe el nivel y una vela cierra de nuevo dentro del rango → a la contra
@@ -202,6 +213,7 @@
             if (rrOk(b.c, st, t)) market = { side: -1, ref: b.c, stop: st, target: t };
             day.brokeHigh = false; day.sweepHigh = null;
           }
+          if (day.pend && !market) limits = day.pend.side > 0 ? { buy: day.pend } : { sell: day.pend };
         }
       }
     }

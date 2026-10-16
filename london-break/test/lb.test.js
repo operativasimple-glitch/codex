@@ -123,3 +123,27 @@ test('ambas: tras confirmar la ruptura, volver dentro ya no cuenta como manipula
   assert.equal(r.trades[0].reason, 'Stop');
   assert.equal(r.open, null);
 });
+
+test('ruptura con retesteo: tras cerrar sobre el máximo compra en el nivel, con el stop dentro del rango', () => {
+  const bars = london();
+  bars.push({ t: T(9, 30), o: 108, h: 116, l: 107, c: 115, v: 100 });  // cierra sobre el máximo (110)
+  bars.push({ t: T(10, 0), o: 115, h: 118, l: 109, c: 117, v: 100 });  // vuelve a 110: compra limitada
+  const r = LB.backtest(bars, Object.assign({}, P, { entryMode: 'reclaim', breakMode: 'breakout', bEntry: 'retest', acceptBars: 1, bStopPts: 30, bTargetMode: 'r', bTargetR: 3 }));
+  assert.equal(r.open.kind, 'ruptura');
+  assert.equal(r.open.entry, 110);
+  assert.equal(r.open.stop, 80);
+  assert.equal(r.open.target, 110 + 3 * 30);
+});
+
+test('decidir por el rango: con un rango de Londres estrecho no opera la manipulación', () => {
+  // Lunes con un rango de NY de 400 puntos; el martes el rango de Londres (20) es el 5 % → día de ruptura
+  const M = day(2025, 3, 3);
+  const prev = [];
+  for (let h = 10; h < 16; h++) prev.push({ t: M(h, 0), o: 300, h: h === 10 ? 500 : 300, l: h === 11 ? 100 : 300, c: 300, v: 100 });
+  const manip = [{ t: T(9, 30), o: 92, h: 93, l: 85, c: 94, v: 100 }, { t: T(10, 0), o: 94, h: 96, l: 93, c: 95, v: 100 }]; // barre el mínimo y vuelve dentro
+  const cfg = Object.assign({}, P, { entryMode: 'reclaim', breakMode: 'both', stopPts: 20 });
+  assert.equal(LB.backtest(london().concat(manip), cfg).open.kind, 'manipulación');
+  const r = LB.backtest(prev.concat(london(), manip), Object.assign({}, cfg, { rangeSplit: 0.4 }));
+  assert.equal(r.open, null);
+  assert.equal(r.trades.length, 0);
+});

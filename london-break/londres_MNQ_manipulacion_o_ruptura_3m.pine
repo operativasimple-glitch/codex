@@ -22,7 +22,7 @@ tClose     = input.int(1555, "Cerrar todo a las (HHMM)", minval = 0, maxval = 23
 
 // ───── Reglas ─────
 entryMode  = input.string("Vuelve dentro (cierre)", "Entrada", options = ["Al tocar el nivel", "Vuelve dentro (cierre)"], group = "Reglas", tooltip = "Al tocar: orden limitada en el nivel. Vuelve dentro: tras romper, entra cuando una vela cierra de nuevo dentro del rango")
-stopMode   = input.string("Puntos tras el nivel", "Stop", options = ["Puntos tras el nivel", "% del rango tras el nivel", "Tras el extremo del barrido"], group = "Reglas", tooltip = "«Tras el extremo del barrido» solo con la entrada «Vuelve dentro»")
+stopMode   = input.string("Tras el extremo del barrido", "Stop", options = ["Puntos tras el nivel", "% del rango tras el nivel", "Tras el extremo del barrido"], group = "Reglas", tooltip = "«Tras el extremo del barrido» solo con la entrada «Vuelve dentro»")
 stopPts    = input.float(20.0, "Stop: puntos tras el nivel", minval = 0.25, step = 0.25, group = "Reglas")
 stopPct    = input.float(25.0, "Stop: % del rango tras el nivel", minval = 1, step = 1, group = "Reglas")
 sweepBuf   = input.int(4, "Stop: ticks tras el extremo del barrido", minval = 0, group = "Reglas")
@@ -34,13 +34,16 @@ direction  = input.string("Ambas", "Dirección", options = ["Ambas", "Solo compr
 
 // ───── Manipulación o ruptura (entrada «Vuelve dentro») ─────
 breakMode  = input.string("Ambas: lo que pase primero", "Lectura de la rotura", options = ["Manipulación (vuelve dentro)", "Ruptura (sigue fuera)", "Ambas: lo que pase primero"], group = "Manipulación o ruptura", tooltip = "Manipulación: rompe y una vela cierra de nuevo dentro del rango → a la contra (stop y objetivo de «Reglas»). Ruptura: varias velas seguidas cierran fuera → a favor de la rotura. Ambas: en cada nivel manda lo que pase primero")
-acceptBars = input.int(3, "Ruptura: velas seguidas cerrando fuera", minval = 1, group = "Manipulación o ruptura")
+acceptBars = input.int(1, "Ruptura: velas seguidas cerrando fuera", minval = 1, group = "Manipulación o ruptura")
 acceptPts  = input.float(0.0, "Ruptura: la última, al menos X puntos fuera", minval = 0, step = 0.25, group = "Manipulación o ruptura")
 bStopMode  = input.string("Puntos desde el cierre", "Ruptura: stop", options = ["Puntos desde el cierre", "Dentro del rango, tras el nivel"], group = "Manipulación o ruptura")
-bStopPts   = input.float(40.0, "Ruptura: puntos del stop", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
-bTargetMode = input.string("Hasta la hora de cierre", "Ruptura: objetivo", options = ["Hasta la hora de cierre", "R fijo", "Proyección del rango"], group = "Manipulación o ruptura", tooltip = "Proyección: el nivel roto ± X veces el tamaño del rango de Londres")
-bTargetR   = input.float(2.0, "Ruptura: R fijo", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
+bStopPts   = input.float(30.0, "Ruptura: puntos del stop", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
+bTargetMode = input.string("R fijo", "Ruptura: objetivo", options = ["Hasta la hora de cierre", "R fijo", "Proyección del rango"], group = "Manipulación o ruptura", tooltip = "Proyección: el nivel roto ± X veces el tamaño del rango de Londres")
+bTargetR   = input.float(3.0, "Ruptura: R fijo", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
 bRangeK    = input.float(1.0, "Ruptura: proyección (× rango)", minval = 0.1, step = 0.1, group = "Manipulación o ruptura")
+bEntry     = input.string("En el retesteo del nivel", "Ruptura: entrada", options = ["En el retesteo del nivel", "A mercado al confirmar"], group = "Manipulación o ruptura", tooltip = "Retesteo: orden limitada en el nivel roto, con el stop dentro del rango («Ruptura: puntos del stop» tras el nivel)")
+bRetestOff = input.float(0.0, "Ruptura: retesteo, puntos más allá del nivel", minval = 0, step = 0.25, group = "Manipulación o ruptura")
+rangeSplit = input.float(0.4, "Decidir por el rango: ruptura si el rango de Londres < X × rango medio de NY (0 = off)", minval = 0, step = 0.05, group = "Manipulación o ruptura", tooltip = "Rango medio de NY = media de 09:30–16:00 de los 10 días anteriores. Rango estrecho: día de ruptura. Rango ancho: día de manipulación. Con «Lectura de la rotura» en Manipulación o Ruptura, solo opera ese tipo de día")
 
 // ───── Gestión de la operación ─────
 beR        = input.float(0.0, "Breakeven al ir X R a favor (0 = off)", minval = 0, step = 0.25, group = "Gestión", tooltip = "R = distancia del stop. Se activa al cierre de la vela y protege desde la siguiente")
@@ -79,9 +82,26 @@ var int outLow = 0
 var int outHigh = 0
 var bool doneLow = false
 var bool doneHigh = false
+var array<float> nyRanges = array.new_float()
+var float nyH = na
+var float nyL = na
+var float avgNY = na
+var int pendSide = 0
+var bool pendLive = false
+var float pendPx = na
 curKey = dayKey(time)
 m = minOf(time)
 if curKey != dk
+    // Rango medio de Nueva York (09:30–16:00) de los 10 días anteriores
+    if not na(nyH)
+        array.push(nyRanges, nyH - nyL)
+        if array.size(nyRanges) > 10
+            array.shift(nyRanges)
+    nyH := na
+    nyL := na
+    avgNY := array.size(nyRanges) > 0 ? array.avg(nyRanges) : na
+    pendSide := 0
+    pendLive := false
     dk := curKey
     H := na
     L := na
@@ -97,6 +117,9 @@ if curKey != dk
 if inLondon(m)
     H := na(H) ? high : math.max(H, high)
     L := na(L) ? low : math.min(L, low)
+if m >= 570 and m < 960
+    nyH := na(nyH) ? high : math.max(nyH, high)
+    nyL := na(nyL) ? low : math.min(nyL, low)
 
 tradesToday = strategy.closedtrades + strategy.opentrades - dayStartCount
 nextMin = dayKey(time_close) == curKey ? minOf(time_close) : 1440
@@ -123,6 +146,9 @@ if pos != 0 and nextMin >= tc
 if pos != 0
     outLow := 0
     outHigh := 0
+    pendSide := 0
+if pos != 0 or not canEnter
+    pendLive := false
 
 // Las órdenes limitadas se emiten una vez y se mantienen; se vuelven a emitir solo tras una operación
 var bool touchLive = false
@@ -167,13 +193,30 @@ if pos == 0 and canEnter
         outHigh := close > H ? outHigh + 1 : 0
         bool bOn = breakMode != "Manipulación (vuelve dentro)"
         bool rOn = breakMode != "Ruptura (sigue fuera)"
+        if rangeSplit > 0 and not na(avgNY)
+            bool narrow = rangeSize / avgNY < rangeSplit
+            bOn := bOn and narrow
+            rOn := rOn and not narrow
         bool bothMode = breakMode == "Ambas: lo que pase primero"
+        bool marketNow = false
         if bOn and shortOk and not doneLow and outLow >= acceptBars and L - close >= acceptPts
             // RUPTURA del mínimo → venta a favor
             float sS = math.round_to_mintick(bStopMode == "Dentro del rango, tras el nivel" ? L + bStopPts : close + bStopPts)
             float tS = bTargetMode == "R fijo" ? math.round_to_mintick(close - (sS - close) * bTargetR) : bTargetMode == "Proyección del rango" ? math.round_to_mintick(L - bRangeK * rangeSize) : na
-            // Sin recorrido si el precio ya pasó la proyección
-            if na(tS) or tS < close
+            // A mercado: sin recorrido si el precio ya pasó la proyección
+            if bEntry == "En el retesteo del nivel"
+                // Venta limitada en el mínimo roto; stop dentro del rango
+                float px = math.round_to_mintick(L - bRetestOff)
+                float s2 = math.round_to_mintick(L + bStopPts)
+                pendSide := -1
+                pendPx := px
+                refS := px
+                riskS := s2 - px
+                stS := s2
+                tgS := bTargetMode == "R fijo" ? math.round_to_mintick(px - (s2 - px) * bTargetR) : bTargetMode == "Proyección del rango" ? math.round_to_mintick(L - bRangeK * rangeSize) : na
+                label.new(bar_index, high, "RUPTURA\nVENTA en " + str.tostring(px, format.mintick), style = label.style_label_down, color = cShort, textcolor = color.white, size = size.small)
+            else if na(tS) or tS < close
+                marketNow := true
                 strategy.entry("Venta", strategy.short)
                 refS := close
                 riskS := sS - close
@@ -188,7 +231,19 @@ if pos == 0 and canEnter
             // RUPTURA del máximo → compra a favor
             float sL = math.round_to_mintick(bStopMode == "Dentro del rango, tras el nivel" ? H - bStopPts : close - bStopPts)
             float tL = bTargetMode == "R fijo" ? math.round_to_mintick(close + (close - sL) * bTargetR) : bTargetMode == "Proyección del rango" ? math.round_to_mintick(H + bRangeK * rangeSize) : na
-            if na(tL) or tL > close
+            if bEntry == "En el retesteo del nivel"
+                // Compra limitada en el máximo roto; stop dentro del rango
+                float px = math.round_to_mintick(H + bRetestOff)
+                float s2 = math.round_to_mintick(H - bStopPts)
+                pendSide := 1
+                pendPx := px
+                refL := px
+                riskL := px - s2
+                stL := s2
+                tgL := bTargetMode == "R fijo" ? math.round_to_mintick(px + (px - s2) * bTargetR) : bTargetMode == "Proyección del rango" ? math.round_to_mintick(H + bRangeK * rangeSize) : na
+                label.new(bar_index, low, "RUPTURA\nCOMPRA en " + str.tostring(px, format.mintick), style = label.style_label_up, color = cLong, textcolor = color.white, size = size.small)
+            else if na(tL) or tL > close
+                marketNow := true
                 strategy.entry("Compra", strategy.long)
                 refL := close
                 riskL := close - sL
@@ -205,6 +260,7 @@ if pos == 0 and canEnter
             float sL = math.round_to_mintick(stopMode == "Tras el extremo del barrido" ? sweepLow - sweepBuf * syminfo.mintick : close - dist)
             float tL = targetMode == "R fijo" ? math.round_to_mintick(close + (close - sL) * targetR) : H
             if minRR <= 0 or tL - close >= minRR * (close - sL)
+                marketNow := true
                 strategy.entry("Compra", strategy.long)
                 refL := close
                 riskL := close - sL
@@ -220,6 +276,7 @@ if pos == 0 and canEnter
             float sS = math.round_to_mintick(stopMode == "Tras el extremo del barrido" ? sweepHigh + sweepBuf * syminfo.mintick : close + dist)
             float tS = targetMode == "R fijo" ? math.round_to_mintick(close - (sS - close) * targetR) : L
             if minRR <= 0 or close - tS >= minRR * (sS - close)
+                marketNow := true
                 strategy.entry("Venta", strategy.short)
                 refS := close
                 riskS := sS - close
@@ -229,6 +286,20 @@ if pos == 0 and canEnter
                 label.new(bar_index, high, "MANIPULACIÓN\nVENTA", style = label.style_label_down, color = cShort, textcolor = color.white, size = size.small)
             brokeHigh := false
             sweepHigh := na
+        // Orden de retesteo pendiente: se emite una vez y se mantiene mientras se pueda entrar
+        if marketNow and pendSide != 0
+            if pendLive
+                strategy.cancel(pendSide > 0 ? "Compra" : "Venta")
+            pendSide := 0
+            pendLive := false
+        if pendSide != 0
+            if not pendLive
+                strategy.entry(pendSide > 0 ? "Compra" : "Venta", pendSide > 0 ? strategy.long : strategy.short, limit = pendPx)
+                pendLive := true
+            if pendSide > 0
+                placedL := true
+            else
+                placedS := true
 // ───── Gestión al cierre: breakeven y contratos añadidos ─────
 var float curStop = na
 var float bestPx = na
@@ -296,6 +367,9 @@ if afterLondon and not afterLondon[1]
     lnL := line.new(bar_index, L, bar_index, L, color = cLong, style = line.style_dashed, width = 2)
     label.new(bar_index, H, "High Londres " + str.tostring(H, format.mintick) + (entryMode == "Al tocar el nivel" ? " → VENTA" : ""), style = label.style_label_lower_left, color = color.new(cShort, 15), textcolor = color.white, size = size.tiny)
     label.new(bar_index, L, "Low Londres " + str.tostring(L, format.mintick) + (entryMode == "Al tocar el nivel" ? " → COMPRA" : ""), style = label.style_label_upper_left, color = color.new(cLong, 15), textcolor = color.white, size = size.tiny)
+    if entryMode != "Al tocar el nivel" and rangeSplit > 0 and not na(avgNY)
+        bool narrowDay = rangeSize / avgNY < rangeSplit
+        label.new(bar_index, (H + L) / 2, "Rango " + str.tostring(math.round(rangeSize / avgNY * 100)) + "% del medio NY\nHoy: " + (narrowDay ? "RUPTURA" : "MANIPULACIÓN"), style = label.style_label_left, color = color.new(narrowDay ? #FFA726 : cRange, 10), textcolor = color.white, size = size.small)
 if afterLondon and not na(lnH)
     lnH.set_x2(bar_index)
     lnL.set_x2(bar_index)
