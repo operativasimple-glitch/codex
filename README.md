@@ -62,6 +62,10 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
 - **Entry modes**:
   - *touch*: a limit order at the level.
   - *reclaim*: after the break, enter when a bar closes back inside the range.
+- **Manipulation or breakout** (reclaim entry only). Each break of a London level is read one of two ways:
+  - *manipulation*: a bar closes back inside the range, so trade against the break toward the other side;
+  - *breakout*: N bars in a row close outside the range, so trade with the break. The stop is X points from the signal close or inside the range behind the level. The target is the closing time, a fixed R or a projection of the range from the level. A projection target that price has already passed means no trade;
+  - *both*: whichever happens first at each level. The chart labels each entry MANIPULACIÓN or RUPTURA.
 - **Stop modes**: points beyond the level, a percentage of the range, or beyond the sweep extreme (reclaim mode only).
 - **Other settings**: max entries per day, direction, last entry time and closing time.
 - **Trade management**:
@@ -76,11 +80,12 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
   - *reclaim* on 3-minute bars, 20 point stop from the signal close and target at the other side won in every year: +734 / +874 / +4,443 (PF 1.10 / 1.11 / 1.56), +6,051 in total, max drawdown −1,319. The 2023–24 year was not used to pick it;
   - it wins about 20% of trades and the profit comes from a few trend days: without the 10 best trades the three years net +763;
   - 2-minute bars also won every year; 5-minute bars did not.
+  - *both* on 3-minute bars, breakout after 3 bars outside with a 40 point stop held to the close, manipulation as above, 1 entry a day: +1,196 / +2,926 / +5,007 (PF 1.12 / 1.27 / 1.42), +9,129 in total, max drawdown −1,137. Breakouts made +6,680 of it. Neighbouring settings also won every year: 3 or 5 bars outside with 30–60 point stops. These settings were picked using all three years.
 - **Files**:
   - `lb.js` is the simulator. It follows TradingView's order emulator: limit fills at the level, or at the open when the bar opens beyond it, and the intrabar path rule.
   - `pine.js` generates the Pine v6 strategy.
-  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine` and `londres_MNQ_vuelve_dentro_3m.pine` (the three-year winner; use it on a 3-minute chart).
+  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine` `londres_MNQ_vuelve_dentro_3m.pine` (manipulation only) and `londres_MNQ_manipulacion_o_ruptura_3m.pine` (both readings). Use the last two on a 3-minute chart.
 - **Tests**:
   - `node --test london-break/test/lb.test.js`
-  - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test.
+  - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test. Three of the original configurations still differ for that reason; the breakout and both configurations match.
   - `node test/manage-parity.mjs 5 <NinjaTrader 1-min file>` (from `london-break/test`) checks the breakeven and pyramiding options day by day.

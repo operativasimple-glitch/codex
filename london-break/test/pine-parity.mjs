@@ -18,7 +18,10 @@ const SETS = [{},
   { stopMode: 'range', stopFrac: 0.25 }, { targetMode: 'r', targetR: 2.5 }, { stopPts: 10 }, { stopPts: 40 },
   { maxTrades: 2 }, { direction: 'long' }, { direction: 'short' }, { minRR: 2.5 },
   { entryMode: 'reclaim', stopMode: 'sweep' }, { entryMode: 'reclaim', stopMode: 'sweep', targetMode: 'r', targetR: 2.5 },
-  { entryMode: 'reclaim', stopMode: 'points', stopPts: 20 }, { lastEntry: '11:00', closeAt: '12:00' }, { slipTicks: 0, commission: 0 }];
+  { entryMode: 'reclaim', stopMode: 'points', stopPts: 20 }, { lastEntry: '11:00', closeAt: '12:00' }, { slipTicks: 0, commission: 0 },
+  { entryMode: 'reclaim', breakMode: 'breakout', acceptBars: 3, bStopPts: 40, bTargetMode: 'close' },
+  { entryMode: 'reclaim', breakMode: 'both', acceptBars: 3, bStopPts: 40, bTargetMode: 'close', maxTrades: 2 },
+  { entryMode: 'reclaim', breakMode: 'both', acceptBars: 2, acceptPts: 10, bStopMode: 'level', bStopPts: 10, bTargetMode: 'range', bRangeK: 0.5 }];
 
 async function runPine(bars, params, tfMin) {
   const spec = E.CONTRACTS[params.contract || 'NQ'];

@@ -3,6 +3,10 @@
    Desde las 09:30 NY (15:30 en España):
      - si el precio toca el mínimo de Londres → compra; objetivo en el máximo de Londres
      - si toca el máximo → venta; objetivo en el mínimo
+   Con la entrada «vuelve dentro», breakMode decide cómo se lee la rotura de un nivel:
+     - manipulación: una vela cierra de nuevo dentro del rango → a la contra, hacia el otro extremo
+     - ruptura: acceptBars velas seguidas cierran fuera → a favor de la rotura
+     - both: lo que pase primero en cada nivel
    Reproduce el emulador de órdenes de TradingView: órdenes decididas al cierre activas desde la vela
    siguiente, órdenes limitadas que se llenan al tocar (o en la apertura si el precio ya está más allá),
    y recorrido dentro de la vela apertura→máximo→mínimo→cierre si la apertura está más cerca del máximo
@@ -30,7 +34,15 @@
     maxTrades: 1,           // entradas por día
     direction: 'both',      // both | long | short
     slipTicks: 1,
-    commission: null
+    commission: null,
+    breakMode: 'reclaim',   // reclaim: solo manipulación | breakout: solo ruptura | both: lo que pase primero
+    acceptBars: 3,          // ruptura: velas seguidas cerrando fuera del rango
+    acceptPts: 0,           // ruptura: y la última al menos X puntos fuera
+    bStopMode: 'points',    // points: bStopPts desde el cierre | level: dentro del rango, bStopPts tras el nivel
+    bStopPts: 20,
+    bTargetMode: 'r',       // r: bTargetR × riesgo | range: proyección de bRangeK × rango desde el nivel | close: hasta la hora de cierre
+    bTargetR: 2,
+    bRangeK: 1
   };
 
   const hhmm = s => { const [h, m] = String(s).split(':').map(Number); return h * 60 + (m || 0); };
@@ -61,11 +73,12 @@
       const pnl = pts * spec.pointValue * qty - commission * qty;
       trades.push({ side: pos.side, entryIdx: pos.idx, exitIdx: i, entryTime: bars[pos.idx].t, exitTime: bars[i].t,
         entry: pos.entry, exit: px, stop: pos.stop, target: pos.target, risk: pos.risk, pts, pnl, reason,
-        H: pos.H, L: pos.L });
+        H: pos.H, L: pos.L, kind: pos.kind });
       pos = null;
     };
     const open = (i, side, px, o) => {
-      pos = { side, entry: px + side * slip, stop: o.stop, target: o.target, idx: i, risk: Math.abs(o.ref - o.stop), H: day.H, L: day.L };
+      pos = { side, entry: px + side * slip, stop: o.stop, target: o.target, idx: i, risk: Math.abs(o.ref - o.stop), H: day.H, L: day.L,
+        kind: o.kind || (p.entryMode === 'touch' ? 'toque' : 'manipulación') };
       day.n++;
       limits = null; // OCA: la otra orden se cancela
     };
@@ -136,7 +149,7 @@
       const key = b.et.date;
       if (!day || day.key !== key) {
         if (day) days.push(day);
-        day = { key, H: null, L: null, n: 0, brokeLow: false, sweepLow: null, brokeHigh: false, sweepHigh: null };
+        day = { key, H: null, L: null, n: 0, brokeLow: false, sweepLow: null, brokeHigh: false, sweepHigh: null, outLow: 0, outHigh: 0, doneLow: false, doneHigh: false };
       }
       if (inLondon(b.et.min)) {
         day.H = day.H == null ? b.h : Math.max(day.H, b.h);
@@ -148,6 +161,7 @@
       const canEnter = ready && nextMin >= tf && nextMin < lastE && day.n < p.maxTrades && b.et.wd >= 1 && b.et.wd <= 5;
       if (pos && nextMin >= ca) closeAll = true;
       limits = null;
+      if (pos) { day.outLow = 0; day.outHigh = 0; }
       if (!pos && canEnter) {
         const H = day.H, L = day.L, range = H - L;
         const dist = p.stopMode === 'range' ? +p.stopFrac * range : +p.stopPts;
@@ -159,15 +173,31 @@
           if (longOk) { const st = rt(L - dist), t = tgt(1, L, st); if (rrOk(L, st, t)) limits.buy = { px: L, ref: L, stop: st, target: t }; }
           if (shortOk) { const st = rt(H + dist), t = tgt(-1, H, st); if (rrOk(H, st, t)) limits.sell = { px: H, ref: H, stop: st, target: t }; }
         } else if (b.et.min >= tf) {
-          // Vuelve dentro: rompe el nivel y una vela cierra de nuevo dentro del rango
+          // Tras romper un nivel: manipulación (vuelve dentro) o ruptura (sigue fuera)
           if (b.l < L) { day.brokeLow = true; day.sweepLow = day.sweepLow == null ? b.l : Math.min(day.sweepLow, b.l); }
           if (b.h > H) { day.brokeHigh = true; day.sweepHigh = day.sweepHigh == null ? b.h : Math.max(day.sweepHigh, b.h); }
           const buf = (+p.sweepBuffer || 0) * tick;
-          if (longOk && day.brokeLow && b.c > L) {
+          // Ruptura: N velas seguidas cerrando fuera → a favor de la rotura
+          day.outLow = b.c < L ? day.outLow + 1 : 0;
+          day.outHigh = b.c > H ? day.outHigh + 1 : 0;
+          const bOn = p.breakMode !== 'reclaim', rOn = p.breakMode !== 'breakout';
+          const bTgt = (side, ref, stop, lvl) => p.bTargetMode === 'r' ? rt(ref + side * Math.abs(ref - stop) * +p.bTargetR) : p.bTargetMode === 'range' ? rt(lvl + side * +p.bRangeK * range) : side * Infinity;
+          if (bOn && shortOk && !day.doneLow && day.outLow >= +p.acceptBars && L - b.c >= +p.acceptPts) {
+            const st = rt(p.bStopMode === 'level' ? L + +p.bStopPts : b.c + +p.bStopPts), t = bTgt(-1, b.c, st, L);
+            if (t < b.c) market = { side: -1, ref: b.c, stop: st, target: t, kind: 'ruptura' }; // sin recorrido si ya pasó la proyección
+            day.doneLow = true; day.brokeLow = false; day.sweepLow = null;
+          } else if (bOn && longOk && !day.doneHigh && day.outHigh >= +p.acceptBars && b.c - H >= +p.acceptPts) {
+            const st = rt(p.bStopMode === 'level' ? H - +p.bStopPts : b.c - +p.bStopPts), t = bTgt(1, b.c, st, H);
+            if (t > b.c) market = { side: 1, ref: b.c, stop: st, target: t, kind: 'ruptura' };
+            day.doneHigh = true; day.brokeHigh = false; day.sweepHigh = null;
+          } else if (rOn && longOk && !day.doneLow && day.brokeLow && b.c > L) {
+            // Manipulación: rompe el nivel y una vela cierra de nuevo dentro del rango → a la contra
+            day.doneLow = p.breakMode === 'both';
             const st = rt(p.stopMode === 'sweep' ? day.sweepLow - buf : b.c - dist), t = tgt(1, b.c, st);
             if (rrOk(b.c, st, t)) market = { side: 1, ref: b.c, stop: st, target: t };
             day.brokeLow = false; day.sweepLow = null;
-          } else if (shortOk && day.brokeHigh && b.c < H) {
+          } else if (rOn && shortOk && !day.doneHigh && day.brokeHigh && b.c < H) {
+            day.doneHigh = p.breakMode === 'both';
             const st = rt(p.stopMode === 'sweep' ? day.sweepHigh + buf : b.c + dist), t = tgt(-1, b.c, st);
             if (rrOk(b.c, st, t)) market = { side: -1, ref: b.c, stop: st, target: t };
             day.brokeHigh = false; day.sweepHigh = null;
