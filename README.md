@@ -81,6 +81,7 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
   - it wins about 20% of trades and the profit comes from a few trend days: without the 10 best trades the three years net +763;
   - 2-minute bars also won every year; 5-minute bars did not.
   - *both* on 3-minute bars, breakout after 3 bars outside with a 40 point stop held to the close, manipulation as above, 1 entry a day: +1,196 / +2,926 / +5,007 (PF 1.12 / 1.27 / 1.42), +9,129 in total, max drawdown −1,137. Breakouts made +6,680 of it. Neighbouring settings also won every year: 3 or 5 bars outside with 30–60 point stops. These settings were picked using all three years.
+  - **Out-of-sample year Oct 2022 – Sep 2023, not used for any choice: everything lost.** *both* −544 (PF 0.95, max drawdown −4,206, 5 of 12 months up), manipulation only −897, breakout only −175. Neighbouring *both* settings lost −173 to −1,661. The edge is not stable from year to year.
 - **Files**:
   - `lb.js` is the simulator. It follows TradingView's order emulator: limit fills at the level, or at the open when the bar opens beyond it, and the intrabar path rule.
   - `pine.js` generates the Pine v6 strategy.
