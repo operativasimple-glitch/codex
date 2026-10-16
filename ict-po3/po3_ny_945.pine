@@ -1,0 +1,172 @@
+//@version=6
+// Power of Three · apertura de Nueva York (ICT)
+//  A · Acumulación: rango de 09:30 a 09:45 (hora de Nueva York = 15:30–15:45 en España)
+//  M · Manipulación: el precio barre el máximo o el mínimo del rango
+//  D · Distribución: una vela cierra de nuevo dentro → posible setup hacia el otro lado
+// Referencias: apertura de medianoche (00:00 NY) para premium / discount y FVG a favor del giro.
+// Es un mapa para leer el precio, no un sistema automático: el setup lo validas tú (sesgo, liquidez, desplazamiento).
+indicator("Power of Three · NY 9:45", shorttitle = "PO3 9:45", overlay = true, max_boxes_count = 300, max_lines_count = 300, max_labels_count = 300)
+
+const string TZ = "America/New_York"
+const string G1 = "Horario (Nueva York)"
+const string G2 = "Setup"
+const string G3 = "Estilo"
+accSess = input.session("0930-0945", "Acumulación (rango A)", group = G1)
+winSess = input.session("0945-1100", "Manipulación y entrada", group = G1)
+showMid = input.bool(true, "Línea de apertura 00:00", group = G1)
+slBuf   = input.float(1.0, "Stop: puntos tras el barrido", minval = 0, step = 0.25, group = G2)
+tpMode  = input.string("Otro lado del rango", "Objetivo", options = ["Otro lado del rango", "R fijo"], group = G2)
+tpR     = input.float(2.0, "Objetivo: R fijo", minval = 0.5, step = 0.25, group = G2)
+showSig = input.bool(true, "Marcar el setup (barrido + cierre dentro)", group = G2)
+showFvg = input.bool(true, "FVG a favor del giro tras el barrido", group = G2)
+fvgMin  = input.float(2.0, "FVG mínimo (puntos)", minval = 0, step = 0.25, group = G2)
+showTbl = input.bool(true, "Panel de estado", group = G3)
+cAcc    = input.color(#78909C, "Rango A", group = G3)
+cBull   = input.color(#26A69A, "Compra", group = G3)
+cBear   = input.color(#EF5350, "Venta", group = G3)
+cMid    = input.color(#B0BEC5, "00:00", group = G3)
+
+inAcc  = not na(time(timeframe.period, accSess, TZ))
+inWin  = not na(time(timeframe.period, winSess, TZ))
+newDay = dayofmonth(time, TZ) != nz(dayofmonth(time[1], TZ), -1)
+nyHour = hour(time, TZ)
+
+// ───── Estado del día ─────
+var float midOpen = na
+var line  midLn = na
+var float aH = na
+var float aL = na
+var box   aBox = na
+var bool  aDone = false
+var bool  sweptH = false
+var bool  sweptL = false
+var float extH = na
+var float extL = na
+var int   lastSw = 0
+var bool  setupDone = false
+var int   side = 0
+var bool  active = false
+var int   sigBar = 0
+var float en = na
+var float sl = na
+var float tp = na
+var box   gBox = na
+var box   rBox = na
+var string status = "Esperando 09:30"
+
+if newDay
+    midOpen := open
+    aH := na
+    aL := na
+    aDone := false
+    sweptH := false
+    sweptL := false
+    extH := na
+    extL := na
+    lastSw := 0
+    setupDone := false
+    active := false
+    side := 0
+    status := "Esperando 09:30"
+    if showMid
+        midLn := line.new(bar_index, open, bar_index, open, color = color.new(cMid, 35), style = line.style_dotted, width = 1)
+        label.new(bar_index, open, "00:00", style = label.style_label_right, color = color.new(cMid, 100), textcolor = color.new(cMid, 20), size = size.tiny)
+else if showMid and not na(midLn) and nyHour < 16
+    line.set_x2(midLn, bar_index)
+
+// ───── A · Acumulación ─────
+if inAcc
+    if not inAcc[1]
+        aH := high
+        aL := low
+        aBox := box.new(bar_index, high, bar_index, low, border_color = color.new(cAcc, 40), bgcolor = color.new(cAcc, 88), text = "A", text_color = color.new(cAcc, 10), text_size = size.small, text_halign = text.align_left, text_valign = text.align_top)
+    else
+        aH := math.max(aH, high)
+        aL := math.min(aL, low)
+        box.set_top(aBox, aH)
+        box.set_bottom(aBox, aL)
+        box.set_right(aBox, bar_index)
+    status := "Acumulación"
+if not inAcc and inAcc[1] and not na(aH)
+    aDone := true
+    status := "Esperando barrido"
+
+// ───── M · Manipulación y D · Distribución ─────
+if aDone and inWin
+    box.set_right(aBox, bar_index)
+    if not setupDone
+        if high > aH
+            if not sweptH
+                label.new(bar_index, high, "M", style = label.style_label_down, color = color.new(cBear, 70), textcolor = color.white, size = size.tiny)
+            sweptH := true
+            extH := na(extH) ? high : math.max(extH, high)
+            lastSw := 1
+            status := "Barrido del máximo → busca venta"
+        if low < aL
+            if not sweptL
+                label.new(bar_index, low, "M", style = label.style_label_up, color = color.new(cBull, 70), textcolor = color.white, size = size.tiny)
+            sweptL := true
+            extL := na(extL) ? low : math.min(extL, low)
+            lastSw := -1
+            status := "Barrido del mínimo → busca compra"
+        // Setup: tras el barrido, una vela cierra de nuevo dentro del rango
+        if showSig and lastSw == -1 and close > aL
+            float s0 = extL - slBuf
+            float t0 = tpMode == "R fijo" ? close + tpR * (close - s0) : aH
+            if t0 > close
+                side := 1
+                en := close
+                sl := s0
+                tp := t0
+        else if showSig and lastSw == 1 and close < aH
+            float s0 = extH + slBuf
+            float t0 = tpMode == "R fijo" ? close - tpR * (s0 - close) : aL
+            if t0 < close
+                side := -1
+                en := close
+                sl := s0
+                tp := t0
+        if side != 0 and not active and not setupDone
+            setupDone := true
+            active := true
+            sigBar := bar_index
+            color cS = side > 0 ? cBull : cBear
+            gBox := box.new(bar_index, side > 0 ? tp : en, bar_index + 1, side > 0 ? en : tp, border_color = color.new(cBull, 60), bgcolor = color.new(cBull, 85))
+            rBox := box.new(bar_index, side > 0 ? en : sl, bar_index + 1, side > 0 ? sl : en, border_color = color.new(cBear, 60), bgcolor = color.new(cBear, 88))
+            label.new(bar_index, side > 0 ? low : high, side > 0 ? "D ▲ COMPRA" : "D ▼ VENTA", style = side > 0 ? label.style_label_up : label.style_label_down, color = cS, textcolor = color.white, size = size.small)
+            label.new(bar_index + 1, tp, "TP " + str.tostring(tp, format.mintick), style = label.style_label_left, color = color.new(cBull, 20), textcolor = color.white, size = size.tiny)
+            label.new(bar_index + 1, sl, "SL " + str.tostring(sl, format.mintick), style = label.style_label_left, color = color.new(cBear, 20), textcolor = color.white, size = size.tiny)
+            status := side > 0 ? "Setup COMPRA activo" : "Setup VENTA activo"
+            alert("PO3 9:45 · setup de " + (side > 0 ? "COMPRA" : "VENTA") + " · entrada " + str.tostring(en, format.mintick) + " · SL " + str.tostring(sl, format.mintick) + " · TP " + str.tostring(tp, format.mintick), alert.freq_once_per_bar_close)
+
+// FVG a favor del giro (tras barrer el mínimo, FVG alcista; tras barrer el máximo, FVG bajista)
+if showFvg and aDone and inWin
+    if sweptL and low > high[2] and low - high[2] >= fvgMin
+        box.new(bar_index - 2, low, bar_index + 4, high[2], border_color = color.new(cBull, 70), bgcolor = color.new(cBull, 88))
+    if sweptH and high < low[2] and low[2] - high >= fvgMin
+        box.new(bar_index - 2, low[2], bar_index + 4, high, border_color = color.new(cBear, 70), bgcolor = color.new(cBear, 88))
+
+// Seguimiento del setup hasta el TP, el SL o las 16:00
+if active and bar_index > sigBar
+    bool hitSL = side > 0 ? low <= sl : high >= sl
+    bool hitTP = side > 0 ? high >= tp : low <= tp
+    box.set_right(gBox, bar_index)
+    box.set_right(rBox, bar_index)
+    if hitSL or hitTP or nyHour >= 16
+        active := false
+        side := 0
+        string res = hitSL ? "SL" : hitTP ? "TP ✓" : "Cierre 16:00"
+        label.new(bar_index, hitSL ? sl : hitTP ? tp : close, res, style = label.style_label_left, color = color.new(hitSL ? cBear : hitTP ? cBull : cAcc, 10), textcolor = color.white, size = size.tiny)
+        status := hitSL ? "Stop tocado" : hitTP ? "Objetivo alcanzado" : "Cerrado a las 16:00"
+if aDone and not inWin and inWin[1] and not setupDone
+    status := "Sin setup hoy"
+
+// ───── Panel ─────
+var table tb = table.new(position.top_right, 2, 3, bgcolor = color.new(#131722, 15), frame_color = color.new(cAcc, 60), frame_width = 1)
+if showTbl and barstate.islast
+    table.cell(tb, 0, 0, "Rango A", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 0, na(aH) ? "—" : str.tostring(aH - aL, "#.##") + " pts", text_color = color.white, text_size = size.small)
+    table.cell(tb, 0, 1, "Precio vs 00:00", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 1, na(midOpen) ? "—" : close > midOpen ? "Encima · premium" : "Debajo · discount", text_color = na(midOpen) ? color.white : close > midOpen ? cBear : cBull, text_size = size.small)
+    table.cell(tb, 0, 2, "Estado", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 2, status, text_color = color.white, text_size = size.small)

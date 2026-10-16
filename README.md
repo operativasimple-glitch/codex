@@ -99,3 +99,15 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
   - `node --test london-break/test/lb.test.js`
   - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test. Three of the original configurations still differ for that reason; the breakout and both configurations match.
   - `node test/manage-parity.mjs 5 <NinjaTrader 1-min file>` (from `london-break/test`) checks the breakeven and pyramiding options day by day.
+
+## Power of Three at the New York open (`/ict-po3/`)
+
+`po3_ny_945.pine` is a clean TradingView indicator for reading the ICT Power of Three at the New York open. It is a map, not an automatic system:
+
+- **A · Accumulation**: the 09:30–09:45 New York range, drawn as a box.
+- **M · Manipulation**: marks the first sweep of the range high or low between 09:45 and 11:00.
+- **D · Distribution**: when a bar closes back inside after a sweep, it draws the possible setup toward the other side, with the stop past the sweep extreme and the target at the other side of the range or a fixed R. It tracks the setup to the target, the stop or 16:00 and raises an alert.
+- The midnight open line and FVGs in the direction of the turn after a sweep.
+- A small panel with the range size, price above or below the midnight open (premium or discount) and the current state.
+
+Taken mechanically, every setup with no discretionary filter lost in each of the four years Oct 2022 – Oct 2026 (1 MNQ, 1, 3 and 5-minute bars: −3,784 to −6,391 in total). Use it to read the sequence, not as a signal to follow blindly.
