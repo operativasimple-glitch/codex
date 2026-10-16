@@ -109,7 +109,9 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
 - **M · Manipulation**: marks the first sweep of the range high or low inside the window.
 - **D · Distribution**: when a bar closes back inside after a sweep, it draws the possible setup toward the other side, with the stop past the sweep extreme and the target at the other side of the range or a fixed R. It tracks the setup to the target, the stop or the end of the window and raises an alert.
 - **Power of Three of every 15-minute candle** (on 3-minute charts or lower: 3m, 2m, 1m, 30s, 15s): a dashed line at each 15-minute open and a light box with its range, coloured by direction when it closes. When price moves at least 10 points past the open (manipulation) and a later bar closes back across it, a small ▲ or ▼ marks the entry, with the stop past the manipulation extreme and the target at the previous 15-minute candle's high or low (or a fixed R if price is already past it).
-- The midnight open line and FVGs in the direction of the turn after a sweep.
-- A small panel with the range size, price above or below the midnight open (premium or discount) and the current state.
+- **FVG and IFVG**: every fair value gap of at least 4 points formed inside the window, up to 12 at a time. A ✓ marks the first time price trades into a gap and closes back out in its direction (respected). When a bar closes through a gap it becomes an inverse FVG (IFVG, orange, dashed) with the opposite role; if price closes through it again it is dropped.
+- **Liquidity and draw on liquidity**: at the start of the window it draws the previous CME day high and low, the Asia (20:00–24:00) and London (02:00–05:00) highs and lows that are still untaken. Swept levels turn dotted with a ✓. The nearest untaken level in the direction of the bias is highlighted as DOL: highs above when price is below the midnight open (discount), lows below when it is above (premium).
+- The midnight open line.
+- A small panel with the range size, price above or below the midnight open (premium or discount), the current state, the 15-minute candle and the draw on liquidity.
 
 Taken mechanically, every setup with no discretionary filter lost in each of the four years Oct 2022 – Oct 2026 (1 MNQ, 1, 3 and 5-minute bars: −3,784 to −6,391 in total). Use it to read the sequence, not as a signal to follow blindly.
