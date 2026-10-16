@@ -22,7 +22,7 @@ tClose     = input.int(1555, "Cerrar todo a las (HHMM)", minval = 0, maxval = 23
 
 // ───── Reglas ─────
 entryMode  = input.string("Vuelve dentro (cierre)", "Entrada", options = ["Al tocar el nivel", "Vuelve dentro (cierre)"], group = "Reglas", tooltip = "Al tocar: orden limitada en el nivel. Vuelve dentro: tras romper, entra cuando una vela cierra de nuevo dentro del rango")
-stopMode   = input.string("Puntos tras el nivel", "Stop", options = ["Puntos tras el nivel", "% del rango tras el nivel", "Tras el extremo del barrido"], group = "Reglas", tooltip = "«Tras el extremo del barrido» solo con la entrada «Vuelve dentro»")
+stopMode   = input.string("Tras el extremo del barrido", "Stop", options = ["Puntos tras el nivel", "% del rango tras el nivel", "Tras el extremo del barrido"], group = "Reglas", tooltip = "«Tras el extremo del barrido» solo con la entrada «Vuelve dentro»")
 stopPts    = input.float(20.0, "Stop: puntos tras el nivel", minval = 0.25, step = 0.25, group = "Reglas")
 stopPct    = input.float(25.0, "Stop: % del rango tras el nivel", minval = 1, step = 1, group = "Reglas")
 sweepBuf   = input.int(4, "Stop: ticks tras el extremo del barrido", minval = 0, group = "Reglas")
@@ -33,17 +33,17 @@ maxTrades  = input.int(1, "Máx. entradas por día", minval = 1, group = "Reglas
 direction  = input.string("Ambas", "Dirección", options = ["Ambas", "Solo compras", "Solo ventas"], group = "Reglas")
 
 // ───── Manipulación o ruptura (entrada «Vuelve dentro») ─────
-breakMode  = input.string("Ruptura (sigue fuera)", "Lectura de la rotura", options = ["Manipulación (vuelve dentro)", "Ruptura (sigue fuera)", "Ambas: lo que pase primero"], group = "Manipulación o ruptura", tooltip = "Manipulación: rompe y una vela cierra de nuevo dentro del rango → a la contra (stop y objetivo de «Reglas»). Ruptura: varias velas seguidas cierran fuera → a favor de la rotura. Ambas: en cada nivel manda lo que pase primero")
-acceptBars = input.int(3, "Ruptura: velas seguidas cerrando fuera", minval = 1, group = "Manipulación o ruptura")
+breakMode  = input.string("Manipulación (vuelve dentro)", "Lectura de la rotura", options = ["Manipulación (vuelve dentro)", "Ruptura (sigue fuera)", "Ambas: lo que pase primero"], group = "Manipulación o ruptura", tooltip = "Manipulación: rompe y una vela cierra de nuevo dentro del rango → a la contra (stop y objetivo de «Reglas»). Ruptura: varias velas seguidas cierran fuera → a favor de la rotura. Ambas: en cada nivel manda lo que pase primero")
+acceptBars = input.int(1, "Ruptura: velas seguidas cerrando fuera", minval = 1, group = "Manipulación o ruptura")
 acceptPts  = input.float(0.0, "Ruptura: la última, al menos X puntos fuera", minval = 0, step = 0.25, group = "Manipulación o ruptura")
 bStopMode  = input.string("Puntos desde el cierre", "Ruptura: stop", options = ["Puntos desde el cierre", "Dentro del rango, tras el nivel"], group = "Manipulación o ruptura")
-bStopPts   = input.float(40.0, "Ruptura: puntos del stop", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
-bTargetMode = input.string("Hasta la hora de cierre", "Ruptura: objetivo", options = ["Hasta la hora de cierre", "R fijo", "Proyección del rango"], group = "Manipulación o ruptura", tooltip = "Proyección: el nivel roto ± X veces el tamaño del rango de Londres")
-bTargetR   = input.float(2.0, "Ruptura: R fijo", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
+bStopPts   = input.float(30.0, "Ruptura: puntos del stop", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
+bTargetMode = input.string("R fijo", "Ruptura: objetivo", options = ["Hasta la hora de cierre", "R fijo", "Proyección del rango"], group = "Manipulación o ruptura", tooltip = "Proyección: el nivel roto ± X veces el tamaño del rango de Londres")
+bTargetR   = input.float(3.0, "Ruptura: R fijo", minval = 0.25, step = 0.25, group = "Manipulación o ruptura")
 bRangeK    = input.float(1.0, "Ruptura: proyección (× rango)", minval = 0.1, step = 0.1, group = "Manipulación o ruptura")
-bEntry     = input.string("A mercado al confirmar", "Ruptura: entrada", options = ["En el retesteo del nivel", "A mercado al confirmar"], group = "Manipulación o ruptura", tooltip = "Retesteo: orden limitada en el nivel roto, con el stop dentro del rango («Ruptura: puntos del stop» tras el nivel)")
+bEntry     = input.string("En el retesteo del nivel", "Ruptura: entrada", options = ["En el retesteo del nivel", "A mercado al confirmar"], group = "Manipulación o ruptura", tooltip = "Retesteo: orden limitada en el nivel roto, con el stop dentro del rango («Ruptura: puntos del stop» tras el nivel)")
 bRetestOff = input.float(0.0, "Ruptura: retesteo, puntos más allá del nivel", minval = 0, step = 0.25, group = "Manipulación o ruptura")
-rangeSplit = input.float(0.0, "Decidir por el rango: ruptura si el rango de Londres < X × rango medio de NY (0 = off)", minval = 0, step = 0.05, group = "Manipulación o ruptura", tooltip = "Rango medio de NY = media de 09:30–16:00 de los 10 días anteriores. Rango estrecho: día de ruptura. Rango ancho: día de manipulación. Con «Lectura de la rotura» en Manipulación o Ruptura, solo opera ese tipo de día")
+rangeSplit = input.float(0.4, "Decidir por el rango: ruptura si el rango de Londres < X × rango medio de NY (0 = off)", minval = 0, step = 0.05, group = "Manipulación o ruptura", tooltip = "Rango medio de NY = media de 09:30–16:00 de los 10 días anteriores. Rango estrecho: día de ruptura. Rango ancho: día de manipulación. Con «Lectura de la rotura» en Manipulación o Ruptura, solo opera ese tipo de día")
 
 // ───── Gestión de la operación ─────
 beR        = input.float(0.0, "Breakeven al ir X R a favor (0 = off)", minval = 0, step = 0.25, group = "Gestión", tooltip = "R = distancia del stop. Se activa al cierre de la vela y protege desde la siguiente")

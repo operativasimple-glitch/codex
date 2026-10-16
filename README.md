@@ -89,12 +89,12 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
   - the picked settings: London range below 0.4× the average New York range means a breakout day, entered on the retest after 1 close outside, 30 point stop inside the range, target 3R; otherwise a manipulation day, with the stop 1 point past the sweep extreme and the target at the other side;
   - results: +2,956 / +2,883 (picking years), then +484 / +3,842 (checking years), +10,165 in total, max drawdown −1,896, 27–30% of trades win, still positive with 2 ticks of slippage;
   - 274 of 384 tested settings won all four years, and 91% of those that won both picking years won both checking years;
-  - almost all the profit comes from manipulation days. Breakout trades netted about −500 over the four years; skipping narrow days entirely gave +10,615;
+  - almost all the profit comes from manipulation days. Breakout trades netted about −500 over the four years; skipping narrow days entirely (`londres_MNQ_manipulacion_3m.pine`) gave +2,008 / +3,123 / +1,144 / +4,341, +10,615 in total, max drawdown −1,687, with about 145 trades a year instead of 225;
   - 2-minute bars won every year; 5-minute bars lost in 2024–25.
 - **Files**:
   - `lb.js` is the simulator. It follows TradingView's order emulator: limit fills at the level, or at the open when the bar opens beyond it, and the intrabar path rule.
   - `pine.js` generates the Pine v6 strategy.
-  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine`, `londres_MNQ_vuelve_dentro_3m.pine` (manipulation only), `londres_MNQ_manipulacion_o_ruptura_3m.pine` (decides by range with the walk-forward settings) and `londres_MNQ_ruptura_3m.pine` (breakout only: 3 bars outside, market entry, 40 point stop, held to the close; best from April to October 2026). Use the last three on a 3-minute chart.
+  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine`, `londres_MNQ_vuelve_dentro_3m.pine` (manipulation only), `londres_MNQ_manipulacion_o_ruptura_3m.pine` (decides by range with the walk-forward settings) and `londres_MNQ_manipulacion_3m.pine` (the same settings, manipulation days only). Use the last three on a 3-minute chart.
 - **Tests**:
   - `node --test london-break/test/lb.test.js`
   - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test. Three of the original configurations still differ for that reason; the breakout and both configurations match.
