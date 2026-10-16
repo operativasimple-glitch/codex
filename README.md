@@ -105,8 +105,10 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
 `po3_ny_945.pine` is a clean TradingView indicator for reading the ICT Power of Three at the New York open. It is a map, not an automatic system:
 
 - **A · Accumulation**: the 09:30–09:45 New York range, drawn as a box.
-- **M · Manipulation**: marks the first sweep of the range high or low between 09:45 and 11:00.
-- **D · Distribution**: when a bar closes back inside after a sweep, it draws the possible setup toward the other side, with the stop past the sweep extreme and the target at the other side of the range or a fixed R. It tracks the setup to the target, the stop or 16:00 and raises an alert.
+- **Trading window**: 09:30–11:00 by default (09:30–10:30 is one setting away). Nothing is marked outside it.
+- **M · Manipulation**: marks the first sweep of the range high or low inside the window.
+- **D · Distribution**: when a bar closes back inside after a sweep, it draws the possible setup toward the other side, with the stop past the sweep extreme and the target at the other side of the range or a fixed R. It tracks the setup to the target, the stop or the end of the window and raises an alert.
+- **Power of Three of every 15-minute candle** (on 3-minute charts or lower: 3m, 2m, 1m, 30s, 15s): a dashed line at each 15-minute open and a light box with its range, coloured by direction when it closes. When price moves at least 10 points past the open (manipulation) and a later bar closes back across it, a small ▲ or ▼ marks the entry, with the stop past the manipulation extreme and the target at the previous 15-minute candle's high or low (or a fixed R if price is already past it).
 - The midnight open line and FVGs in the direction of the turn after a sweep.
 - A small panel with the range size, price above or below the midnight open (premium or discount) and the current state.
 
