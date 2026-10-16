@@ -70,10 +70,16 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
 - **Management tests on the NinjaTrader sample** (`manage.js` covers trailing stops and partial exits too):
   - trailing stops and partial exits reduced results;
   - breakeven at 1R plus adding at +1R and +2R gave the best result.
+- **Three-year test** (Dukascopy 1-minute Nasdaq-100 CFD, Oct 2023 – Oct 2026, 1 MNQ with commission and slippage):
+  - the CFD matched the NinjaTrader MNQ sample: London ranges within 0–5 points and the same days touching each level;
+  - *touch*: none of 180 stop, target and management combinations won in both Oct 2024 – Oct 2026 years. Breakeven plus pyramiding, the best on the short NinjaTrader sample, lost in both;
+  - *reclaim* on 3-minute bars, 20 point stop from the signal close and target at the other side won in every year: +734 / +874 / +4,443 (PF 1.10 / 1.11 / 1.56), +6,051 in total, max drawdown −1,319. The 2023–24 year was not used to pick it;
+  - it wins about 20% of trades and the profit comes from a few trend days: without the 10 best trades the three years net +763;
+  - 2-minute bars also won every year; 5-minute bars did not.
 - **Files**:
   - `lb.js` is the simulator. It follows TradingView's order emulator: limit fills at the level, or at the open when the bar opens beyond it, and the intrabar path rule.
   - `pine.js` generates the Pine v6 strategy.
-  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine` and `londres_MNQ_BE_piramidar.pine`.
+  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine` and `londres_MNQ_vuelve_dentro_3m.pine` (the three-year winner; use it on a 3-minute chart).
 - **Tests**:
   - `node --test london-break/test/`
   - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test.
