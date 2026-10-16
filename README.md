@@ -82,10 +82,11 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
   - 2-minute bars also won every year; 5-minute bars did not.
   - *both* on 3-minute bars, breakout after 3 bars outside with a 40 point stop held to the close, manipulation as above, 1 entry a day: +1,196 / +2,926 / +5,007 (PF 1.12 / 1.27 / 1.42), +9,129 in total, max drawdown −1,137. Breakouts made +6,680 of it. Neighbouring settings also won every year: 3 or 5 bars outside with 30–60 point stops. These settings were picked using all three years.
   - **Out-of-sample year Oct 2022 – Sep 2023, not used for any choice: everything lost.** *both* −544 (PF 0.95, max drawdown −4,206, 5 of 12 months up), manipulation only −897, breakout only −175. Neighbouring *both* settings lost −173 to −1,661. The edge is not stable from year to year.
+  - Breakout only over the four years: −175 / +3,358 / +2,762 / +5,112, +11,057 in total, max drawdown −2,119, 23–30% of trades win. Its settings were picked using the 2023–2026 years, so only 2022–23 is out of sample.
 - **Files**:
   - `lb.js` is the simulator. It follows TradingView's order emulator: limit fills at the level, or at the open when the bar opens beyond it, and the intrabar path rule.
   - `pine.js` generates the Pine v6 strategy.
-  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine` `londres_MNQ_vuelve_dentro_3m.pine` (manipulation only) and `londres_MNQ_manipulacion_o_ruptura_3m.pine` (both readings). Use the last two on a 3-minute chart.
+  - Ready-to-paste scripts: `londres_tocar_nivel.pine`, `londres_vuelve_dentro_2.5R.pine`, `londres_MNQ_limite_borde.pine`, `londres_MNQ_BE_piramidar.pine` `londres_MNQ_vuelve_dentro_3m.pine` (manipulation only), `londres_MNQ_manipulacion_o_ruptura_3m.pine` (both readings) and `londres_MNQ_ruptura_3m.pine` (breakout only: 3 bars outside, 40 point stop, held to the close). Use the last three on a 3-minute chart.
 - **Tests**:
   - `node --test london-break/test/lb.test.js`
   - `cd london-break/test && npm install --no-save pinets@0.10.0 && node pine-parity.mjs <NinjaTrader 1-min file> 5` compares the Pine strategy run in PineTS with the simulator. PineTS fills a few same-bar and gap cases differently from TradingView, so the simulator imitates them only in that test. Three of the original configurations still differ for that reason; the breakout and both configurations match.
