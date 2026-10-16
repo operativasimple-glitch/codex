@@ -396,7 +396,12 @@ bgcolor(ready and m >= tf and m < tl ? color.new(cRange, 95) : na, title = "Vent
 posNow = strategy.position_size
 plot(posNow != 0 ? curStop : na, "Stop", color = cShort, style = plot.style_linebr, linewidth = 2)
 plot(posNow > 0 ? tgL : posNow < 0 ? tgS : na, "Objetivo", color = cLong, style = plot.style_linebr, linewidth = 2)
-`;
+${p.testedTf ? `
+// Aviso si el gráfico no es el temporal en el que se probó
+var table warnTbl = table.new(position.top_right, 1, 1)
+if barstate.islast and timeframe.period != "${p.testedTf}"
+    table.cell(warnTbl, 0, 0, "Probado en gráfico de ${p.testedTf} min (ahora: " + timeframe.period + ")", bgcolor = color.new(color.red, 15), text_color = color.white)
+` : ''}`;
   }
 
   const api = { pineStrategy };
