@@ -115,3 +115,5 @@ A TradingView strategy for **NQ / MNQ** built on the London session range.
 - A small panel with the range size, price above or below the midnight open (premium or discount), the current state, the 15-minute candle and the draw on liquidity.
 
 Taken mechanically, every setup with no discretionary filter lost in each of the four years Oct 2022 – Oct 2026 (1 MNQ, 1, 3 and 5-minute bars: −3,784 to −6,391 in total). Use it to read the sequence, not as a signal to follow blindly.
+
+`po3_oro_tokio_oklahoma.pine` is the same indicator set up for gold (micro MGC) at the Tokyo open in Oklahoma (US Central) time: range 19:00–19:30, window 19:00–21:00, the 17:00 CME reopen as the day open, the New York session and London highs and lows as liquidity, and smaller gold-sized thresholds. On about 84 days of Dukascopy gold data (Oct 2025 – Oct 2026), none of six simple mechanical rules (Power of Three or opening-range breakout, at the 17:00 reopen or the Tokyo open) won reliably in both halves; it is a tool for practising, not a tested strategy.
