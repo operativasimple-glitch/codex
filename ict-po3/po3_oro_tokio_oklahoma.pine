@@ -91,7 +91,7 @@ if newDay
     if showMid
         midLn := line.new(bar_index, open, bar_index, open, color = color.new(cMid, 35), style = line.style_dotted, width = 1)
         label.new(bar_index, open, "17:00", style = label.style_label_right, color = color.new(cMid, 100), textcolor = color.new(cMid, 20), size = size.tiny)
-else if showMid and not na(midLn) and nyHour < 16
+else if showMid and not na(midLn) and nyHour >= 17 and nyHour < 21
     line.set_x2(midLn, bar_index)
 
 // ───── A · Acumulación ─────
