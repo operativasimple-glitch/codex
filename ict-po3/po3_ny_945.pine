@@ -3,6 +3,7 @@
 //  A · Acumulación: rango de 09:30 a 09:45 (hora de Nueva York = 15:30–15:45 en España)
 //  M · Manipulación: el precio barre el máximo o el mínimo del rango
 //  D · Distribución: una vela cierra de nuevo dentro → posible setup hacia el otro lado
+// PO3 de la vela de 1 h de las 10:00 (10 am open): barrido de un lado de la apertura de las 10:00 y vuelta sobre ella.
 // Además, el PO3 de cada vela de 15 minutos (en gráficos de 3 min o menos): apertura de la vela, barrido de un lado
 // de la apertura (manipulación) y vuelta sobre ella (distribución).
 // FVG de la ventana: ✓ cuando el precio los respeta e IFVG cuando una vela cierra atravesándolos (cambian de papel).
@@ -18,6 +19,7 @@ const string G3 = "Estilo"
 const string G4 = "PO3 de cada vela de 15 min"
 const string G5 = "FVG e IFVG"
 const string G6 = "Liquidez (draw on liquidity)"
+const string G7 = "PO3 de la vela de las 10:00 (10 am open)"
 accSess = input.session("0930-0945", "Acumulación (rango A)", group = G1)
 winSess = input.session("0930-1100", "Ventana de trading", group = G1, tooltip = "Fuera de esta ventana no marca nada. Pon 0930-1030 para operar solo hasta las 10:30")
 showMid = input.bool(true, "Línea de apertura 00:00", group = G1)
@@ -38,6 +40,10 @@ asiaSes = input.session("2000-2359", "Asia", group = G6)
 lonSes  = input.session("0200-0500", "Londres", group = G6)
 cLiq    = input.color(#90A4AE, "Liquidez", group = G6)
 cDol    = input.color(#FFD54F, "Draw on liquidity", group = G6)
+showTen = input.bool(true, "PO3 de la vela de 1 h de las 10:00", group = G7)
+tenSess = input.session("1000-1100", "Vela de la hora", group = G7)
+tenMan  = input.float(15.0, "Manipulación mínima: puntos más allá de las 10:00", minval = 0, step = 0.25, group = G7)
+cTen    = input.color(#42A5F5, "10 am open", group = G7)
 showTbl = input.bool(true, "Panel de estado", group = G3)
 cAcc    = input.color(#78909C, "Rango A", group = G3)
 cBull   = input.color(#26A69A, "Compra", group = G3)
@@ -401,8 +407,69 @@ if showLiq and inWin
 else if not inWin
     dolTxt := "—"
 
+// ───── PO3 de la vela de 1 h de las 10:00 (10 am open) ─────
+inTen = not na(time(timeframe.period, tenSess, TZ))
+var float tOpen = na
+var line  tLine = na
+var float preH = na
+var float preL = na
+var float tExtH = na
+var float tExtL = na
+var int   tLast = 0
+var bool  tDone = false
+var string tTxt = "Esperando 10:00"
+if newDay
+    preH := na
+    preL := na
+    tOpen := na
+    tTxt := "Esperando 10:00"
+// Máximo y mínimo de 09:30 a 10:00: la liquidez que suele buscar la distribución
+if nyMin >= 570 and nyMin < 600
+    preH := na(preH) ? high : math.max(preH, high)
+    preL := na(preL) ? low : math.min(preL, low)
+if showTen and inTen
+    if not inTen[1]
+        tOpen := open
+        tExtH := na
+        tExtL := na
+        tLast := 0
+        tDone := false
+        tTxt := "Esperando manipulación"
+        tLine := line.new(bar_index, open, bar_index, open, color = color.new(cTen, 10), style = line.style_solid, width = 1)
+        label.new(bar_index, open, "10:00", style = label.style_label_right, color = color.new(cTen, 100), textcolor = cTen, size = size.tiny)
+    else
+        line.set_x2(tLine, bar_index)
+    if not tDone
+        bool tDn = low <= tOpen - tenMan
+        bool tUp = high >= tOpen + tenMan
+        if tDn
+            tExtL := na(tExtL) ? low : math.min(tExtL, low)
+        if tUp
+            tExtH := na(tExtH) ? high : math.max(tExtH, high)
+        tLast := tDn and tUp ? (close > tOpen ? -1 : 1) : tDn ? -1 : tUp ? 1 : tLast
+        if tLast == -1
+            tTxt := "Manipulación abajo → busca compra"
+        else if tLast == 1
+            tTxt := "Manipulación arriba → busca venta"
+        // Tras manipular por debajo de la apertura de las 10:00, cierra encima → vela alcista (y al revés)
+        if inTen[1] and ((tLast == -1 and close > tOpen) or (tLast == 1 and close < tOpen))
+            tDone := true
+            int   d  = tLast == -1 ? 1 : -1
+            float ts = d > 0 ? tExtL - slBuf : tExtH + slBuf
+            float tt = d > 0 ? (not na(preH) and preH > close ? preH : close + tpR * (close - ts)) : (not na(preL) and preL < close ? preL : close - tpR * (ts - close))
+            int   left = math.max(1, int((660 - nyMin) * 60 / timeframe.in_seconds(timeframe.period)))
+            label.new(bar_index, d > 0 ? low : high, d > 0 ? "10 ▲ COMPRA" : "10 ▼ VENTA", style = d > 0 ? label.style_label_up : label.style_label_down, color = color.new(cTen, 10), textcolor = color.white, size = size.small)
+            line.new(bar_index, ts, bar_index + left, ts, color = color.new(cBear, 20), width = 2)
+            line.new(bar_index, tt, bar_index + left, tt, color = color.new(cBull, 20), width = 2)
+            label.new(bar_index + left, tt, "TP 10 " + str.tostring(tt, format.mintick), style = label.style_label_left, color = color.new(cBull, 20), textcolor = color.white, size = size.tiny)
+            label.new(bar_index + left, ts, "SL 10 " + str.tostring(ts, format.mintick), style = label.style_label_left, color = color.new(cBear, 20), textcolor = color.white, size = size.tiny)
+            tTxt := d > 0 ? "Setup COMPRA (vuelve sobre las 10:00)" : "Setup VENTA (vuelve bajo las 10:00)"
+            alert("PO3 10:00 · " + (d > 0 ? "COMPRA" : "VENTA") + " · entrada " + str.tostring(close, format.mintick) + " · SL " + str.tostring(ts, format.mintick) + " · TP " + str.tostring(tt, format.mintick), alert.freq_once_per_bar_close)
+if showTen and not inTen and inTen[1] and not tDone
+    tTxt := "Sin PO3 a las 10:00"
+
 // ───── Panel ─────
-var table tb = table.new(position.top_right, 2, 5, bgcolor = color.new(#131722, 15), frame_color = color.new(cAcc, 60), frame_width = 1)
+var table tb = table.new(position.top_right, 2, 6, bgcolor = color.new(#131722, 15), frame_color = color.new(cAcc, 60), frame_width = 1)
 if showTbl and barstate.islast
     table.cell(tb, 0, 0, "Rango A", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
     table.cell(tb, 1, 0, na(aH) ? "—" : str.tostring(aH - aL, "#.##") + " pts", text_color = color.white, text_size = size.small)
@@ -412,5 +479,7 @@ if showTbl and barstate.islast
     table.cell(tb, 1, 2, status, text_color = color.white, text_size = size.small)
     table.cell(tb, 0, 4, "Draw on liquidity", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
     table.cell(tb, 1, 4, showLiq ? dolTxt : "—", text_color = cDol, text_size = size.small)
+    table.cell(tb, 0, 5, "Vela 10:00", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 5, not showTen ? "—" : inTen and not na(tOpen) and not tDone ? (close > tOpen ? "Encima de las 10:00 · " : "Debajo de las 10:00 · ") + tTxt : tTxt, text_color = cTen, text_size = size.small)
     table.cell(tb, 0, 3, "Vela 15 min", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
     table.cell(tb, 1, 3, not (showQ and ltf) ? "Gráfico de 3 min o menos" : not inWin ? "Fuera de la ventana" : na(qOpen) ? "—" : close > qOpen ? "Encima de su apertura" : "Debajo de su apertura", text_color = not (showQ and ltf and inWin) or na(qOpen) ? color.gray : close > qOpen ? cBull : cBear, text_size = size.small)

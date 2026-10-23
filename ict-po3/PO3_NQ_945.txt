@@ -1,0 +1,485 @@
+//@version=6
+// Power of Three · apertura de Nueva York (ICT)
+//  A · Acumulación: rango de 09:30 a 09:45 (hora de Nueva York = 15:30–15:45 en España)
+//  M · Manipulación: el precio barre el máximo o el mínimo del rango
+//  D · Distribución: una vela cierra de nuevo dentro → posible setup hacia el otro lado
+// PO3 de la vela de 1 h de las 10:00 (10 am open): barrido de un lado de la apertura de las 10:00 y vuelta sobre ella.
+// Además, el PO3 de cada vela de 15 minutos (en gráficos de 3 min o menos): apertura de la vela, barrido de un lado
+// de la apertura (manipulación) y vuelta sobre ella (distribución).
+// FVG de la ventana: ✓ cuando el precio los respeta e IFVG cuando una vela cierra atravesándolos (cambian de papel).
+// Liquidez: máximo y mínimo del día anterior, de Asia y de Londres que siguen sin barrer; el más cercano a favor
+// del sesgo (premium / discount respecto a las 00:00) se marca como draw on liquidity (DOL).
+// Es un mapa para leer el precio, no un sistema automático: el setup lo validas tú (sesgo, liquidez, desplazamiento).
+indicator("Power of Three · NY 9:45", shorttitle = "PO3 9:45", overlay = true, max_boxes_count = 300, max_lines_count = 300, max_labels_count = 300)
+
+const string TZ = "America/New_York"
+const string G1 = "Horario (Nueva York)"
+const string G2 = "Setup"
+const string G3 = "Estilo"
+const string G4 = "PO3 de cada vela de 15 min"
+const string G5 = "FVG e IFVG"
+const string G6 = "Liquidez (draw on liquidity)"
+const string G7 = "PO3 de la vela de las 10:00 (10 am open)"
+accSess = input.session("0930-0945", "Acumulación (rango A)", group = G1)
+winSess = input.session("0930-1100", "Ventana de trading", group = G1, tooltip = "Fuera de esta ventana no marca nada. Pon 0930-1030 para operar solo hasta las 10:30")
+showMid = input.bool(true, "Línea de apertura 00:00", group = G1)
+slBuf   = input.float(1.0, "Stop: puntos tras el barrido", minval = 0, step = 0.25, group = G2)
+tpMode  = input.string("Otro lado del rango", "Objetivo", options = ["Otro lado del rango", "R fijo"], group = G2)
+tpR     = input.float(2.0, "Objetivo: R fijo", minval = 0.5, step = 0.25, group = G2)
+showSig = input.bool(true, "Marcar el setup (barrido + cierre dentro)", group = G2)
+showQ   = input.bool(true, "PO3 de cada vela de 15 min (gráficos de 3 min o menos)", group = G4)
+qManip  = input.float(10.0, "Manipulación mínima: puntos más allá de la apertura", minval = 0, step = 0.25, group = G4)
+qSig    = input.bool(true, "Marcar entrada al volver sobre la apertura", group = G4)
+cQ      = input.color(#9575CD, "Vela de 15 min", group = G4)
+showFvg = input.bool(true, "FVG de la ventana (✓ respetado · IFVG invertido)", group = G5)
+fvgMin  = input.float(4.0, "FVG mínimo (puntos)", minval = 0, step = 0.25, group = G5)
+fvgMax  = input.int(12, "FVG vivos como máximo", minval = 1, maxval = 50, group = G5)
+cIfvg   = input.color(#FFA726, "IFVG", group = G5)
+showLiq = input.bool(true, "Niveles de liquidez y DOL", group = G6)
+asiaSes = input.session("2000-2359", "Asia", group = G6)
+lonSes  = input.session("0200-0500", "Londres", group = G6)
+cLiq    = input.color(#90A4AE, "Liquidez", group = G6)
+cDol    = input.color(#FFD54F, "Draw on liquidity", group = G6)
+showTen = input.bool(true, "PO3 de la vela de 1 h de las 10:00", group = G7)
+tenSess = input.session("1000-1100", "Vela de la hora", group = G7)
+tenMan  = input.float(15.0, "Manipulación mínima: puntos más allá de las 10:00", minval = 0, step = 0.25, group = G7)
+cTen    = input.color(#42A5F5, "10 am open", group = G7)
+showTbl = input.bool(true, "Panel de estado", group = G3)
+cAcc    = input.color(#78909C, "Rango A", group = G3)
+cBull   = input.color(#26A69A, "Compra", group = G3)
+cBear   = input.color(#EF5350, "Venta", group = G3)
+cMid    = input.color(#B0BEC5, "00:00", group = G3)
+
+inAcc  = not na(time(timeframe.period, accSess, TZ))
+inWin  = not na(time(timeframe.period, winSess, TZ))
+newDay = dayofmonth(time, TZ) != nz(dayofmonth(time[1], TZ), -1)
+nyHour = hour(time, TZ)
+nyMin  = nyHour * 60 + minute(time, TZ)
+ltf    = timeframe.in_seconds(timeframe.period) <= 180
+
+// ───── Estado del día ─────
+var float midOpen = na
+var line  midLn = na
+var float aH = na
+var float aL = na
+var box   aBox = na
+var bool  aDone = false
+var bool  sweptH = false
+var bool  sweptL = false
+var float extH = na
+var float extL = na
+var int   lastSw = 0
+var bool  setupDone = false
+var int   side = 0
+var bool  active = false
+var int   sigBar = 0
+var float en = na
+var float sl = na
+var float tp = na
+var box   gBox = na
+var box   rBox = na
+var string status = "Esperando 09:30"
+
+if newDay
+    midOpen := open
+    aH := na
+    aL := na
+    aDone := false
+    sweptH := false
+    sweptL := false
+    extH := na
+    extL := na
+    lastSw := 0
+    setupDone := false
+    active := false
+    side := 0
+    status := "Esperando 09:30"
+    if showMid
+        midLn := line.new(bar_index, open, bar_index, open, color = color.new(cMid, 35), style = line.style_dotted, width = 1)
+        label.new(bar_index, open, "00:00", style = label.style_label_right, color = color.new(cMid, 100), textcolor = color.new(cMid, 20), size = size.tiny)
+else if showMid and not na(midLn) and nyHour < 16
+    line.set_x2(midLn, bar_index)
+
+// ───── A · Acumulación ─────
+if inAcc
+    if not inAcc[1]
+        aH := high
+        aL := low
+        aBox := box.new(bar_index, high, bar_index, low, border_color = color.new(cAcc, 40), bgcolor = color.new(cAcc, 88), text = "A", text_color = color.new(cAcc, 10), text_size = size.small, text_halign = text.align_left, text_valign = text.align_top)
+    else
+        aH := math.max(aH, high)
+        aL := math.min(aL, low)
+        box.set_top(aBox, aH)
+        box.set_bottom(aBox, aL)
+        box.set_right(aBox, bar_index)
+    status := "Acumulación"
+if not inAcc and inAcc[1] and not na(aH)
+    aDone := true
+    status := "Esperando barrido"
+
+// ───── M · Manipulación y D · Distribución ─────
+if aDone and inWin
+    box.set_right(aBox, bar_index)
+    if not setupDone
+        if high > aH
+            if not sweptH
+                label.new(bar_index, high, "M", style = label.style_label_down, color = color.new(cBear, 70), textcolor = color.white, size = size.tiny)
+            sweptH := true
+            extH := na(extH) ? high : math.max(extH, high)
+            lastSw := 1
+            status := "Barrido del máximo → busca venta"
+        if low < aL
+            if not sweptL
+                label.new(bar_index, low, "M", style = label.style_label_up, color = color.new(cBull, 70), textcolor = color.white, size = size.tiny)
+            sweptL := true
+            extL := na(extL) ? low : math.min(extL, low)
+            lastSw := -1
+            status := "Barrido del mínimo → busca compra"
+        // Setup: tras el barrido, una vela cierra de nuevo dentro del rango
+        if showSig and lastSw == -1 and close > aL
+            float s0 = extL - slBuf
+            float t0 = tpMode == "R fijo" ? close + tpR * (close - s0) : aH
+            if t0 > close
+                side := 1
+                en := close
+                sl := s0
+                tp := t0
+        else if showSig and lastSw == 1 and close < aH
+            float s0 = extH + slBuf
+            float t0 = tpMode == "R fijo" ? close - tpR * (s0 - close) : aL
+            if t0 < close
+                side := -1
+                en := close
+                sl := s0
+                tp := t0
+        if side != 0 and not active and not setupDone
+            setupDone := true
+            active := true
+            sigBar := bar_index
+            color cS = side > 0 ? cBull : cBear
+            gBox := box.new(bar_index, side > 0 ? tp : en, bar_index + 1, side > 0 ? en : tp, border_color = color.new(cBull, 60), bgcolor = color.new(cBull, 85))
+            rBox := box.new(bar_index, side > 0 ? en : sl, bar_index + 1, side > 0 ? sl : en, border_color = color.new(cBear, 60), bgcolor = color.new(cBear, 88))
+            label.new(bar_index, side > 0 ? low : high, side > 0 ? "D ▲ COMPRA" : "D ▼ VENTA", style = side > 0 ? label.style_label_up : label.style_label_down, color = cS, textcolor = color.white, size = size.small)
+            label.new(bar_index + 1, tp, "TP " + str.tostring(tp, format.mintick), style = label.style_label_left, color = color.new(cBull, 20), textcolor = color.white, size = size.tiny)
+            label.new(bar_index + 1, sl, "SL " + str.tostring(sl, format.mintick), style = label.style_label_left, color = color.new(cBear, 20), textcolor = color.white, size = size.tiny)
+            status := side > 0 ? "Setup COMPRA activo" : "Setup VENTA activo"
+            alert("PO3 9:45 · setup de " + (side > 0 ? "COMPRA" : "VENTA") + " · entrada " + str.tostring(en, format.mintick) + " · SL " + str.tostring(sl, format.mintick) + " · TP " + str.tostring(tp, format.mintick), alert.freq_once_per_bar_close)
+
+// Seguimiento del setup hasta el TP, el SL o el final de la ventana
+if active and bar_index > sigBar
+    bool hitSL = side > 0 ? low <= sl : high >= sl
+    bool hitTP = side > 0 ? high >= tp : low <= tp
+    box.set_right(gBox, bar_index)
+    box.set_right(rBox, bar_index)
+    if hitSL or hitTP or not inWin
+        active := false
+        side := 0
+        string res = hitSL ? "SL" : hitTP ? "TP ✓" : "Fin de ventana"
+        label.new(bar_index, hitSL ? sl : hitTP ? tp : close, res, style = label.style_label_left, color = color.new(hitSL ? cBear : hitTP ? cBull : cAcc, 10), textcolor = color.white, size = size.tiny)
+        status := hitSL ? "Stop tocado" : hitTP ? "Objetivo alcanzado" : "Fin de la ventana"
+if aDone and not inWin and inWin[1] and not setupDone
+    status := "Sin setup hoy"
+
+// ───── PO3 de cada vela de 15 minutos ─────
+var float qOpen = na
+var float qH = na
+var float qL = na
+var float pQH = na
+var float pQL = na
+var line  qLine = na
+var box   qBox = na
+var bool  qSwH = false
+var bool  qSwL = false
+var float qExtH = na
+var float qExtL = na
+var int   qLast = 0
+var bool  qDone = false
+qId  = math.floor(nyMin / 15)
+newQ = newDay or qId != nz(qId[1], -1)
+if showQ and ltf
+    if newQ
+        // Colorea la vela de 15 min que acaba de cerrar y guarda su máximo y mínimo (liquidez)
+        if not na(qBox)
+            box.set_bgcolor(qBox, close[1] >= qOpen ? color.new(cBull, 92) : color.new(cBear, 92))
+        pQH := qH
+        pQL := qL
+        qOpen := open
+        qH := high
+        qL := low
+        qSwH := false
+        qSwL := false
+        qExtH := na
+        qExtL := na
+        qLast := 0
+        qDone := false
+        qLine := na
+        qBox := na
+        if inWin
+            qLine := line.new(bar_index, open, bar_index, open, color = color.new(cQ, 25), style = line.style_dashed, width = 1)
+            qBox := box.new(bar_index, high, bar_index, low, border_color = color.new(cQ, 75), bgcolor = color.new(cQ, 95))
+    else
+        qH := math.max(qH, high)
+        qL := math.min(qL, low)
+        if not na(qLine)
+            line.set_x2(qLine, bar_index)
+            box.set_right(qBox, bar_index)
+            box.set_top(qBox, qH)
+            box.set_bottom(qBox, qL)
+    if inWin and not qDone and not na(qOpen)
+        bool qDn = low <= qOpen - qManip
+        bool qUp = high >= qOpen + qManip
+        if qDn
+            qSwL := true
+            qExtL := na(qExtL) ? low : math.min(qExtL, low)
+        if qUp
+            qSwH := true
+            qExtH := na(qExtH) ? high : math.max(qExtH, high)
+        // Si la vela barre los dos lados, la manipulación es el lado contrario a su cierre
+        qLast := qDn and qUp ? (close > qOpen ? -1 : 1) : qDn ? -1 : qUp ? 1 : qLast
+        // Tras manipular por debajo de la apertura, vuelve a cerrar encima → PO3 alcista (y al revés). No en la primera vela.
+        if qSig and not newQ and ((qLast == -1 and close > qOpen) or (qLast == 1 and close < qOpen))
+            qDone := true
+            int   d  = qLast == -1 ? 1 : -1
+            float qs = d > 0 ? qExtL - slBuf : qExtH + slBuf
+            float qt = d > 0 ? (not na(pQH) and pQH > close ? pQH : close + tpR * (close - qs)) : (not na(pQL) and pQL < close ? pQL : close - tpR * (qs - close))
+            int   left = math.max(1, int((15 * 60 - (nyMin % 15) * 60 - second(time, TZ)) / timeframe.in_seconds(timeframe.period)))
+            label.new(bar_index, d > 0 ? low : high, d > 0 ? "▲" : "▼", style = d > 0 ? label.style_label_up : label.style_label_down, color = color.new(d > 0 ? cBull : cBear, 25), textcolor = color.white, size = size.tiny)
+            line.new(bar_index, qs, bar_index + left, qs, color = color.new(cBear, 30), width = 1)
+            line.new(bar_index, qt, bar_index + left, qt, color = color.new(cBull, 30), width = 1)
+            alert("PO3 15 min · " + (d > 0 ? "COMPRA" : "VENTA") + " · entrada " + str.tostring(close, format.mintick) + " · SL " + str.tostring(qs, format.mintick) + " · TP " + str.tostring(qt, format.mintick), alert.freq_once_per_bar_close)
+
+// ───── FVG, respetos e IFVG ─────
+type Fvg
+    float top
+    float bot
+    int   dir
+    bool  inv = false
+    bool  resp = false
+    bool  dead = false
+    int   bar
+    box   bx
+
+var array<Fvg> fvgs = array.new<Fvg>()
+if showFvg and inWin
+    if low > high[2] and low - high[2] >= fvgMin
+        array.push(fvgs, Fvg.new(low, high[2], 1, false, false, false, bar_index, box.new(bar_index - 2, low, bar_index, high[2], border_color = color.new(cBull, 75), bgcolor = color.new(cBull, 90))))
+    if high < low[2] and low[2] - high >= fvgMin
+        array.push(fvgs, Fvg.new(low[2], high, -1, false, false, false, bar_index, box.new(bar_index - 2, low[2], bar_index, high, border_color = color.new(cBear, 75), bgcolor = color.new(cBear, 90))))
+    while array.size(fvgs) > fvgMax
+        array.shift(fvgs)
+    for f in fvgs
+        if not f.dead and bar_index > f.bar
+            box.set_right(f.bx, bar_index)
+            // Cierra atravesándolo: el FVG se invierte (IFVG); si ya era IFVG, deja de valer
+            bool through = f.dir > 0 ? close < f.bot : close > f.top
+            // Entra en el hueco y cierra fuera, a favor: lo respeta
+            bool touched = f.dir > 0 ? low <= f.top : high >= f.bot
+            bool held    = f.dir > 0 ? close > f.top : close < f.bot
+            if through
+                if f.inv
+                    f.dead := true
+                    box.set_bgcolor(f.bx, color.new(cAcc, 95))
+                    box.set_border_color(f.bx, color.new(cAcc, 85))
+                else
+                    f.inv := true
+                    f.dir := -f.dir
+                    f.resp := false
+                    box.set_bgcolor(f.bx, color.new(cIfvg, 88))
+                    box.set_border_color(f.bx, color.new(cIfvg, 40))
+                    box.set_border_style(f.bx, line.style_dashed)
+                    label.new(bar_index, f.dir > 0 ? f.bot : f.top, "IFVG", style = f.dir > 0 ? label.style_label_up : label.style_label_down, color = color.new(cIfvg, 20), textcolor = color.white, size = size.tiny)
+            else if touched and held and not f.resp
+                f.resp := true
+                box.set_border_color(f.bx, color.new(f.inv ? cIfvg : f.dir > 0 ? cBull : cBear, 10))
+                box.set_border_width(f.bx, 2)
+                label.new(bar_index, f.dir > 0 ? low : high, "✓", style = f.dir > 0 ? label.style_label_up : label.style_label_down, color = color.new(color.black, 100), textcolor = f.inv ? cIfvg : f.dir > 0 ? cBull : cBear, size = size.small)
+if not inWin and inWin[1]
+    for f in fvgs
+        f.dead := true
+    array.clear(fvgs)
+
+// ───── Liquidez y draw on liquidity ─────
+type Liq
+    string name
+    float  px
+    int    dir
+    bool   swept = false
+    line   ln
+    label  lb
+
+// Día de CME (18:00–17:00): máximo y mínimo del día anterior
+cmeKey = dayofmonth(time + 6 * 3600000, TZ)
+newCme = cmeKey != nz(cmeKey[1], -1)
+var float cdH = na
+var float cdL = na
+var float pdH = na
+var float pdL = na
+if newCme
+    pdH := cdH
+    pdL := cdL
+    cdH := high
+    cdL := low
+else
+    cdH := math.max(cdH, high)
+    cdL := math.min(cdL, low)
+// Asia y Londres, y lo que el precio ha hecho después (para saber si ya se barrieron)
+inAsia = not na(time(timeframe.period, asiaSes, TZ))
+inLon  = not na(time(timeframe.period, lonSes, TZ))
+var float asH = na
+var float asL = na
+var float asAH = na
+var float asAL = na
+var float lnH = na
+var float lnL = na
+var float lnAH = na
+var float lnAL = na
+if inAsia
+    if not inAsia[1]
+        asH := high
+        asL := low
+        asAH := na
+        asAL := na
+    else
+        asH := math.max(asH, high)
+        asL := math.min(asL, low)
+else if not na(asH)
+    asAH := na(asAH) ? high : math.max(asAH, high)
+    asAL := na(asAL) ? low : math.min(asAL, low)
+if inLon
+    if not inLon[1]
+        lnH := high
+        lnL := low
+        lnAH := na
+        lnAL := na
+    else
+        lnH := math.max(lnH, high)
+        lnL := math.min(lnL, low)
+else if not na(lnH)
+    lnAH := na(lnAH) ? high : math.max(lnAH, high)
+    lnAL := na(lnAL) ? low : math.min(lnAL, low)
+
+var array<Liq> liqs = array.new<Liq>()
+addLiq(string name, float px, int dir, float after) =>
+    // Solo niveles que siguen sin barrer al empezar la ventana
+    if not na(px) and (na(after) or (dir > 0 ? after < px : after > px))
+        array.push(liqs, Liq.new(name, px, dir, false, line.new(bar_index, px, bar_index, px, color = color.new(cLiq, 30), width = 1), label.new(bar_index, px, name, style = label.style_label_left, color = color.new(color.black, 100), textcolor = color.new(cLiq, 10), size = size.tiny)))
+    true
+var string dolTxt = "—"
+if showLiq and inWin and not inWin[1]
+    array.clear(liqs)
+    addLiq("PDH", pdH, 1, cdH)
+    addLiq("PDL", pdL, -1, cdL)
+    addLiq("Asia H", asH, 1, asAH)
+    addLiq("Asia L", asL, -1, asAL)
+    addLiq("Londres H", lnH, 1, lnAH)
+    addLiq("Londres L", lnL, -1, lnAL)
+if showLiq and inWin
+    int bias = na(midOpen) ? 0 : close < midOpen ? 1 : -1
+    Liq dol = na
+    float best = na
+    for l in liqs
+        if not l.swept
+            if l.dir > 0 ? high >= l.px : low <= l.px
+                l.swept := true
+                line.set_style(l.ln, line.style_dotted)
+                line.set_color(l.ln, color.new(cLiq, 70))
+                label.set_text(l.lb, l.name + " ✓")
+                label.set_textcolor(l.lb, color.new(cLiq, 60))
+            else
+                line.set_x2(l.ln, bar_index)
+                label.set_x(l.lb, bar_index)
+                line.set_width(l.ln, 1)
+                line.set_color(l.ln, color.new(cLiq, 30))
+                label.set_text(l.lb, l.name)
+                label.set_textcolor(l.lb, color.new(cLiq, 10))
+                float d = math.abs(l.px - close)
+                if l.dir == bias and (na(best) or d < best)
+                    best := d
+                    dol := l
+    if not na(dol)
+        line.set_width(dol.ln, 2)
+        line.set_color(dol.ln, cDol)
+        label.set_text(dol.lb, "DOL · " + dol.name)
+        label.set_textcolor(dol.lb, cDol)
+        dolTxt := (dol.dir > 0 ? "↑ " : "↓ ") + dol.name + " " + str.tostring(dol.px, format.mintick) + " · " + str.tostring(math.round(best)) + " pts"
+    else
+        dolTxt := "Sin liquidez a favor del sesgo"
+else if not inWin
+    dolTxt := "—"
+
+// ───── PO3 de la vela de 1 h de las 10:00 (10 am open) ─────
+inTen = not na(time(timeframe.period, tenSess, TZ))
+var float tOpen = na
+var line  tLine = na
+var float preH = na
+var float preL = na
+var float tExtH = na
+var float tExtL = na
+var int   tLast = 0
+var bool  tDone = false
+var string tTxt = "Esperando 10:00"
+if newDay
+    preH := na
+    preL := na
+    tOpen := na
+    tTxt := "Esperando 10:00"
+// Máximo y mínimo de 09:30 a 10:00: la liquidez que suele buscar la distribución
+if nyMin >= 570 and nyMin < 600
+    preH := na(preH) ? high : math.max(preH, high)
+    preL := na(preL) ? low : math.min(preL, low)
+if showTen and inTen
+    if not inTen[1]
+        tOpen := open
+        tExtH := na
+        tExtL := na
+        tLast := 0
+        tDone := false
+        tTxt := "Esperando manipulación"
+        tLine := line.new(bar_index, open, bar_index, open, color = color.new(cTen, 10), style = line.style_solid, width = 1)
+        label.new(bar_index, open, "10:00", style = label.style_label_right, color = color.new(cTen, 100), textcolor = cTen, size = size.tiny)
+    else
+        line.set_x2(tLine, bar_index)
+    if not tDone
+        bool tDn = low <= tOpen - tenMan
+        bool tUp = high >= tOpen + tenMan
+        if tDn
+            tExtL := na(tExtL) ? low : math.min(tExtL, low)
+        if tUp
+            tExtH := na(tExtH) ? high : math.max(tExtH, high)
+        tLast := tDn and tUp ? (close > tOpen ? -1 : 1) : tDn ? -1 : tUp ? 1 : tLast
+        if tLast == -1
+            tTxt := "Manipulación abajo → busca compra"
+        else if tLast == 1
+            tTxt := "Manipulación arriba → busca venta"
+        // Tras manipular por debajo de la apertura de las 10:00, cierra encima → vela alcista (y al revés)
+        if inTen[1] and ((tLast == -1 and close > tOpen) or (tLast == 1 and close < tOpen))
+            tDone := true
+            int   d  = tLast == -1 ? 1 : -1
+            float ts = d > 0 ? tExtL - slBuf : tExtH + slBuf
+            float tt = d > 0 ? (not na(preH) and preH > close ? preH : close + tpR * (close - ts)) : (not na(preL) and preL < close ? preL : close - tpR * (ts - close))
+            int   left = math.max(1, int((660 - nyMin) * 60 / timeframe.in_seconds(timeframe.period)))
+            label.new(bar_index, d > 0 ? low : high, d > 0 ? "10 ▲ COMPRA" : "10 ▼ VENTA", style = d > 0 ? label.style_label_up : label.style_label_down, color = color.new(cTen, 10), textcolor = color.white, size = size.small)
+            line.new(bar_index, ts, bar_index + left, ts, color = color.new(cBear, 20), width = 2)
+            line.new(bar_index, tt, bar_index + left, tt, color = color.new(cBull, 20), width = 2)
+            label.new(bar_index + left, tt, "TP 10 " + str.tostring(tt, format.mintick), style = label.style_label_left, color = color.new(cBull, 20), textcolor = color.white, size = size.tiny)
+            label.new(bar_index + left, ts, "SL 10 " + str.tostring(ts, format.mintick), style = label.style_label_left, color = color.new(cBear, 20), textcolor = color.white, size = size.tiny)
+            tTxt := d > 0 ? "Setup COMPRA (vuelve sobre las 10:00)" : "Setup VENTA (vuelve bajo las 10:00)"
+            alert("PO3 10:00 · " + (d > 0 ? "COMPRA" : "VENTA") + " · entrada " + str.tostring(close, format.mintick) + " · SL " + str.tostring(ts, format.mintick) + " · TP " + str.tostring(tt, format.mintick), alert.freq_once_per_bar_close)
+if showTen and not inTen and inTen[1] and not tDone
+    tTxt := "Sin PO3 a las 10:00"
+
+// ───── Panel ─────
+var table tb = table.new(position.top_right, 2, 6, bgcolor = color.new(#131722, 15), frame_color = color.new(cAcc, 60), frame_width = 1)
+if showTbl and barstate.islast
+    table.cell(tb, 0, 0, "Rango A", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 0, na(aH) ? "—" : str.tostring(aH - aL, "#.##") + " pts", text_color = color.white, text_size = size.small)
+    table.cell(tb, 0, 1, "Precio vs 00:00", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 1, na(midOpen) ? "—" : close > midOpen ? "Encima · premium" : "Debajo · discount", text_color = na(midOpen) ? color.white : close > midOpen ? cBear : cBull, text_size = size.small)
+    table.cell(tb, 0, 2, "Estado", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 2, status, text_color = color.white, text_size = size.small)
+    table.cell(tb, 0, 4, "Draw on liquidity", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 4, showLiq ? dolTxt : "—", text_color = cDol, text_size = size.small)
+    table.cell(tb, 0, 5, "Vela 10:00", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 5, not showTen ? "—" : inTen and not na(tOpen) and not tDone ? (close > tOpen ? "Encima de las 10:00 · " : "Debajo de las 10:00 · ") + tTxt : tTxt, text_color = cTen, text_size = size.small)
+    table.cell(tb, 0, 3, "Vela 15 min", text_color = color.gray, text_size = size.small, text_halign = text.align_left)
+    table.cell(tb, 1, 3, not (showQ and ltf) ? "Gráfico de 3 min o menos" : not inWin ? "Fuera de la ventana" : na(qOpen) ? "—" : close > qOpen ? "Encima de su apertura" : "Debajo de su apertura", text_color = not (showQ and ltf and inWin) or na(qOpen) ? color.gray : close > qOpen ? cBull : cBear, text_size = size.small)
