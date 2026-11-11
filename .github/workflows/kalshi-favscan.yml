@@ -1,0 +1,50 @@
+# Barrido de mercados: dónde habría ganado el bot comprando favoritos como maker, con el histórico
+# minuto a minuto de las últimas 6 semanas (kalshi_sim/favscan.py). Solo datos públicos.
+name: "Kalshi: barrido de favoritos"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-favscan.yml
+      - kalshi_sim/favscan.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kalshi-favscan
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Tenis ATP y WTA", series: "KXATPMATCH KXWTAMATCH" }
+          - { name: "Tenis Challenger", series: "KXATPCHALLENGERMATCH KXWTACHALLENGERMATCH" }
+          - { name: "Tenis ITF", series: "KXITFMATCH KXITFWMATCH" }
+          - { name: "UFC y e-sports", series: "KXUFCFIGHT KXCS2GAME KXLOLGAME KXVALORANTGAME" }
+          - { name: "Fútbol Europa", series: "KXEPLGAME KXUCLGAME KXLALIGAGAME KXSERIEAGAME KXBUNDESLIGAGAME KXLIGUE1GAME KXUELGAME" }
+          - { name: "Fútbol América", series: "KXMLSGAME KXLIGAMXGAME KXBRASILEIROGAME KXARGPREMDIVGAME KXDIMAYORGAME KXSAUDIPLGAME" }
+          - { name: "Baloncesto y otros", series: "KXNCAAWBGAME KXEUROLEAGUEGAME KXT20MATCH KXODIMATCH KXNCAAMBGAME" }
+          - { name: "Clima A", series: "KXHIGHTSFO KXHIGHTPHX KXHIGHTATL KXHIGHTSEA KXHIGHTBOS KXHIGHTDAL KXHIGHTDC" }
+          - { name: "Clima B", series: "KXHIGHTLV KXHIGHTHOU KXHIGHTMIN KXHIGHTOKC KXHIGHTNOLA KXHIGHTSATX" }
+          - { name: "Clima mínimas", series: "KXLOWTNYC KXLOWTAUS KXLOWTDEN KXLOWTMIA KXLOWTCHI KXLOWTLAX KXLOWTPHIL" }
+          - { name: "Clima de siempre A", series: "KXHIGHLAX KXHIGHNY KXHIGHCHI KXHIGHMIA" }
+          - { name: "Clima de siempre B", series: "KXHIGHAUS KXHIGHDEN KXHIGHPHIL" }
+          - { name: "Ligas del bot A", series: "KXNFLGAME KXNBAGAME KXNHLGAME KXMLBGAME" }
+          - { name: "Ligas del bot B", series: "KXNCAAFGAME" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - name: Barrido
+        run: python kalshi_sim/favscan.py ${{ matrix.series }}
