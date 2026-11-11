@@ -1,0 +1,36 @@
+# ¿Quién gana con las combinadas (parlays) de Kalshi? Muestra al azar de combinadas ya decididas y
+# sus operaciones reales (kalshi_sim/combos.py). Solo datos públicos: ni claves ni cuentas.
+name: "Kalshi: combinadas"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/kalshi-bot-kjmcj6]
+    paths:
+      - .github/workflows/kalshi-combos.yml
+      - kalshi_sim/combos.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kalshi-combos
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    name: Parte ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - name: Muestra y operaciones
+        run: python kalshi_sim/combos.py fetch --shard ${{ matrix.shard }} --shards 20 --per-shard 1000
